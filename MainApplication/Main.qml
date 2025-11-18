@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 
-import CppObjects
+// import CppObjects
 
 ApplicationWindow {
     width: 800

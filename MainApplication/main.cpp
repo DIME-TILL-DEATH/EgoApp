@@ -1,19 +1,19 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
-#include "uicore.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);    app.setOrganizationName("AMT");
+
+    app.setOrganizationName("AMT electronics");
     app.setOrganizationDomain("amtelectronics.com");
     app.setApplicationName("EgoGig");
 
-    UiCore uiCore;
+    QQuickStyle::setStyle("Fusion");
 
     QQmlApplicationEngine engine;
-
-    qmlRegisterSingletonInstance("CppObjects", 1, 0, "UiCore", &uiCore);
 
     QObject::connect(
         &engine,

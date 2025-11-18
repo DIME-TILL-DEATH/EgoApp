@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+// import CppObjects 1.0
+
 Rectangle {
     id: _root
 
@@ -19,6 +21,8 @@ Rectangle {
 
             ComboBox{
                 Layout.preferredWidth: _root.width/2
+
+                model: UiCore.avaliablePlaylists
             }
 
             Button{
@@ -104,8 +108,7 @@ Rectangle {
 
         PlayerPanel{
             Layout.preferredWidth: parent.width
-            Layout.fillHeight: true
-            Layout.verticalStretchFactor: 2
+            Layout.preferredHeight: parent.height/5
         }
     }
 }

@@ -16,7 +16,7 @@ Resampler::Resampler()
     m_wavOutputFormat.channels = 2;
     m_wavOutputFormat.sampleRate = 44100;
     m_wavOutputFormat.bitsPerSample = 16;
-    m_wavOutputFormat.maxFileSize = 30000;
+    m_wavOutputFormat.maxFileSize = 0;
 }
 
 
