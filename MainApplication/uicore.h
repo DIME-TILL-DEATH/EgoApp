@@ -27,6 +27,7 @@ public:
 signals:
 
     void workspaceChanged();
+    void errorOccured(QString errorString);
 
 private:
     SdContentModel m_sdContentModel{this};

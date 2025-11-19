@@ -186,4 +186,21 @@ ApplicationWindow {
             }
         }
     }
+
+    MessageDialog{
+        id: _errorDialog
+
+        title: qsTr("Error!")
+    }
+
+    Connections{
+        target: UiCore
+
+        function onErrorOccured(description){
+            console.log("qml error dialog")
+
+            _errorDialog.informativeText = description
+            _errorDialog.open();
+        }
+    }
 }

@@ -27,6 +27,7 @@ SdContentModel::SdContentModel(QObject *parent)
     decoder.setAudioFormat(format);
     connect(&decoder, &QAudioDecoder::isDecodingChanged, this, &SdContentModel::slDecodingChanged);
     connect(&decoder, &QAudioDecoder::bufferReady, this, &SdContentModel::slBufferReady);
+    connect(&decoder, qOverload<QAudioDecoder::Error>(&QAudioDecoder::error), this, &SdContentModel::slDecodingError);
 }
 
 QModelIndex SdContentModel::rootIndex() const
@@ -168,6 +169,11 @@ void SdContentModel::slDecodingChanged(bool isDecoding)
 
         startDecoding();
     }
+}
+
+void SdContentModel::slDecodingError(QAudioDecoder::Error error)
+{
+    emit errorOccured(decoder.errorString());
 }
 
 void SdContentModel::addMidi(QModelIndex parentIndex, QList<QUrl> filesPathList)

@@ -6,6 +6,8 @@ UiCore::UiCore(QObject *parent)
     QString workspacePath = m_settings.value("workspace_path").toString();
     m_workspaceDir = QDir(workspacePath);
     m_sdContentModel.setWorkspace(workspacePath);
+
+    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)

@@ -61,9 +61,12 @@ signals:
     void decodingUpdated(quint64 durationProcessed, quint64 fileDuration);
     void decodingFinished();
 
+    void errorOccured(QString errorDescription);
+
 public slots:
     void slBufferReady();
     void slDecodingChanged(bool isDecoding);
+    void slDecodingError(QAudioDecoder::Error error);
 
 private:
     SdProxyModel m_sdProxyModel{this};
