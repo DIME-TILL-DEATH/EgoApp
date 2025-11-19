@@ -41,6 +41,40 @@ void SdContentModel::setWorkspace(const QDir &workspaceDir)
     emit rootIndexChanged();
 }
 
+void SdContentModel::addContent(QModelIndex parentIndex, QList<QUrl> filesPathList)
+{
+    QModelIndex realIndex = m_sdProxyModel.mapToSource(parentIndex);
+    if(realIndex.row() == -1) realIndex = index(rootPath() + "/SONGS");
+
+    QString dstPath = this->filePath(realIndex);
+
+    QFileInfo info(dstPath);
+
+    if(info.isFile()) dstPath = info.absoluteDir().absolutePath();
+
+    QList<QUrl> sortedMidiList;
+    QList<QUrl> sortedAudioList;
+    foreach(QUrl fileUrl, filesPathList)
+    {
+        QString filePath = fileUrl.toLocalFile();
+        QFileInfo fileInfo(filePath);
+
+        if(fileInfo.suffix().compare("mid", Qt::CaseSensitivity::CaseInsensitive) == 0)
+        {
+            sortedMidiList.append(fileUrl);
+        }
+
+        if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0
+            || fileInfo.suffix().compare("mp3", Qt::CaseSensitivity::CaseInsensitive) == 0)
+        {
+            sortedAudioList.append(fileUrl);
+        }
+    }
+
+    addMidi(dstPath, sortedMidiList);
+    addWav(dstPath, sortedAudioList);
+}
+
 void SdContentModel::addFolder(QModelIndex parentIndex, QString name)
 {
     QModelIndex realIndex = m_sdProxyModel.mapToSource(parentIndex);
@@ -55,14 +89,10 @@ void SdContentModel::addFolder(QModelIndex parentIndex, QString name)
     mkdir(realIndex, name);
 }
 
-void SdContentModel::addWav(QModelIndex parentIndex, QList<QUrl> filesPathList)
+void SdContentModel::addWav(QString dstPath, QList<QUrl> filesPathList)
 {
-    QModelIndex realIndex = m_sdProxyModel.mapToSource(parentIndex);
-
-    if(realIndex.row() == -1) realIndex = index(rootPath() + "/SONGS");
-
     m_wavsListToUpload = filesPathList;
-    dstWavFolderPath = this->filePath(realIndex) + "/";
+    dstWavFolderPath = dstPath + "/";
 
     startDecoding();
 }
@@ -176,17 +206,13 @@ void SdContentModel::slDecodingError(QAudioDecoder::Error error)
     emit errorOccured(decoder.errorString());
 }
 
-void SdContentModel::addMidi(QModelIndex parentIndex, QList<QUrl> filesPathList)
+void SdContentModel::addMidi(QString dstPath, QList<QUrl> filesPathList)
 {
-    QModelIndex realIndex = m_sdProxyModel.mapToSource(parentIndex);
-
-    if(realIndex.row() == -1) realIndex = index(rootPath() + "/SONGS");
-
     foreach(QUrl fileUrl, filesPathList)
     {
         QString filePath = fileUrl.toLocalFile();
         QFileInfo fileInfo(filePath);
-        QFile::copy(filePath, this->filePath(realIndex) + "/" + fileInfo.fileName());
+        QFile::copy(filePath, dstPath + "/" + fileInfo.fileName());
     }
 }
 

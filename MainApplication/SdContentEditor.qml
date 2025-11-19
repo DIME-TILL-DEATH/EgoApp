@@ -23,8 +23,29 @@ Item{
 
             selectionModel: ItemSelectionModel{
                 id: _itemSelectionModel
+
+                // onCurrentChanged:{
+                //     console.log(currentIndex)
+                // }
             }
-            delegate: TreeViewDelegate{}
+
+            delegate: TreeViewDelegate{
+                id: _delegate
+
+                // highlighted: _dropArea.containsDrag
+
+                DropArea{
+                    id: _dropArea
+
+                    anchors.fill: parent
+
+                    onDropped: (drop) => {
+                        var currentIndex = _treeView.index(_delegate.row, _delegate.column);
+
+                        UiCore.sdContentModel.addContent(currentIndex, drop.urls);
+                    }
+                }
+            }
 
             Layout.preferredWidth: parent.width
             Layout.fillHeight: true
@@ -111,10 +132,10 @@ Item{
 
         fileMode: QmlDialogs.FileDialog.OpenFiles
 
-        nameFilters: ["Wav files (*.wav)"]
+        nameFilters: ["WAV(*.wav)", "MP3(*.mp3)"]
 
         onAccepted: {
-            UiCore.sdContentModel.addWav(_itemSelectionModel.currentIndex, _wavFileDialog.selectedFiles);
+            UiCore.sdContentModel.addContent(_itemSelectionModel.currentIndex, _wavFileDialog.selectedFiles);
         }
 
         Settings{
@@ -130,7 +151,7 @@ Item{
         nameFilters: ["Midi files (*.mid)"]
 
         onAccepted: {
-            UiCore.sdContentModel.addMidi(_itemSelectionModel.currentIndex, _midiFileDialog.selectedFiles);
+            UiCore.sdContentModel.addContent(_itemSelectionModel.currentIndex, _midiFileDialog.selectedFiles);
         }
 
         Settings{

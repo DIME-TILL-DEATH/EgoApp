@@ -49,9 +49,8 @@ public:
 
     void setWorkspace(const QDir& workspaceDir);
 
+    Q_INVOKABLE void addContent(QModelIndex parentIndex, QList<QUrl> filesPathList);
     Q_INVOKABLE void addFolder(QModelIndex parentIndex, QString name);
-    Q_INVOKABLE void addWav(QModelIndex parentIndex, QList<QUrl> filesPathList);
-    Q_INVOKABLE void addMidi(QModelIndex parentIndex, QList<QUrl> filesPathList);
     Q_INVOKABLE void deleteObject(QModelIndex index);
 
 signals:
@@ -77,6 +76,9 @@ private:
     QList<QUrl> m_wavsListToUpload;
     QString dstWavFolderPath;
     QFile dstWavFile;
+
+    void addWav(QString dstPath, QList<QUrl> filesPathList);
+    void addMidi(QString dstPath, QList<QUrl> filesPathList);
 };
 
 #endif // SDCONTENTMODEL_H
