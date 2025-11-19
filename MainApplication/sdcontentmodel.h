@@ -5,6 +5,7 @@
 #include <QSortFilterProxyModel>
 #include <QObject>
 #include <QQmlEngine>
+#include <QAudioDecoder>
 
 class SdProxyModel : public QSortFilterProxyModel
 {
@@ -49,12 +50,30 @@ public:
     void setWorkspace(const QDir& workspaceDir);
 
     Q_INVOKABLE void addFolder(QModelIndex parentIndex, QString name);
+    Q_INVOKABLE void addWav(QModelIndex parentIndex, QList<QUrl> filesPathList);
+    Q_INVOKABLE void addMidi(QModelIndex parentIndex, QList<QUrl> filesPathList);
+    Q_INVOKABLE void deleteObject(QModelIndex index);
 
 signals:
     void rootIndexChanged();
 
+    void decodingStarted(quint16 filesLeft);
+    void decodingUpdated(quint64 durationProcessed, quint64 fileDuration);
+    void decodingFinished();
+
+public slots:
+    void slBufferReady();
+    void slDecodingChanged(bool isDecoding);
+
 private:
     SdProxyModel m_sdProxyModel{this};
+    QAudioDecoder decoder{this};
+
+    void startDecoding();
+
+    QList<QUrl> m_wavsListToUpload;
+    QString dstWavFolderPath;
+    QFile dstWavFile;
 };
 
 #endif // SDCONTENTMODEL_H

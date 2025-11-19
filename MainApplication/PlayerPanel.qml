@@ -35,12 +35,14 @@ Rectangle {
             x: 5
 
             Button{
+                Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
                 onClicked: _root.playPause()
             }
 
             Button{
+                Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
                 onClicked: _root.stop

@@ -58,6 +58,12 @@ target_link_libraries(EgoGig PRIVATE Qt6::Core)
 # )
 
 qt_policy(SET QTP0001 NEW)
+
+set(QT_QML_GENERATE_QMLLS_INI ON)
+set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/EgoApp)
+set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt Creator's code model" FORCE)
+
+
 qt_add_qml_module(${PROJECT_NAME}
     URI EgoApp
     VERSION 1.0
@@ -85,7 +91,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick
-    QuickControls2 LinguistTools Svg)
+    QuickControls2 LinguistTools Svg Multimedia)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
@@ -93,6 +99,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Svg
     Qt6::Qml
     Qt6::QuickControls2
+    Qt6::Multimedia
 )
 
 set(QT_QML_GENERATE_QMLLS_INI ON)

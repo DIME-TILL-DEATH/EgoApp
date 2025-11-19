@@ -1,8 +1,9 @@
+import QtCore
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-
-// import CppObjects
+import QtQuick.Dialogs as QmlDialogs
 
 Item{
     id: _root
@@ -55,24 +56,32 @@ Item{
                 text: qsTr("ADD WAV")
 
                 Layout.fillWidth: true
+
+                onClicked: _wavFileDialog.open()
             }
 
             Button{
                 text: qsTr("ADD MIDI")
 
                 Layout.fillWidth: true
+
+                onClicked: _midiFileDialog.open()
             }
 
             Button{
                 text: qsTr("DELETE")
 
                 Layout.fillWidth: true
+
+                onClicked: _removeConfirmationDialog.open()
             }
         }
 
         PlayerPanel{
+            label: qsTr("WAV player")
+
             Layout.preferredWidth: parent.width
-            Layout.preferredHeight: parent.height/5
+            Layout.preferredHeight: parent.height/8
         }
     }
 
@@ -94,6 +103,58 @@ Item{
 
         onAccepted: {
             UiCore.sdContentModel.addFolder(_itemSelectionModel.currentIndex, _folderTextField.text);
+        }
+    }
+
+    QmlDialogs.FileDialog{
+        id: _wavFileDialog
+
+        fileMode: QmlDialogs.FileDialog.OpenFiles
+
+        nameFilters: ["Wav files (*.wav)"]
+
+        onAccepted: {
+            UiCore.sdContentModel.addWav(_itemSelectionModel.currentIndex, _wavFileDialog.selectedFiles);
+        }
+
+        Settings{
+            property alias path: _wavFileDialog.currentFolder
+        }
+    }
+
+    QmlDialogs.FileDialog{
+        id: _midiFileDialog
+
+        fileMode: QmlDialogs.FileDialog.OpenFiles
+
+        nameFilters: ["Midi files (*.mid)"]
+
+        onAccepted: {
+            UiCore.sdContentModel.addMidi(_itemSelectionModel.currentIndex, _midiFileDialog.selectedFiles);
+        }
+
+        Settings{
+            property alias path: _wavFileDialog.currentFolder
+        }
+    }
+
+    Dialog{
+        id: _removeConfirmationDialog
+
+        title: qsTr("Remove item?")
+
+        width: 250
+        height: 100
+
+        contentItem: Label{
+            text: qsTr("Do you really want to delete object?")
+            horizontalAlignment: Label.AlignHCenter
+        }
+
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        onAccepted: {
+           UiCore.sdContentModel.deleteObject(_itemSelectionModel.currentIndex)
         }
     }
 }

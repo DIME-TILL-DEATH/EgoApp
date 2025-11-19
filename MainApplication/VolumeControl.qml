@@ -21,8 +21,6 @@ Rectangle {
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height * 3/4
             Layout.alignment: Text.AlignHCenter
-            // Layout.fillHeight: true
-            // Layout.verticalStretchFactor: 4
         }
 
         Button{
@@ -50,6 +48,7 @@ Rectangle {
             Layout.preferredWidth: parent.width
             Layout.verticalStretchFactor: 2
             Layout.fillHeight: true
+            Layout.bottomMargin: 5
 
             CheckBox{
                 id: _chkBoxL
@@ -61,11 +60,9 @@ Rectangle {
 
                 checked: true
 
-                contentItem: Text {
+                contentItem: Label {
                     text: _chkBoxL.text
                     font: _chkBoxL.font
-                    opacity: enabled ? 1.0 : 0.3
-                    color: _indicatorLabel.color
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxL.indicator.height + _chkBoxL.spacing + 2
@@ -82,11 +79,9 @@ Rectangle {
 
                 checked: true
 
-                contentItem: Text {
+                contentItem: Label {
                     text: _chkBoxR.text
                     font: _chkBoxR.font
-                    opacity: enabled ? 1.0 : 0.3
-                    color: _indicatorLabel.color
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 2

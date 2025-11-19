@@ -14,6 +14,8 @@ Rectangle {
 
         RowLayout{
             Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 1
 
             Label{
                 text: qsTr("Playlist:")
@@ -42,36 +44,42 @@ Rectangle {
 
         ListView{
             Layout.preferredWidth: parent.width
-            Layout.preferredHeight: parent.height/2
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 5
         }
 
         RowLayout{
             Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 1
 
             Button{
                 Layout.fillWidth: true
-                Layout.fillHeight: true
 
                 text: qsTr("ADD SONG")
             }
 
             Button{
                 Layout.fillWidth: true
-                Layout.fillHeight: true
 
                 text: qsTr("DELETE SONG")
             }
 
             Button{
                 Layout.fillWidth: true
-                Layout.fillHeight: true
 
                 text: qsTr("CHECK")
             }
         }
 
+        CheckBox{
+            text: qsTr("Play next")
+        }
+
         RowLayout{
             Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 1
 
             Label{
                 text: "T1"
@@ -79,10 +87,7 @@ Rectangle {
 
             TextField{
                 readOnly: true
-            }
-
-            CheckBox{
-                text: qsTr("Play next")
+                Layout.fillWidth: true
             }
 
             Button{
@@ -92,6 +97,8 @@ Rectangle {
 
         RowLayout{
             Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 1
 
             Label{
                 text: "T2"
@@ -99,6 +106,7 @@ Rectangle {
 
             TextField{
                 readOnly: true
+                Layout.fillWidth: true
             }
 
             Button{
@@ -107,8 +115,10 @@ Rectangle {
         }
 
         PlayerPanel{
+            label: qsTr("EGO player")
+
             Layout.preferredWidth: parent.width
-            Layout.preferredHeight: parent.height/5
+            Layout.preferredHeight: parent.height/8
         }
     }
 }
