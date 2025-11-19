@@ -37,8 +37,29 @@ QModelIndex SdContentModel::rootIndex() const
 
 void SdContentModel::setWorkspace(const QDir &workspaceDir)
 {
+    m_sdProxyModel.setFilterRegularExpression("");
     setRootPath(workspaceDir.absolutePath());
     emit rootIndexChanged();
+    m_sdProxyModel.setFilterRegularExpression("SONGS");
+}
+
+void SdContentModel::currentSelectionChanged(QModelIndex currentIndex)
+{
+    QModelIndex realIndex = m_sdProxyModel.mapToSource(currentIndex);
+    QString dstPath = this->filePath(realIndex);
+    QFileInfo fileInfo(dstPath);
+
+    m_canSetTrack = false;
+
+    if(fileInfo.isFile())
+    {
+        if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0
+            || fileInfo.suffix().compare("mp3", Qt::CaseSensitivity::CaseInsensitive) == 0)
+        {
+            m_canSetTrack = true;
+        }
+    }
+    emit canSetTrackChanged();
 }
 
 void SdContentModel::addContent(QModelIndex parentIndex, QList<QUrl> filesPathList)
@@ -220,4 +241,17 @@ void SdContentModel::deleteObject(QModelIndex index)
 {
     QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
     remove(realIndex);
+}
+
+bool SdContentModel::canSetTrack() const
+{
+    return m_canSetTrack;
+}
+
+void SdContentModel::setCanSetTrack(bool newCanSetTrack)
+{
+    if (m_canSetTrack == newCanSetTrack)
+        return;
+    m_canSetTrack = newCanSetTrack;
+    emit canSetTrackChanged();
 }

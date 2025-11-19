@@ -54,6 +54,7 @@ qt_add_executable(${PROJECT_NAME}
 
 target_link_libraries(EgoGig PRIVATE Qt6::Core)
 target_link_libraries(EgoGig PRIVATE Qt6::Core)
+target_link_libraries(EgoGig PRIVATE Qt6::Core)
 
 # )
 
@@ -69,14 +70,16 @@ qt_add_qml_module(${PROJECT_NAME}
     VERSION 1.0
     QML_FILES
         Main.qml
-        VolumeControl.qml
         PlaylistEditor.qml
         PlayerPanel.qml
         SdContentEditor.qml
+        VolumeControl.qml
 
     SOURCES
-        uicore.h uicore.cpp
+        playlistmodel.h playlistmodel.cpp
         sdcontentmodel.h sdcontentmodel.cpp
+        song.h song.cpp
+        uicore.h uicore.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -92,6 +95,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick
     QuickControls2 LinguistTools Svg Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core

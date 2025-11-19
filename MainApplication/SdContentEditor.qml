@@ -24,15 +24,13 @@ Item{
             selectionModel: ItemSelectionModel{
                 id: _itemSelectionModel
 
-                // onCurrentChanged:{
-                //     console.log(currentIndex)
-                // }
+                onCurrentChanged:{
+                    UiCore.sdContentModel.currentSelectionChanged(currentIndex)
+                }
             }
 
             delegate: TreeViewDelegate{
                 id: _delegate
-
-                // highlighted: _dropArea.containsDrag
 
                 DropArea{
                     id: _dropArea
