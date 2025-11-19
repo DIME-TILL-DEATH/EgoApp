@@ -15,7 +15,6 @@ UiCore::UiCore(QObject *parent)
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
 {
-    qDebug() << __FUNCTION__;
     QString path = workspaceFolderPath.path();
 #ifdef Q_OS_WINDOWS
     path = path.removeFirst();
@@ -148,8 +147,6 @@ quint16 UiCore::currentPlaylistIndex() const
 
 void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
 {
-    qDebug() << __FUNCTION__ << newCurrentPlaylistIndex;
-
     m_currentPlaylistIndex = newCurrentPlaylistIndex;
 
     if(m_avaliablePlaylists.size() == 0)

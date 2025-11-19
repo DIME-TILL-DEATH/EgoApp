@@ -43,6 +43,14 @@ Item{
                         UiCore.sdContentModel.addContent(currentIndex, drop.urls);
                     }
                 }
+
+                Rectangle{
+                    visible: _dropArea.containsDrag
+
+                    anchors.fill: parent
+
+                    color: palette.highlight
+                }
             }
 
             Layout.preferredWidth: parent.width

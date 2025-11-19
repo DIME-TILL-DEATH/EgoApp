@@ -57,7 +57,7 @@ Rectangle {
             color: "transparent"
 
             ListView{
-
+                id: _listView
                 model: UiCore.currentPlaylist
 
                 clip: true
@@ -70,6 +70,8 @@ Rectangle {
                 spacing: 2
 
                 delegate: Rectangle{
+                    id: _delegate
+
                     height: 20
                     width: parent.width
 
@@ -78,6 +80,20 @@ Rectangle {
                     Label{
                         text: (index+1) + ": " + t1Name + " | " + t2Name
                     }
+
+                    MouseArea{
+                        id: _ma
+
+                        anchors.fill: parent
+
+                        onClicked:{
+                            _listView.currentIndex = index
+                        }
+                    }
+                }
+
+                highlight: Rectangle{
+                    color: palette.highlight
                 }
 
                 ScrollBar.vertical: ScrollBar{
@@ -112,6 +128,8 @@ Rectangle {
 
         CheckBox{
             text: qsTr("Play next")
+
+            checked: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
         }
 
         RowLayout{
@@ -128,6 +146,8 @@ Rectangle {
 
                 readOnly: true
                 Layout.fillWidth: true
+
+                text: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
             }
 
             Button{
@@ -151,6 +171,8 @@ Rectangle {
 
                 readOnly: true
                 Layout.fillWidth: true
+
+                text: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
             }
 
             Button{

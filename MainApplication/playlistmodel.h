@@ -23,9 +23,6 @@ public:
 
     QString playlistName() const {return m_playlistName;};
     void setPlaylistName(const QString& newName) {m_playlistName = newName;};
-private:
-    QString m_playlistName;
-    QList<Song> m_songList;
 
     enum ListRoles{
         PlayNextRole = Qt::UserRole + 1,
@@ -34,6 +31,11 @@ private:
         T1NameRole,
         T2NameRole
     };
+    Q_ENUM(ListRoles)
+
+private:
+    QString m_playlistName;
+    QList<Song> m_songList;
 
 };
 
