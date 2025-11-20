@@ -8,6 +8,8 @@ class Song
 public:
     Song();
 
+    void setPath(quint16 trackNum, const QString& path);
+
     QString t1Path;
     QString t2Path;
 

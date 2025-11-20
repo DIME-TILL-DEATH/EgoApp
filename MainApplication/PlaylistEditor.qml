@@ -147,13 +147,30 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                text: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
+                Connections{
+                    target: UiCore.currentPlaylist
+
+                    function onDataChanged(){
+                        _t1PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
+                    }
+                }
+                Binding{
+                    target: _t1PathFiled
+                    property: "text"
+                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
+                    restoreMode: Binding.RestoreBinding
+                }
             }
 
             Button{
                 text: qsTr("Set link")
 
                 enabled: UiCore.sdContentModel.canSetTrack
+
+                onClicked:{
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 0, UiCore.sdContentModel.selectedPath);
+                }
             }
         }
 
@@ -172,13 +189,29 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                text: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
+                Connections{
+                    target: UiCore.currentPlaylist
+
+                    function onDataChanged(){
+                        _t2PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
+                    }
+                }
+                Binding{
+                    target: _t2PathFiled
+                    property: "text"
+                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
+                    restoreMode: Binding.RestoreBinding
+                }
             }
 
             Button{
                 text: qsTr("Set link")
 
                 enabled: UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
+                onClicked:{
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 1, UiCore.sdContentModel.selectedPath);
+                }
             }
         }
 

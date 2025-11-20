@@ -43,6 +43,7 @@ class SdContentModel : public QFileSystemModel
     Q_PROPERTY(QModelIndex rootIndex READ rootIndex NOTIFY rootIndexChanged FINAL)
 
     Q_PROPERTY(bool canSetTrack READ canSetTrack WRITE setCanSetTrack NOTIFY canSetTrackChanged FINAL)
+    Q_PROPERTY(QString selectedPath READ selectedPath NOTIFY selectedPathChanged FINAL)
 public:
     explicit SdContentModel(QObject *parent = nullptr);
 
@@ -56,8 +57,11 @@ public:
     Q_INVOKABLE void addContent(QModelIndex parentIndex, QList<QUrl> filesPathList);
     Q_INVOKABLE void addFolder(QModelIndex parentIndex, QString name);
     Q_INVOKABLE void deleteObject(QModelIndex index);
+
     bool canSetTrack() const;
     void setCanSetTrack(bool newCanSetTrack);
+
+    QString selectedPath() const;
 
 signals:
     void rootIndexChanged();
@@ -69,6 +73,8 @@ signals:
     void errorOccured(QString errorDescription);
 
     void canSetTrackChanged();
+
+    void selectedPathChanged();
 
 public slots:
     void slBufferReady();
@@ -85,9 +91,11 @@ private:
     QString dstWavFolderPath;
     QFile dstWavFile;
 
+    bool m_canSetTrack{false};
+
     void addWav(QString dstPath, QList<QUrl> filesPathList);
     void addMidi(QString dstPath, QList<QUrl> filesPathList);
-    bool m_canSetTrack{false};
+    QString m_selectedPath;
 };
 
 #endif // SDCONTENTMODEL_H

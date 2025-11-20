@@ -69,3 +69,26 @@ void PlaylistModel::refreshModel(const QList<Song> &songList)
 {
 
 }
+
+void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)
+{
+    if(!index.isValid()) return;
+    quint16 songNum = index.row();
+
+    if(songNum > m_songList.size()) return;
+
+    Song* song = m_songList.data();
+    song[songNum].setPath(trackNum, path);
+
+    emit dataChanged(index, index);
+}
+
+QDir PlaylistModel::dir() const
+{
+    return m_dir;
+}
+
+void PlaylistModel::setDir(const QDir &newDir)
+{
+    m_dir = newDir;
+}

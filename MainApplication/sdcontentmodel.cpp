@@ -53,10 +53,15 @@ void SdContentModel::currentSelectionChanged(QModelIndex currentIndex)
 
     if(fileInfo.isFile())
     {
-        if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0
-            || fileInfo.suffix().compare("mp3", Qt::CaseSensitivity::CaseInsensitive) == 0)
+        if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0)
         {
             m_canSetTrack = true;
+
+            m_selectedPath = this->filePath(realIndex);
+            quint16 workspacePathLenght = rootPath().size();
+            m_selectedPath.remove(0, workspacePathLenght);
+            if(m_selectedPath.first(1) != '/') m_selectedPath.prepend('/');
+            emit selectedPathChanged();
         }
     }
     emit canSetTrackChanged();
@@ -254,4 +259,9 @@ void SdContentModel::setCanSetTrack(bool newCanSetTrack)
         return;
     m_canSetTrack = newCanSetTrack;
     emit canSetTrackChanged();
+}
+
+QString SdContentModel::selectedPath() const
+{
+    return m_selectedPath;
 }

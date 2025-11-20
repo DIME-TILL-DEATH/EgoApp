@@ -2,6 +2,26 @@
 
 Song::Song() {}
 
+void Song::setPath(quint16 trackNum, const QString &path)
+{
+    switch(trackNum)
+    {
+    case 0:
+    {
+        t1Path = path;
+        break;
+    }
+
+    case 1:
+    {
+        t2Path = path;
+        break;
+    }
+
+    default: return;
+    }
+}
+
 QByteArray Song::generateFileContent()
 {
     QByteArray result;
