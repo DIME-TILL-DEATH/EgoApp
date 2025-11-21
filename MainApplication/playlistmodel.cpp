@@ -98,21 +98,10 @@ bool PlaylistModel::insertRows(int position, int count, const QModelIndex &paren
         {
             for(int i = position + rowNumber; i < m_songList.size(); ++i)
             {
-                if(m_songList.size() == i+1)
-                {
-                    oldSong[i].fileNum++;
-                    break;
-                }
+                oldSong[i].fileNum++;
 
-                if((oldSong[i+1].fileNum - oldSong[i].fileNum) == 1)
-                {
-                    oldSong[i].fileNum++;
-                }
-                else
-                {
-                    oldSong[i].fileNum++;
-                    break;
-                }
+                if(m_songList.size() == i+1) break;
+                if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) break;
             }
 
             m_songList.insert(position, newSong);
@@ -150,21 +139,10 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
         Song* oldSong = m_songList.data();
         for(int i = position + rowNumber; i < m_songList.size(); ++i)
         {
-            if(m_songList.size() == i+1)
-            {
-                oldSong[i].fileNum--;
-                break;
-            }
+            oldSong[i].fileNum--;
 
-            if((oldSong[i+1].fileNum - oldSong[i].fileNum) == 1)
-            {
-                oldSong[i].fileNum--;
-            }
-            else
-            {
-                oldSong[i].fileNum--;
-                break;
-            }
+            if(m_songList.size() == i+1) break;
+            if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) break;
         }
     }
 
@@ -179,7 +157,62 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
 
 void PlaylistModel::moveSong(quint16 fromPosition, quint16 toPosition)
 {
+    moveRows(QModelIndex(), fromPosition, 1, QModelIndex(), toPosition);
+}
 
+bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild)
+{
+    if(sourceRow == destinationChild) return false;
+
+
+    Song* song = m_songList.data();
+    if(sourceRow < destinationChild)
+    {
+        beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild + 1);
+
+        for(int i = sourceRow; i <= destinationChild; i++)
+        {
+            if(i > m_songList.size() - 1) continue;
+            QFile file(m_dir.absolutePath() + "/" + QString::number(m_songList.at(i).fileNum) + ".ego");
+
+            if(i == sourceRow)
+            {
+                file.remove();
+                song[i].fileNum = song[destinationChild].fileNum;
+            }
+            else
+            {
+                if(i != destinationChild) file.remove();
+                song[i].fileNum--;
+            }
+            writeEgoFile(song[i]);
+        }
+    }
+    else
+    {
+        beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild);
+        for(int i = sourceRow; i >= destinationChild; i--)
+        {
+            if(i < 0) continue;
+            QFile file(m_dir.absolutePath() + "/" + QString::number(m_songList.at(i).fileNum) + ".ego");
+
+            if(i == sourceRow)
+            {
+                file.remove();
+                song[i].fileNum = song[destinationChild].fileNum;
+            }
+            else
+            {
+                if(i != destinationChild) file.remove();
+                song[i].fileNum++;
+            }
+            writeEgoFile(song[i]);
+        }
+    }
+    m_songList.move(sourceRow, destinationChild);
+
+    endMoveRows();
+    return true;
 }
 
 void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)

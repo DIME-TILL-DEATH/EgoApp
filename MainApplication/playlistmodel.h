@@ -53,10 +53,7 @@ private:
 
     void writeEgoFile(const Song& song);
 
-    // QAbstractItemModel interface
-public:
-
-
+    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
 };
 
 #endif // PLAYLISTMODEL_H

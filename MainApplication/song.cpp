@@ -22,6 +22,11 @@ void Song::setPath(quint16 trackNum, const QString &path)
     }
 }
 
+void Song::setFileNum(quint16 newFileNum)
+{
+    fileNum = newFileNum;
+}
+
 QByteArray Song::generateFileContent() const
 {
     QByteArray result;

@@ -58,8 +58,6 @@ Rectangle {
 
             ListView{
                 id: _listView
-                model: UiCore.currentPlaylist
-
                 clip: true
 
                 anchors.fill: parent
@@ -69,29 +67,87 @@ Rectangle {
 
                 spacing: 2
 
-                delegate: Rectangle{
-                    id: _delegate
+                model: DelegateModel{
+                    id: _visualModel
 
-                    height: 20
-                    width: _listView.width
+                    model: UiCore.currentPlaylist
 
-                    color: "transparent"
+                    delegate: DropArea{
+                        id: _delegateRoot
 
-                    Label{
-                        text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
-                               + ": " + t1Name
-                               + (t2Name !== "" ? " | " + t2Name : "")
-                               + (playNext ? " ->" : "")
+                        height: 20
+                        width: _listView.width
 
-                    }
+                        property int modelIndex
+                        property int visualIndex: DelegateModel.itemsIndex
 
-                    MouseArea{
-                        id: _ma
+                        onEntered: function (drag) {
+                            var from = drag.source.visualIndex;
+                            var to = _thing.visualIndex;
+                            _visualModel.items.move(from, to);
+                        }
 
-                        anchors.fill: parent
+                        onDropped: function (drag) {
+                            var from = modelIndex;
+                            var to = (drag.source as Item).visualIndex;
+                            UiCore.currentPlaylist.moveSong(from, to);
+                        }
 
-                        onClicked:{
-                            _listView.currentIndex = index
+                        Rectangle{
+                            id: _thing
+
+                            width: _delegateRoot.width
+                            height: _delegateRoot.height
+
+                            color: "transparent"
+
+                            property Item dragParent: _delegateRoot
+                            property int visualIndex: _delegateRoot.visualIndex
+
+                            Drag.active: _mouseAreaDrag.drag.active
+                            Drag.source: _thing
+                            Drag.hotSpot.x: width / 2
+                            Drag.hotSpot.y: height / 2
+
+                            opacity: Drag.active ? 0.5 : 1
+
+                            MouseArea {
+                                id: _mouseAreaDrag
+                                anchors.fill: parent
+
+                                drag.target: _thing
+                                drag.axis: Drag.YAxis
+
+                                onPressed:
+                                {
+                                    _listView.currentIndex = index
+                                    _delegateRoot.modelIndex = visualIndex
+                                }
+                                onReleased: _thing.Drag.drop()
+                            }
+
+                            Label{
+                                text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
+                                       + ": " + t1Name
+                                       + (t2Name !== "" ? " | " + t2Name : "")
+                                       + (playNext ? " |->" : "")
+
+                            }
+
+                            states: State {
+                                when: _mouseAreaDrag.drag.active
+
+                                ParentChange {
+                                    target: _thing
+                                    parent: _listView
+                                }
+
+                                AnchorChanges {
+                                    target: _thing
+                                    anchors.horizontalCenter: undefined
+                                    anchors.verticalCenter: undefined
+                                }
+                            }
                         }
                     }
                 }
@@ -146,13 +202,6 @@ Rectangle {
             text: qsTr("Play next")
 
             checked: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
-
-            // Binding{
-            //     target: _cbPlayNext
-            //     property: "checked"
-            //     value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
-            //     restoreMode: Binding.RestoreBinding
-            // }
 
             onClicked:{
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
