@@ -14,7 +14,8 @@ class PlaylistModel : public QAbstractListModel
     QML_ELEMENT
 public:
     enum ListRoles{
-        PlayNextRole = Qt::UserRole + 1,
+        FileNumRole = Qt::UserRole + 1,
+        PlayNextRole,
         T1PathRole,
         T2PathRole,
         T1NameRole,
@@ -34,7 +35,12 @@ public:
     QString playlistName() const {return m_playlistName;};
     void setPlaylistName(const QString& newName) {m_playlistName = newName;};
 
+    Q_INVOKABLE bool insertRows(int position, int count, const QModelIndex &parent = QModelIndex()) override;
+    Q_INVOKABLE bool removeRows(int position, int count, const QModelIndex &parent = QModelIndex()) override;
+    Q_INVOKABLE void moveSong(quint16 fromPosition, quint16 toPosition);
+
     Q_INVOKABLE void setLink(const QModelIndex &index, quint8 trackNum, QString path);
+    Q_INVOKABLE void setPlayNext(const QModelIndex &index, bool state);
 
     QDir dir() const;
     void setDir(const QDir &newDir);
@@ -44,6 +50,13 @@ private:
     QList<Song> m_songList;
 
     QDir m_dir;
+
+    void writeEgoFile(const Song& song);
+
+    // QAbstractItemModel interface
+public:
+
+
 };
 
 #endif // PLAYLISTMODEL_H

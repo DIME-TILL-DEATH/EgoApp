@@ -1,5 +1,7 @@
 #include "uicore.h"
 
+#include <QCollator>
+
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
@@ -91,18 +93,21 @@ void UiCore::readPlaylistFolder()
     m_avaliablePlaylists.clear();
     m_currentPlaylist = nullptr;
 
-    QDir playlistDir = m_workspaceDir;
-    if(playlistDir.cd("PLAYLIST"))
+    QDir roorPlstDir = m_workspaceDir;
+    if(roorPlstDir.cd("PLAYLIST"))
     {
-        QStringList allDirs = playlistDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        QStringList allDirs = roorPlstDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
 
-        foreach(QString plsDirPath, allDirs)
+        foreach(QString plsDirName, allDirs)
         {
-            QDir plsDir(playlistDir.absolutePath() + "/" + plsDirPath);
+            QDir plsDir(roorPlstDir.absolutePath() + "/" + plsDirName);
 
             QStringList filters;
             filters.append("*.ego");
-            QStringList egoFiles = plsDir.entryList(filters);
+            QStringList egoFiles = plsDir.entryList(filters, QDir::Files, QDir::Name);
+            QCollator collator;
+            collator.setNumericMode(true);
+            std::sort(egoFiles.begin(), egoFiles.end(), collator);
 
             QList<Song> songList;
             if(!egoFiles.isEmpty())
@@ -128,12 +133,23 @@ void UiCore::readPlaylistFolder()
                         song.t2Path = file.readLine();
                         song.t2Path.remove("\n");
                     }
+
+                    QFileInfo fileInfo(file);
+                    QString fileName = fileInfo.fileName();
+                    fileName.remove(".ego");
+                    song.fileNum = fileName.toInt();
+
                     songList.append(song);
                 }
 
             }
             PlaylistModel* playListModel = new PlaylistModel(songList, this);
-            playListModel->setPlaylistName(plsDirPath);
+            playListModel->setPlaylistName(plsDirName);
+
+            QDir playlistDir(roorPlstDir);
+            playlistDir.cd(plsDirName);
+
+            playListModel->setDir(playlistDir);
             m_avaliablePlaylists.append(playListModel);
         }
     }

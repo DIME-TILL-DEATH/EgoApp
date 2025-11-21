@@ -15,7 +15,9 @@ public:
 
     bool playNext{false};
 
-    QByteArray generateFileContent();
+    quint16 fileNum{0};
+
+    QByteArray generateFileContent() const;
 };
 
 #endif // SONG_H

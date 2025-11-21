@@ -73,12 +73,16 @@ Rectangle {
                     id: _delegate
 
                     height: 20
-                    width: parent.width
+                    width: _listView.width
 
                     color: "transparent"
 
                     Label{
-                        text: (index+1) + ": " + t1Name + " | " + t2Name
+                        text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
+                               + ": " + t1Name
+                               + (t2Name !== "" ? " | " + t2Name : "")
+                               + (playNext ? " ->" : "")
+
                     }
 
                     MouseArea{
@@ -92,6 +96,7 @@ Rectangle {
                     }
                 }
 
+                highlightMoveDuration: 100
                 highlight: Rectangle{
                     color: palette.highlight
                 }
@@ -111,12 +116,21 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("ADD SONG")
+
+                onClicked: {
+                    UiCore.currentPlaylist.insertRows(_listView.currentIndex + 1, 1);
+                    _listView.currentIndex = _listView.currentIndex + 1
+                }
             }
 
             Button{
                 Layout.fillWidth: true
 
                 text: qsTr("DELETE SONG")
+
+                onClicked: {
+                    _removeSongConfirmationDialog.open()
+                }
             }
 
             Button{
@@ -127,9 +141,23 @@ Rectangle {
         }
 
         CheckBox{
+            id: _cbPlayNext
+
             text: qsTr("Play next")
 
             checked: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+
+            // Binding{
+            //     target: _cbPlayNext
+            //     property: "checked"
+            //     value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+            //     restoreMode: Binding.RestoreBinding
+            // }
+
+            onClicked:{
+                var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+            }
         }
 
         RowLayout{
@@ -261,6 +289,27 @@ Rectangle {
 
         onAccepted: {
            UiCore.deletePlaylist(_plsCombo.currentIndex);
+        }
+    }
+
+    Dialog{
+        id: _removeSongConfirmationDialog
+
+        title: qsTr("Remove song?")
+
+        width: 250
+        height: 100
+
+        contentItem: Label{
+            text: qsTr("Do you really want to delete object?")
+            horizontalAlignment: Label.AlignHCenter
+        }
+
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        onAccepted: {
+            UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);
+            _listView.currentIndex = _listView.currentIndex - 1
         }
     }
 }
