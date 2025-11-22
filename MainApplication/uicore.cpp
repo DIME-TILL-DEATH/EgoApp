@@ -1,5 +1,12 @@
 #include "uicore.h"
 
+#include <QStandardPaths>
+#include <QDesktopServices>
+
+#include <QProcess>
+#include <QCoreApplication>
+#include <QUrl>
+
 #include <QCollator>
 
 UiCore::UiCore(QObject *parent)
@@ -179,3 +186,92 @@ void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
     emit currentPlaylistChanged();
     emit currentPlaylistIndexChanged();
 }
+
+
+void UiCore::openManualExternally(QString fileName)
+{
+    QString appLanguage = m_settings.value("application_language", "autoselect").toString();
+
+    if(appLanguage=="autoselect")
+    {
+        appLanguage = QLocale().name().left(2);
+    }
+
+    QString fullFileName =  fileName + "_" + appLanguage + ".pdf";
+
+#ifdef Q_OS_ANDROID
+    QString filePath = ":/docs/" + fullFileName;
+    QFile pdfFile(filePath);
+
+    if(!pdfFile.exists())
+    {
+        fullFileName = fileName + ".pdf";
+        filePath = ":/docs/" + fullFileName;
+        pdfFile.setFileName(filePath);
+    }
+
+    QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/" + fullFileName;
+    pdfFile.copy(temporallyPath);
+
+    qDebug() << "Final manual path: " << temporallyPath;
+
+    QJniObject::callStaticMethod<void>(
+        "com.amtelectronics.utils/JavaFile", "openFileExternally",
+        "(Ljava/lang/String;Landroid/content/Context;)V",
+        QJniObject::fromString(fullFileName).object<jstring>(),
+        QNativeInterface::QAndroidApplication::context());
+#elif defined(Q_OS_IOS)
+    QString filePath = ":/docs/" + fullFileName;
+    QFile pdfFile(filePath);
+
+    if(!pdfFile.exists())
+    {
+        qDebug() << "Manual finded inresources";
+        fullFileName = fileName + ".pdf";
+        filePath = ":/docs/" + fullFileName;
+        pdfFile.setFileName(filePath);
+    }
+
+    QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/" + fullFileName;
+    pdfFile.copy(temporallyPath);
+
+    qDebug() << "Final manual path: " << temporallyPath;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(temporallyPath));
+#elif defined(Q_OS_LINUX)
+    QString filePath = QCoreApplication::applicationDirPath() + "/../docs/" + fullFileName;
+
+    QProcess proc;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.remove("LD_LIBRARY_PATH"); // force evince use system librarys
+
+    proc.setProcessEnvironment(env);
+    proc.setProgram("evince");
+    proc.setArguments(QStringList(filePath));
+    proc.startDetached();
+#else
+    QString filePath =  QCoreApplication::applicationDirPath() + "/docs/" + fullFileName;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+#endif
+}
+
+void UiCore::runWavConvertor()
+{
+#ifdef Q_OS_WIN
+    QProcess WavConvertorProcess;
+    WavConvertorProcess.setWorkingDirectory(QCoreApplication::applicationDirPath());
+    WavConvertorProcess.setProgram("WavConverter.exe");
+    WavConvertorProcess.startDetached();
+#endif
+
+#ifdef Q_OS_MACOS
+    QProcess irConvertorProcess;
+    qDebug() << "Run converter" << irConvertorProcess.startDetached(QCoreApplication::applicationDirPath() + "/IrConverter");
+#endif
+
+#ifdef Q_OS_LINUX
+    QProcess irConvertorProcess;
+    QString path = QCoreApplication::applicationDirPath() + "/IrConverter";
+    qDebug() << "Run converter, path" << path << "result:" << irConvertorProcess.startDetached(path);
+#endif
+}
+

@@ -47,10 +47,41 @@ ApplicationWindow {
 
         Menu{
             title: qsTr("Tools")
+
+            MenuItem{
+                text: qsTr("Ru legacy convertor")
+
+                onTriggered: UiCore.runWavConvertor();
+            }
         }
 
         Menu{
             title: qsTr("Help")
+
+            MenuItem{
+                text: qsTr("AMT web site")
+
+                onTriggered: Qt.openUrlExternally("http://www.amtelectronics.ru/");
+            }
+
+            MenuItem{
+                text: qsTr("Pangaea web page")
+
+                onTriggered: Qt.openUrlExternally("https://media.amtelectronics.ru/amt-egogig-eg-4/")
+            }
+
+            MenuItem{
+                id: menuDeviceManual
+
+                property string strManualBaseName: "EgoGIG_manual"
+
+                text: qsTr("Device manual")
+
+                onTriggered: {
+                    UiCore.openManualExternally(strManualBaseName)
+                }
+            }
+            MenuSeparator{}
             MenuItem{
                 text: qsTr("About...")
                 onTriggered: aboutDialog.open()
@@ -185,6 +216,17 @@ ApplicationWindow {
                 _wait.close()
             }
         }
+    }
+
+    MessageDialog{
+        id: aboutDialog
+
+        title: qsTr("About...")
+        text: qsTr("AMT EgoGIG")
+        informativeText: qsTr("Desktop application") + "\n" +
+              qsTr("Version: ") + Qt.application.version + "\n"
+              + qsTr("(c) 2025")
+
     }
 
     MessageDialog{

@@ -35,6 +35,9 @@ public:
     quint16 currentPlaylistIndex() const;
     void setCurrentPlaylistIndex(qint16 newCurrentPlylistInex);
 
+    Q_INVOKABLE void openManualExternally(QString fileName);
+    Q_INVOKABLE void runWavConvertor();
+
 signals:
 
     void workspaceChanged();

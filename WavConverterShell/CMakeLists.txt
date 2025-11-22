@@ -46,17 +46,17 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 if(WIN32)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterShell/IrConverter.exe"
-            "${PROJECT_SOURCE_DIR}/../deploy_windows/release/IrConverter.exe")
+            "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.exe"
+            "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe")
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE} "${PROJECT_SOURCE_DIR}/../deploy_windows/release/IrConverter.exe"
+            COMMAND ${WINDEPLOYQT_EXECUTABLE} "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe"
                                 --qmldir "${PROJECT_SOURCE_DIR}/")
 endif()
 
 if(LINUX)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterShell/IrConverter"
-            "${PROJECT_SOURCE_DIR}/../deploy_linux/app/bin/IrConverter")
+            "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter"
+            "${PROJECT_SOURCE_DIR}/../deploy_linux/app/bin/WavConverter")
 endif()
