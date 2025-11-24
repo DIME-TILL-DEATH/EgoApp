@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs as QmlDialogs
 
 // import CppObjects 1.0
 
@@ -321,40 +322,30 @@ Rectangle {
         }
     }
 
-    Dialog{
+    QmlDialogs.MessageDialog{
         id: _removePlsConfirmationDialog
 
         title: qsTr("Remove playlist?")
 
-        width: 250
-        height: 100
+        text: qsTr("Do you really want to delete playlist?")
 
-        contentItem: Label{
-            text: qsTr("Do you really want to delete object?")
-            horizontalAlignment: Label.AlignHCenter
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        buttons: QmlDialogs.MessageDialog.Ok
+                | QmlDialogs.MessageDialog.Cancel
 
         onAccepted: {
            UiCore.deletePlaylist(_plsCombo.currentIndex);
         }
     }
 
-    Dialog{
+    QmlDialogs.MessageDialog{
         id: _removeSongConfirmationDialog
 
         title: qsTr("Remove song?")
 
-        width: 250
-        height: 100
+        text: qsTr("Do you really want to delete song?")
 
-        contentItem: Label{
-            text: qsTr("Do you really want to delete object?")
-            horizontalAlignment: Label.AlignHCenter
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        buttons: QmlDialogs.MessageDialog.Ok
+                | QmlDialogs.MessageDialog.Cancel
 
         onAccepted: {
             UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);

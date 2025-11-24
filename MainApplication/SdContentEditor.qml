@@ -165,20 +165,15 @@ Item{
         }
     }
 
-    Dialog{
+    QmlDialogs.MessageDialog{
         id: _removeConfirmationDialog
 
         title: qsTr("Remove item?")
 
-        width: 250
-        height: 100
+        text: qsTr("Do you really want to delete object?")
 
-        contentItem: Label{
-            text: qsTr("Do you really want to delete object?")
-            horizontalAlignment: Label.AlignHCenter
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        buttons: QmlDialogs.MessageDialog.Ok
+                | QmlDialogs.MessageDialog.Cancel
 
         onAccepted: {
            UiCore.sdContentModel.deleteObject(_itemSelectionModel.currentIndex)
