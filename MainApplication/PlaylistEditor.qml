@@ -312,6 +312,13 @@ Rectangle {
         contentItem: TextField{
             id: _folderTextField
 
+            validator: RegularExpressionValidator{
+                id: _onlyFileNamesValidator
+
+                regularExpression: /^(?!^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$)[^<>:"/\\|?*\x00-\x1F]*[^<>:"/\\|?*\x00-\x1F\s.]$/
+            }
+
+
             text: "default"
         }
 
@@ -343,6 +350,7 @@ Rectangle {
         title: qsTr("Remove song?")
 
         text: qsTr("Do you really want to delete song?")
+
 
         buttons: QmlDialogs.MessageDialog.Ok
                 | QmlDialogs.MessageDialog.Cancel
