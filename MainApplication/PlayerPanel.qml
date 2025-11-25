@@ -38,12 +38,16 @@ Rectangle {
                 Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
+                icon.source: "icons/play.svg"
+
                 onClicked: _root.playPause()
             }
 
             Button{
                 Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
+
+                icon.source: "icons/stop.svg"
 
                 onClicked: _root.stop
             }

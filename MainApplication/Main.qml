@@ -120,14 +120,46 @@ ApplicationWindow {
             Layout.preferredWidth: parent.width / 9 / 2
             Layout.fillHeight: true
 
+            value: SoundCore.track1Volume
+            leftEnabled: SoundCore.track1LEnabled
+            rightEnabled: SoundCore.track1REnabled
+
             label: "T1"
+
+            onSliderValueChanged: (newValue) => {
+                                    SoundCore.track1Volume = newValue
+                                }
+
+            onLeftMuteChanged: (newValue) => {
+                                   SoundCore.track1LEnabled = newValue
+                               }
+
+            onRightMuteChanged: (newValue) => {
+                                   SoundCore.track1REnabled = newValue
+                               }
         }
 
         VolumeControl{
             Layout.preferredWidth: parent.width / 9 / 2
             Layout.fillHeight: true
 
+            value: SoundCore.track2Volume
+            leftEnabled: SoundCore.track2LEnabled
+            rightEnabled: SoundCore.track2REnabled
+
             label: "T2"
+
+            onSliderValueChanged: (newValue) => {
+                                    SoundCore.track2Volume = newValue
+                                }
+
+            onLeftMuteChanged: (newValue) => {
+                                   SoundCore.track2LEnabled = newValue
+                               }
+
+            onRightMuteChanged: (newValue) => {
+                                   SoundCore.track2REnabled = newValue
+                               }
         }
 
         PlaylistEditor{
@@ -144,7 +176,23 @@ ApplicationWindow {
             Layout.preferredWidth: parent.width / 9 / 2
             Layout.fillHeight: true
 
+            value: SoundCore.sdTrackVolume
+            leftEnabled: SoundCore.sdTrackLEnabled
+            rightEnabled: SoundCore.sdTrackREnabled
+
             label: "WAV"
+
+            onSliderValueChanged: (newValue) => {
+                                    SoundCore.sdTrackVolume = newValue
+                                }
+
+            onLeftMuteChanged: (newValue) => {
+                                   SoundCore.sdTrackLEnabled = newValue
+                               }
+
+            onRightMuteChanged: (newValue) => {
+                                   SoundCore.sdTrackREnabled = newValue
+                               }
         }
     }
 

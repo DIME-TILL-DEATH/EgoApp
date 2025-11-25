@@ -3,12 +3,18 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Rectangle {
+    id: _root
+
     color: "transparent"
 
-    // border.color: "blue"
-    // border.width: 1
-
     property alias label: _indicatorLabel.text
+    property alias value: _slider.value
+    property alias leftEnabled: _chkBoxL.checked
+    property alias rightEnabled: _chkBoxR.checked
+
+    signal sliderValueChanged(var value)
+    signal leftMuteChanged(var state)
+    signal rightMuteChanged(var state)
 
     ColumnLayout{
         anchors.fill: parent
@@ -21,6 +27,15 @@ Rectangle {
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height * 3/4
             Layout.alignment: Text.AlignHCenter
+
+            from: 0.0
+            to: 1.0
+
+            value: SoundCore.track1Volume
+
+            onMoved: {
+                _root.sliderValueChanged(_slider.value);
+            }
         }
 
         Button{
@@ -67,6 +82,10 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxL.indicator.height + _chkBoxL.spacing + 2
                 }
+
+                onClicked: {
+                    _root.leftMuteChanged(_chkBoxL.checked)
+                }
             }
 
             CheckBox{
@@ -85,6 +104,10 @@ Rectangle {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 2
+                }
+
+                onClicked: {
+                    _root.rightMuteChanged(_chkBoxR.checked)
                 }
             }
         }

@@ -44,6 +44,21 @@ Item{
                     }
                 }
 
+                MouseArea {
+                    anchors.fill: parent
+
+                    acceptedButtons: Qt.RightButton
+
+                    onClicked: (mouse) => {
+                        if(mouse.button === Qt.RightButton) {
+                            _contextMenu.x = mouse.x
+                            _contextMenu.y = mouse.y
+                            // _contextMenu.open()
+                        }
+
+                    }
+                }
+
                 Rectangle{
                     visible: _dropArea.containsDrag
 
@@ -64,6 +79,22 @@ Item{
             //         _treeView.expand(0)
             //     }
             // }
+
+            Menu{
+                id: _contextMenu
+
+                MenuItem {
+                    text: qsTr("Set track 1 link")
+
+                    onTriggered: {
+
+                    }
+                }
+
+                MenuItem {
+                    text: qsTr("Set track 2 link")
+                }
+            }
         }
 
         RowLayout{
@@ -109,6 +140,10 @@ Item{
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8
+
+            onPlayPause: {
+                SoundCore.playContent(_itemSelectionModel.currentIndex);
+            }
         }
     }
 
