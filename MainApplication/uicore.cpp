@@ -1,11 +1,25 @@
 #include "uicore.h"
 
+#include <QStandardPaths>
+#include <QDesktopServices>
+
+#include <QProcess>
+#include <QCoreApplication>
+#include <QUrl>
+
+#include <QCollator>
+
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
     QString workspacePath = m_settings.value("workspace_path").toString();
     m_workspaceDir = QDir(workspacePath);
     m_sdContentModel.setWorkspace(workspacePath);
+
+    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
+
+    readPlaylistFolder();
+    setCurrentPlaylistIndex(0);
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
@@ -19,7 +33,42 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
     m_settings.setValue("workspace_path", path);
 
+    readPlaylistFolder();
+    setCurrentPlaylistIndex(0);
+
     emit workspaceChanged();
+}
+
+void UiCore::addPlaylist(QString plsName)
+{
+    m_workspaceDir.mkpath("PLAYLIST/" + plsName);
+    readPlaylistFolder();
+
+    for(int i=0; i < m_avaliablePlaylists.size(); i++)
+    {
+        if(m_avaliablePlaylists.at(i)->playlistName() == plsName)
+        {
+            emit workspaceChanged();
+            setCurrentPlaylistIndex(i);
+        }
+    }
+}
+
+void UiCore::deletePlaylist(quint16 index)
+{
+    QDir playlistDir = m_workspaceDir;
+    if(playlistDir.cd("PLAYLIST"))
+    {
+        if(index < m_avaliablePlaylists.size())
+        {
+            QDir plsDir(playlistDir.absolutePath() + "/" + m_avaliablePlaylists.at(index)->playlistName());
+            plsDir.removeRecursively();
+            readPlaylistFolder();
+            emit workspaceChanged();
+
+            setCurrentPlaylistIndex(0);
+        }
+    }
 }
 
 QString UiCore::workspacePath() const
@@ -31,21 +80,197 @@ QStringList UiCore::avaliablePlaylists() const
 {
     QStringList playlists;
 
-    QDir playlistDir = m_workspaceDir;
-    playlistDir.cd("PLAYLIST");
-
-    QStringList allDirs = playlistDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-
-    foreach(QString plsDirPath, allDirs)
+    foreach (PlaylistModel* plsModel, m_avaliablePlaylists)
     {
-        QDir plsDir(playlistDir.absolutePath() + "/" + plsDirPath);
-
-        QStringList filters;
-        filters.append("*.ego");
-        QStringList egoFiles = plsDir.entryList(filters);
-
-        if(!egoFiles.isEmpty()) playlists.append(plsDirPath);
+        playlists.append(plsModel->playlistName());
     }
 
     return playlists;
 }
+
+PlaylistModel* UiCore::currentPlaylist() const
+{
+    return m_currentPlaylist;
+}
+
+void UiCore::readPlaylistFolder()
+{
+    qDeleteAll(m_avaliablePlaylists);
+    m_avaliablePlaylists.clear();
+    m_currentPlaylist = nullptr;
+
+    QDir roorPlstDir = m_workspaceDir;
+    if(roorPlstDir.cd("PLAYLIST"))
+    {
+        QStringList allDirs = roorPlstDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+
+        foreach(QString plsDirName, allDirs)
+        {
+            QDir plsDir(roorPlstDir.absolutePath() + "/" + plsDirName);
+
+            QStringList filters;
+            filters.append("*.ego");
+            QStringList egoFiles = plsDir.entryList(filters, QDir::Files, QDir::Name);
+            QCollator collator;
+            collator.setNumericMode(true);
+            std::sort(egoFiles.begin(), egoFiles.end(), collator);
+
+            QList<Song> songList;
+            if(!egoFiles.isEmpty())
+            {
+                foreach (QString egoFilePath, egoFiles)
+                {
+                    Song song;
+
+                    QFile file(plsDir.absoluteFilePath(egoFilePath));
+                    if(file.open(QIODevice::ReadOnly))
+                    {
+                        QByteArray track1Line = file.readLine();
+                        if(track1Line.size() != 0)
+                        {
+                            if(track1Line.front() == '>')
+                            {
+                                song.playNext = true;
+                                track1Line = track1Line.removeFirst();
+                            }
+                            song.t1Path = track1Line;
+                            song.t1Path.remove("\n");
+                        }
+                        song.t2Path = file.readLine();
+                        song.t2Path.remove("\n");
+                    }
+
+                    QFileInfo fileInfo(file);
+                    QString fileName = fileInfo.fileName();
+                    fileName.remove(".ego");
+                    song.fileNum = fileName.toInt();
+
+                    songList.append(song);
+                }
+
+            }
+            PlaylistModel* playListModel = new PlaylistModel(songList, this);
+            playListModel->setPlaylistName(plsDirName);
+
+            QDir playlistDir(roorPlstDir);
+            playlistDir.cd(plsDirName);
+
+            playListModel->setDir(playlistDir);
+            m_avaliablePlaylists.append(playListModel);
+        }
+    }
+}
+
+
+quint16 UiCore::currentPlaylistIndex() const
+{
+    return m_currentPlaylistIndex;
+}
+
+void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
+{
+    m_currentPlaylistIndex = newCurrentPlaylistIndex;
+
+    if(m_avaliablePlaylists.size() == 0)
+    {
+        m_currentPlaylist = nullptr;
+        m_currentPlaylistIndex = -1;
+    }
+    else
+    {
+        if(m_currentPlaylistIndex <  m_avaliablePlaylists.size())
+            m_currentPlaylist = m_avaliablePlaylists.at(m_currentPlaylistIndex);
+    }
+
+    emit currentPlaylistChanged();
+    emit currentPlaylistIndexChanged();
+}
+
+
+void UiCore::openManualExternally(QString fileName)
+{
+    QString appLanguage = m_settings.value("application_language", "autoselect").toString();
+
+    if(appLanguage=="autoselect")
+    {
+        appLanguage = QLocale().name().left(2);
+    }
+
+    QString fullFileName =  fileName + "_" + appLanguage + ".pdf";
+
+#ifdef Q_OS_ANDROID
+    QString filePath = ":/docs/" + fullFileName;
+    QFile pdfFile(filePath);
+
+    if(!pdfFile.exists())
+    {
+        fullFileName = fileName + ".pdf";
+        filePath = ":/docs/" + fullFileName;
+        pdfFile.setFileName(filePath);
+    }
+
+    QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/" + fullFileName;
+    pdfFile.copy(temporallyPath);
+
+    qDebug() << "Final manual path: " << temporallyPath;
+
+    QJniObject::callStaticMethod<void>(
+        "com.amtelectronics.utils/JavaFile", "openFileExternally",
+        "(Ljava/lang/String;Landroid/content/Context;)V",
+        QJniObject::fromString(fullFileName).object<jstring>(),
+        QNativeInterface::QAndroidApplication::context());
+#elif defined(Q_OS_IOS)
+    QString filePath = ":/docs/" + fullFileName;
+    QFile pdfFile(filePath);
+
+    if(!pdfFile.exists())
+    {
+        qDebug() << "Manual finded inresources";
+        fullFileName = fileName + ".pdf";
+        filePath = ":/docs/" + fullFileName;
+        pdfFile.setFileName(filePath);
+    }
+
+    QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/" + fullFileName;
+    pdfFile.copy(temporallyPath);
+
+    qDebug() << "Final manual path: " << temporallyPath;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(temporallyPath));
+#elif defined(Q_OS_LINUX)
+    QString filePath = QCoreApplication::applicationDirPath() + "/../docs/" + fullFileName;
+
+    QProcess proc;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.remove("LD_LIBRARY_PATH"); // force evince use system librarys
+
+    proc.setProcessEnvironment(env);
+    proc.setProgram("evince");
+    proc.setArguments(QStringList(filePath));
+    proc.startDetached();
+#else
+    QString filePath =  QCoreApplication::applicationDirPath() + "/docs/" + fullFileName;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+#endif
+}
+
+void UiCore::runWavConvertor()
+{
+#ifdef Q_OS_WIN
+    QProcess WavConvertorProcess;
+    WavConvertorProcess.setWorkingDirectory(QCoreApplication::applicationDirPath());
+    WavConvertorProcess.setProgram("WavConverter.exe");
+    WavConvertorProcess.startDetached();
+#endif
+
+#ifdef Q_OS_MACOS
+    QProcess irConvertorProcess;
+    qDebug() << "Run converter" << irConvertorProcess.startDetached(QCoreApplication::applicationDirPath() + "/IrConverter");
+#endif
+
+#ifdef Q_OS_LINUX
+    QProcess irConvertorProcess;
+    QString path = QCoreApplication::applicationDirPath() + "/IrConverter";
+    qDebug() << "Run converter, path" << path << "result:" << irConvertorProcess.startDetached(path);
+#endif
+}
+

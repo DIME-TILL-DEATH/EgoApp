@@ -3,12 +3,20 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Rectangle {
+    id: _root
+
     color: "transparent"
 
-    // border.color: "blue"
-    // border.width: 1
-
     property alias label: _indicatorLabel.text
+    property alias value: _slider.value
+    property alias leftEnabled: _chkBoxL.checked
+    property alias rightEnabled: _chkBoxR.checked
+    property alias muted: _muteButton.muted
+
+    signal sliderValueChanged(var value)
+    signal leftMuteChanged(var state)
+    signal rightMuteChanged(var state)
+    signal trackMuteChanged()
 
     ColumnLayout{
         anchors.fill: parent
@@ -21,19 +29,32 @@ Rectangle {
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height * 3/4
             Layout.alignment: Text.AlignHCenter
-            // Layout.fillHeight: true
-            // Layout.verticalStretchFactor: 4
+
+            from: 0.0
+            to: 1.0
+
+            value: SoundCore.track1Volume
+
+            onMoved: {
+                _root.sliderValueChanged(_slider.value);
+            }
         }
 
         Button{
             id: _muteButton
 
-            text: "M"
+            icon.source: muted ? "icons/sound-off.svg" : "icons/sound-on.svg"
 
-            Layout.preferredWidth: parent.width * 3/4
+            property bool muted: false
+
+            Layout.preferredWidth: parent.width * 2/4
             Layout.alignment: Text.AlignHCenter
             Layout.verticalStretchFactor: 2
             Layout.fillHeight: true
+
+            onClicked: {
+                _root.trackMuteChanged()
+            }
         }
 
         Label{
@@ -50,6 +71,7 @@ Rectangle {
             Layout.preferredWidth: parent.width
             Layout.verticalStretchFactor: 2
             Layout.fillHeight: true
+            Layout.bottomMargin: 5
 
             CheckBox{
                 id: _chkBoxL
@@ -61,14 +83,16 @@ Rectangle {
 
                 checked: true
 
-                contentItem: Text {
+                contentItem: Label {
                     text: _chkBoxL.text
                     font: _chkBoxL.font
-                    opacity: enabled ? 1.0 : 0.3
-                    color: _indicatorLabel.color
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxL.indicator.height + _chkBoxL.spacing + 2
+                }
+
+                onClicked: {
+                    _root.leftMuteChanged(_chkBoxL.checked)
                 }
             }
 
@@ -82,14 +106,16 @@ Rectangle {
 
                 checked: true
 
-                contentItem: Text {
+                contentItem: Label {
                     text: _chkBoxR.text
                     font: _chkBoxR.font
-                    opacity: enabled ? 1.0 : 0.3
-                    color: _indicatorLabel.color
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 2
+                }
+
+                onClicked: {
+                    _root.rightMuteChanged(_chkBoxR.checked)
                 }
             }
         }
