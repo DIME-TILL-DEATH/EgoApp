@@ -11,7 +11,6 @@ DecodeStream::DecodeStream()
     m_outputBuf.open(QIODevice::ReadOnly);
     m_inputBuf.open(QIODevice::WriteOnly);
 
-    // connect(&m_decoder, &QAudioDecoder::durationChanged, this, &DecodeStream::durationChanged);
     connect(&m_decoder, &QAudioDecoder::bufferReady, this, [this]() {
         const QAudioBuffer buffer = m_decoder.read();
         m_inputBuf.write(buffer.data<char>(), buffer.byteCount());

@@ -43,6 +43,12 @@ ApplicationWindow {
 
         Menu{
             title: qsTr("Interface")
+
+            MenuItem{
+                text: qsTr("Show hotkeys")
+
+                onTriggered: _playlistEditor.hotKeysDialog.open()
+            }
         }
 
         Menu{
@@ -173,6 +179,8 @@ ApplicationWindow {
         }
 
         PlaylistEditor{
+            id: _playlistEditor
+
             Layout.fillWidth: true
             Layout.fillHeight: true
         }

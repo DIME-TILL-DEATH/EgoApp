@@ -10,6 +10,8 @@ Rectangle {
 
     color: "transparent"
 
+    property alias hotKeysDialog: _hotKeysDialog
+
     ColumnLayout{
         anchors.fill: parent
 
@@ -170,6 +172,8 @@ Rectangle {
             Layout.verticalStretchFactor: 1
 
             Button{
+                id: _btnAddSong
+
                 Layout.fillWidth: true
 
                 text: qsTr("ADD SONG")
@@ -178,15 +182,39 @@ Rectangle {
                     UiCore.currentPlaylist.insertRows(_listView.currentIndex + 1, 1);
                     _listView.currentIndex = _listView.currentIndex + 1
                 }
+
+                Shortcut{
+                    id: _shortcutAddSong
+
+                    sequence: "Ctrl+S"
+
+                    onActivated: {
+                        if(_btnAddSong.enabled)
+                            _btnAddSong.clicked();
+                    }
+                }
             }
 
             Button{
+                id: _btnDeleteSong
+
                 Layout.fillWidth: true
 
                 text: qsTr("DELETE SONG")
 
                 onClicked: {
                     _removeSongConfirmationDialog.open()
+                }
+
+                Shortcut{
+                    id: _shortcutDeleteSong
+
+                    sequence: "Ctrl+D"
+
+                    onActivated: {
+                        if(_btnDeleteSong.enabled)
+                            _btnDeleteSong.clicked();
+                    }
                 }
             }
 
@@ -241,6 +269,8 @@ Rectangle {
             }
 
             Button{
+                id: _btnSetLinkT1
+
                 text: qsTr("Set link")
 
                 enabled: UiCore.sdContentModel.canSetTrack
@@ -248,6 +278,17 @@ Rectangle {
                 onClicked:{
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 0, UiCore.sdContentModel.selectedPath);
+                }
+
+                Shortcut{
+                    id: _shortcutSetLink1
+
+                    sequence: "1"
+
+                    onActivated: {
+                        if(_btnSetLinkT1.enabled)
+                            _btnSetLinkT1.clicked();
+                    }
                 }
             }
         }
@@ -283,12 +324,25 @@ Rectangle {
             }
 
             Button{
+                id: _btnSetLinkT2
+
                 text: qsTr("Set link")
 
                 enabled: UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
                 onClicked:{
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, UiCore.sdContentModel.selectedPath);
+                }
+
+                Shortcut{
+                    id: _shortcutSetLink2
+
+                    sequence: "2"
+
+                    onActivated: {
+                        if(_btnSetLinkT2.enabled)
+                            _btnSetLinkT2.clicked();
+                    }
                 }
             }
         }
@@ -375,5 +429,17 @@ Rectangle {
             UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);
             _listView.currentIndex = _listView.currentIndex - 1
         }
+    }
+
+    QmlDialogs.MessageDialog{
+        id: _hotKeysDialog
+
+        title: qsTr("Hotkeys")
+
+        text: qsTr("Add song: ") + _shortcutAddSong.sequence + "\n" +
+              qsTr("Delete song: ") + _shortcutDeleteSong.sequence + "\n" +
+              qsTr("Set track1 link: ") + _shortcutSetLink1.sequence + "\n" +
+              qsTr("Set track2 link: ") + _shortcutSetLink2.sequence + "\n"
+
     }
 }
