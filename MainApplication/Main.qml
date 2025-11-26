@@ -18,7 +18,7 @@ ApplicationWindow {
     maximumHeight: 1000
 
     visible: true
-    title: qsTr("EgoGig")
+    title: "EgoGig" + " v." + Qt.application.version
 
     Settings{
         property alias width: _mainWindow.width
