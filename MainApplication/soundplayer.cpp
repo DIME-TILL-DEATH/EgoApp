@@ -21,41 +21,30 @@ SoundPlayer::SoundPlayer(QObject *parent)
 
     m_streamTrack1->setFormat(m_format);
     m_streamTrack2->setFormat(m_format);
+
+    connect(m_streamTrack1, &DecodeStream::durationChanged, this, &SoundPlayer::track1DurationChanged);
+    connect(m_streamTrack2, &DecodeStream::durationChanged, this, &SoundPlayer::track2DurationChanged);
+
+    QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    m_audioSink = new QAudioSink(device, m_format, this);
+    connect(m_audioSink, &QAudioSink::stateChanged, this, &SoundPlayer::handlePlayerStateChanged);
 }
 
 SoundPlayer::~SoundPlayer()
 {
-    // if(m_audioSink)
-    // {
-    //     delete(m_audioSink);
-    //     m_audioSink = nullptr;
-    // }
+    if(m_audioSink) delete(m_audioSink);
 }
 
 void SoundPlayer::play(State mode, const QString& track1Path, const QString& track2Path)
 {
-    // if(mode != m_state)
-    // {
-    //     // stop();
-    // }
-    // else
-    // {
-    //     pauseResume();
-    // }
+    stop();
 
     m_state = mode;
-    QAudioDevice device = QMediaDevices::defaultAudioOutput();
 
     m_streamTrack1->open(track1Path, QIODevice::ReadOnly);
-    if(!track1Path.isEmpty()) m_streamTrack2->open(track2Path, QIODevice::ReadOnly);
+    m_streamTrack2->open(track2Path, QIODevice::ReadOnly);
 
-    m_format.setSampleRate(44100);
-    m_format.setChannelCount(2);
-    m_format.setSampleFormat(QAudioFormat::Int16);
-
-    m_audioSink = new QAudioSink(m_format, this);
-    m_audioSink->setVolume(0.1);
-    connect(m_audioSink, &QAudioSink::stateChanged, this, &SoundPlayer::handlePlayerStateChanged);
+    samplePos = 0;
     m_audioSink->start(this);
 }
 
@@ -66,12 +55,24 @@ void SoundPlayer::pauseResume()
 
 void SoundPlayer::stop()
 {
-    if(m_audioSink)
-    {
-        m_audioSink->stop();
-        delete(m_audioSink);
-        m_audioSink = nullptr;
-    }
+
+    m_audioSink->reset();
+
+    m_streamTrack1->close();
+    m_streamTrack2->close();
+
+    samplePos = 0;
+    emit positionUpdated(samplePos * 1000/44100);
+
+    m_state = State::Idle;
+}
+
+void SoundPlayer::setPlayPosition(qint64 msPosition)
+{
+    samplePos = 44100/1000 * msPosition;
+
+    m_streamTrack1->seek(samplePos * m_format.channelCount() * m_format.bytesPerSample());
+    m_streamTrack2->seek(samplePos * m_format.channelCount() * m_format.bytesPerSample());
 }
 
 void SoundPlayer::handlePlayerStateChanged(QtAudio::State state)
@@ -84,16 +85,10 @@ void SoundPlayer::handlePlayerStateChanged(QtAudio::State state)
     case QAudio::SuspendedState: break;
     case QAudio::StoppedState:
     {
-        if(m_audioSink)
-        {
-            delete(m_audioSink);
-            m_audioSink = nullptr;
-        }
         break;
     }
     case QAudio::IdleState:
     {
-        if(m_audioSink) m_audioSink->stop();
         break;
     }
     }
@@ -131,18 +126,18 @@ qint64 SoundPlayer::readData(char *data, qint64 maxSize)
         t1Volume = egoT1Volume;
         t2Volume = egoT2Volume;
 
-        t1LeftEnabled = egoT1LeftEnabled;
-        t1RightEnabled = egoT1RightEnabled;
-        t2LeftEnabled = egoT2LeftEnabled;
-        t2RightEnabled = egoT2RightEnabled;
+        t1LeftEnabled = egoT1LeftEnabled & !egoT1Muted;
+        t1RightEnabled = egoT1RightEnabled & !egoT1Muted;
+        t2LeftEnabled = egoT2LeftEnabled & !egoT2Muted;
+        t2RightEnabled = egoT2RightEnabled & !egoT2Muted;
         break;
     }
     case PlaySd:
     {
         t1Volume = sdVolume;
 
-        t1LeftEnabled = sdLeftEnabled;
-        t1RightEnabled = sdRightEnabled;
+        t1LeftEnabled = sdLeftEnabled & !sdMuted;
+        t1RightEnabled = sdRightEnabled & !sdMuted;
         break;
     }
     default: break;
@@ -164,6 +159,8 @@ qint64 SoundPlayer::readData(char *data, qint64 maxSize)
             //right
             sample1 *= t1RightEnabled;
             sample2 *= t2RightEnabled;
+
+            samplePos++;
         }
 
         sample1 *= t1Volume;
@@ -171,6 +168,9 @@ qint64 SoundPlayer::readData(char *data, qint64 maxSize)
 
         *cursor = combineSamples(sample1, sample2);
     }
+
+    qint64 msPos = samplePos * 1000/44100;
+    emit positionUpdated(msPos);
 
     return maxSize;
 }
@@ -184,7 +184,7 @@ qint64 SoundPlayer::writeData([[maybe_unused]]const char *data,
 
 qint64 SoundPlayer::bytesAvailable() const
 {
-    return 16384;
+    return m_streamTrack1->bytesAvailable();
 }
 
 void SoundPlayer::setTracksVolume(State mode, float track1Volume, float track2Volume)
@@ -215,7 +215,7 @@ void SoundPlayer::setTracksEn(State mode, bool track1LeftEnabled, bool track1Rig
         egoT1LeftEnabled = track1LeftEnabled;
         egoT1RightEnabled = track1RightEnabled;
         egoT2LeftEnabled = track2LeftEnabled;
-        egoT2RightEnabled = track1RightEnabled;
+        egoT2RightEnabled = track2RightEnabled;
         break;
     }
     case PlaySd:
@@ -226,5 +226,12 @@ void SoundPlayer::setTracksEn(State mode, bool track1LeftEnabled, bool track1Rig
     }
     default: break;
     }
+}
+
+void SoundPlayer::setMuted(bool track1Mute, bool track2Mute, bool sdTrackMute)
+{
+    egoT1Muted = track1Mute;
+    egoT2Muted = track2Mute;
+    sdMuted = sdTrackMute;
 }
 

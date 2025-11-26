@@ -11,10 +11,12 @@ Rectangle {
     property alias value: _slider.value
     property alias leftEnabled: _chkBoxL.checked
     property alias rightEnabled: _chkBoxR.checked
+    property alias muted: _muteButton.muted
 
     signal sliderValueChanged(var value)
     signal leftMuteChanged(var state)
     signal rightMuteChanged(var state)
+    signal trackMuteChanged()
 
     ColumnLayout{
         anchors.fill: parent
@@ -41,12 +43,18 @@ Rectangle {
         Button{
             id: _muteButton
 
-            text: "M"
+            icon.source: muted ? "icons/sound-off.svg" : "icons/sound-on.svg"
 
-            Layout.preferredWidth: parent.width * 3/4
+            property bool muted: false
+
+            Layout.preferredWidth: parent.width * 2/4
             Layout.alignment: Text.AlignHCenter
             Layout.verticalStretchFactor: 2
             Layout.fillHeight: true
+
+            onClicked: {
+                _root.trackMuteChanged()
+            }
         }
 
         Label{

@@ -49,7 +49,7 @@ ApplicationWindow {
             title: qsTr("Tools")
 
             MenuItem{
-                text: qsTr("Ru legacy convertor")
+                text: qsTr("Legacy WAV convertor")
 
                 onTriggered: UiCore.runWavConvertor();
             }
@@ -121,6 +121,7 @@ ApplicationWindow {
             Layout.fillHeight: true
 
             value: SoundCore.track1Volume
+            muted: SoundCore.track1Muted
             leftEnabled: SoundCore.track1LEnabled
             rightEnabled: SoundCore.track1REnabled
 
@@ -129,6 +130,10 @@ ApplicationWindow {
             onSliderValueChanged: (newValue) => {
                                     SoundCore.track1Volume = newValue
                                 }
+
+            onTrackMuteChanged: {
+                SoundCore.track1Muted = !SoundCore.track1Muted
+            }
 
             onLeftMuteChanged: (newValue) => {
                                    SoundCore.track1LEnabled = newValue
@@ -144,6 +149,7 @@ ApplicationWindow {
             Layout.fillHeight: true
 
             value: SoundCore.track2Volume
+            muted: SoundCore.track2Muted
             leftEnabled: SoundCore.track2LEnabled
             rightEnabled: SoundCore.track2REnabled
 
@@ -152,6 +158,10 @@ ApplicationWindow {
             onSliderValueChanged: (newValue) => {
                                     SoundCore.track2Volume = newValue
                                 }
+
+            onTrackMuteChanged: {
+                SoundCore.track2Muted = !SoundCore.track2Muted
+            }
 
             onLeftMuteChanged: (newValue) => {
                                    SoundCore.track2LEnabled = newValue
@@ -177,6 +187,7 @@ ApplicationWindow {
             Layout.fillHeight: true
 
             value: SoundCore.sdTrackVolume
+            muted: SoundCore.sdTrackMuted
             leftEnabled: SoundCore.sdTrackLEnabled
             rightEnabled: SoundCore.sdTrackREnabled
 
@@ -185,6 +196,10 @@ ApplicationWindow {
             onSliderValueChanged: (newValue) => {
                                     SoundCore.sdTrackVolume = newValue
                                 }
+
+            onTrackMuteChanged: {
+                SoundCore.sdTrackMuted = !SoundCore.sdTrackMuted
+            }
 
             onLeftMuteChanged: (newValue) => {
                                    SoundCore.sdTrackLEnabled = newValue

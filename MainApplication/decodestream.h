@@ -28,8 +28,9 @@ public:
     qint64 pos() const override;
     bool seek(qint64 pos) override;
     bool atEnd() const override;
+
 signals:
-    void finished();
+    void durationChanged(qint64 duration);
 
 private:
     QFile m_sourceFile;

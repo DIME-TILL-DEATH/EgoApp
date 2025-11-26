@@ -12,8 +12,16 @@ Rectangle {
 
     property alias label: _label.text
 
+    property alias duration: _slider.to
+    property alias value: _slider.value
+    property alias position: _slider.position
+
+    // property alias timeLabel: _timeLabel.text
+
+    signal moved()
+
     signal playPause()
-    signal stop
+    signal stop()
 
     Column{
         anchors.fill: parent
@@ -49,15 +57,27 @@ Rectangle {
 
                 icon.source: "icons/stop.svg"
 
-                onClicked: _root.stop
+                onClicked: _root.stop()
             }
 
             Slider{
+                id: _slider
 
+                Layout.fillWidth: true
+
+                onMoved:
+                {
+                    _root.moved();
+                }
             }
 
             Label{
-                text: "0.0 s"
+                id: _timeLabel
+
+                Layout.preferredWidth: parent.width / 8
+
+                text:  Math.trunc(_slider.value / 1000 / 60).toString().padStart(2, '0') + ":"
+                       + Math.trunc(_slider.value / 1000 % 60).toString().padStart(2, '0')
             }
         }
     }

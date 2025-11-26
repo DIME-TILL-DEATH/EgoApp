@@ -11,6 +11,7 @@ DecodeStream::DecodeStream()
     m_outputBuf.open(QIODevice::ReadOnly);
     m_inputBuf.open(QIODevice::WriteOnly);
 
+    // connect(&m_decoder, &QAudioDecoder::durationChanged, this, &DecodeStream::durationChanged);
     connect(&m_decoder, &QAudioDecoder::bufferReady, this, [this]() {
         const QAudioBuffer buffer = m_decoder.read();
         m_inputBuf.write(buffer.data<char>(), buffer.byteCount());
@@ -30,6 +31,7 @@ void DecodeStream::setFormat(const QAudioFormat &format)
 bool DecodeStream::open(const QString &filePath, OpenMode mode)
 {
     close();
+
     m_sourceFile.setFileName(filePath);
     return open(mode);
 }
@@ -40,6 +42,7 @@ bool DecodeStream::open(OpenMode mode)
     {
         m_decoder.setSourceDevice(&m_sourceFile);
         m_decoder.start();
+        emit durationChanged(m_decoder.duration());
         return true;
     }
     else
@@ -50,12 +53,18 @@ bool DecodeStream::open(OpenMode mode)
 
 void DecodeStream::close()
 {
-    // m_sourceFile.close();
-    // m_decoder.stop();
+    m_sourceFile.close();
+    m_decoder.stop();
+
+    m_inputBuf.seek(0);
+    m_outputBuf.seek(0);
+    m_data.clear();
 }
 
 qint64 DecodeStream::readData(char *data, qint64 maxSize)
 {
+    // qDebug() << __FUNCTION__ << m_outputBuf.pos();
+
     memset(data, 0, maxSize);
 
     if(m_outputBuf.size())
@@ -76,7 +85,7 @@ qint64 DecodeStream::writeData(const char *data, qint64 maxSize)
 
 qint64 DecodeStream::bytesAvailable() const
 {
-    return m_outputBuf.bytesAvailable() + QIODevice::bytesAvailable();
+    return m_outputBuf.bytesAvailable();// + QIODevice::bytesAvailable();
 }
 
 qint64 DecodeStream::size() const

@@ -1,6 +1,7 @@
 #include "soundcore.h"
 
 #include "sdcontentmodel.h"
+#include "playlistmodel.h"
 
 SoundCore::SoundCore(QObject *parent)
     : QObject{parent}
@@ -16,14 +17,23 @@ SoundCore::SoundCore(QObject *parent)
     m_sdTrackLEnabled = m_settings.value("sdTrackLEnabled", true).toBool();
     m_sdTrackREnabled = m_settings.value("sdTrackREnabled", true).toBool();
 
+    m_track1Muted = m_settings.value("track1Muted", false).toBool();
+    m_track2Muted = m_settings.value("track2Muted", false).toBool();
+    m_sdTrackMuted = m_settings.value("sdTrackMuted", false).toBool();
+
     m_soundPlayer.setTracksVolume(SoundPlayer::PlayEgo, m_track1Volume, m_track2Volume);
     m_soundPlayer.setTracksEn(SoundPlayer::PlayEgo, m_track1LEnabled, m_track1REnabled, m_track2LEnabled, m_track2REnabled);
     m_soundPlayer.setTracksVolume(SoundPlayer::PlaySd, m_sdTrackVolume);
     m_soundPlayer.setTracksEn(SoundPlayer::PlaySd, m_sdTrackLEnabled, m_sdTrackREnabled);
+
+    m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
+
+    connect(&m_soundPlayer, &SoundPlayer::track1DurationChanged, this, &SoundCore::trackDurationChanged);
+    connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
 }
 
 void SoundCore::playContent(const QModelIndex &contentIndex)
-{
+{    
     const SdProxyModel* sdProxyModel = qobject_cast<const SdProxyModel*>(contentIndex.model());
     if(sdProxyModel)
     {
@@ -42,6 +52,101 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
             }
         }
     }
+}
+
+void SoundCore::playEgo(const QModelIndex &contentIndex)
+{
+    const PlaylistModel* plsModel = qobject_cast<const PlaylistModel*>(contentIndex.model());
+
+    QDir wrkSpaceDir = plsModel->dir();
+    wrkSpaceDir.cd("../..");
+    QString wrkSpacePath = wrkSpaceDir.absolutePath();
+
+    QString t1Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T1PathRole).toString();
+    QString t2Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T2PathRole).toString();
+
+    m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path);
+}
+
+void SoundCore::stop()
+{
+    m_soundPlayer.stop();
+}
+
+void SoundCore::setPosition(SoundPlayer::State mode, qint64 msPosition)
+{
+    if(mode != m_soundPlayer.state()) return;
+
+    switch (m_soundPlayer.state())
+    {
+    case SoundPlayer::PlayEgo:
+    {
+        m_egoTrackPosition = msPosition;
+        break;
+    }
+
+    case SoundPlayer::PlaySd:
+    {
+        m_sdTrackPosition = msPosition;
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    m_soundPlayer.setPlayPosition(msPosition);
+    emit qmlTrackPositionChanged();
+}
+
+void SoundCore::trackDurationChanged(qint64 duration)
+{
+    switch (m_soundPlayer.state())
+    {
+        case SoundPlayer::PlayEgo:
+        {
+            m_egoTrackDuration = duration;
+            m_sdTrackDuration = 0;
+            break;
+        }
+
+        case SoundPlayer::PlaySd:
+        {
+            m_sdTrackDuration = duration;
+            m_egoTrackDuration = 0;
+            break;
+        }
+
+    default:
+        break;
+    }
+
+    emit qmlTrackDurationChanged();
+}
+
+void SoundCore::trackPositionChanged(qint64 posisiton)
+{
+    switch (m_soundPlayer.state())
+    {
+    case SoundPlayer::PlayEgo:
+    {
+        m_egoTrackPosition = posisiton;
+        m_sdTrackPosition = 0;
+        break;
+    }
+
+    case SoundPlayer::PlaySd:
+    {
+        m_sdTrackPosition = posisiton;
+        m_egoTrackPosition = 0;
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    emit qmlTrackPositionChanged();
 }
 
 //----------------------Getters/setters-------------------
@@ -188,4 +293,72 @@ void SoundCore::setSdTrackREnabled(bool newSdTrackREnabled)
 
     m_settings.setValue("sdTrackREnabled", m_sdTrackREnabled);
     m_soundPlayer.setTracksEn(SoundPlayer::PlaySd, m_sdTrackLEnabled, m_sdTrackREnabled);
+}
+
+qint64 SoundCore::egoTrackDuration() const
+{
+    return m_egoTrackDuration;
+}
+
+qint64 SoundCore::sdTrackDuration() const
+{
+    return m_sdTrackDuration;
+}
+
+qint64 SoundCore::egoTrackPosition() const
+{
+    return m_egoTrackPosition;
+}
+
+qint64 SoundCore::sdTrackPosition() const
+{
+    return m_sdTrackPosition;
+}
+
+bool SoundCore::track1LMuted() const
+{
+    return m_track1Muted;
+}
+
+void SoundCore::setTrack1LMuted(bool newTrack1Muted)
+{
+    if (m_track1Muted == newTrack1Muted)
+        return;
+    m_track1Muted = newTrack1Muted;
+    emit tracksMutedChanged();
+
+    m_settings.setValue("track1Muted", m_track1Muted);
+    m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
+}
+
+bool SoundCore::track2LMuted() const
+{
+    return m_track2Muted;
+}
+
+void SoundCore::setTrack2LMuted(bool newTrack2Muted)
+{
+    if (m_track2Muted == newTrack2Muted)
+        return;
+    m_track2Muted = newTrack2Muted;
+    emit tracksMutedChanged();
+
+    m_settings.setValue("track2Muted", m_track2Muted);
+    m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
+}
+
+bool SoundCore::sdTrackLMuted() const
+{
+    return m_sdTrackMuted;
+}
+
+void SoundCore::setSdTrackLMuted(bool newSdTrackMuted)
+{
+    if (m_sdTrackMuted == newSdTrackMuted)
+        return;
+    m_sdTrackMuted = newSdTrackMuted;
+    emit tracksMutedChanged();
+
+    m_settings.setValue("sdTrackMuted", m_sdTrackMuted);
+    m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
 }

@@ -141,8 +141,19 @@ Item{
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8
 
+            value: SoundCore.sdTrackPosition
+            duration: SoundCore.sdTrackDuration
+
             onPlayPause: {
                 SoundCore.playContent(_itemSelectionModel.currentIndex);
+            }
+
+            onStop: {
+                SoundCore.stop();
+            }
+
+            onMoved: {
+                SoundCore.setPosition(SoundPlayer.PlaySd, duration * position)
             }
         }
     }

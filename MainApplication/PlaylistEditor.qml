@@ -298,6 +298,22 @@ Rectangle {
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8
+
+            value: SoundCore.egoTrackPosition
+            duration: SoundCore.egoTrackDuration
+
+            onPlayPause: {
+                var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                SoundCore.playEgo(indx);
+            }
+
+            onStop: {
+                SoundCore.stop();
+            }
+
+            onMoved: {
+                SoundCore.setPosition(SoundPlayer.PlayEgo, duration * position)
+            }
         }
     }
 
