@@ -46,7 +46,6 @@ void UiCore::addPlaylist(QString plsName)
 
     for(int i=0; i < m_avaliablePlaylists.size(); i++)
     {
-        qDebug() << i << m_avaliablePlaylists.at(i)->playlistName() << plsName;
         if(m_avaliablePlaylists.at(i)->playlistName() == plsName)
         {
             emit workspaceChanged();

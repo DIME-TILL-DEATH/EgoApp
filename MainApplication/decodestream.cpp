@@ -62,16 +62,10 @@ void DecodeStream::close()
 
 qint64 DecodeStream::readData(char *data, qint64 maxSize)
 {
-    // qDebug() << __FUNCTION__ << m_outputBuf.pos();
-
     memset(data, 0, maxSize);
 
     if(m_outputBuf.size())
         maxSize = m_outputBuf.read(data, maxSize);
-    // if (m_outputBuf.size() && m_outputBuf.atEnd())
-    // {
-    //     emit finished();
-    // }
 
     return maxSize;
 }

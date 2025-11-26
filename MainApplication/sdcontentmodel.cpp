@@ -3,6 +3,33 @@
 #include <QAudioDecoder>
 #include <QThread>
 
+bool SdProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+{
+    QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent);
+
+    QFileSystemModel* srcModel = qobject_cast<QFileSystemModel*>(sourceModel());
+    QModelIndex rootIndex = srcModel->index(srcModel->rootPath());
+
+    if(rootIndex == sourceParent)
+    {
+        return sourceModel()->data(index0).toString().contains("SONGS");
+    }
+    else
+    {
+        const QFileSystemModel* fileSystemModel = qobject_cast<QFileSystemModel*>(sourceModel());
+        QFileInfo fileInfo(fileSystemModel->data(index0, QFileSystemModel::FilePathRole).toString());
+        if(fileInfo.isFile())
+        {
+            QRegularExpressionMatch match;
+            fileSystemModel->data(index0, QFileSystemModel::FileNameRole).toString().contains(filterRegularExpression(), &match);
+            // qDebug() << filterRegularExpression() << match.capturedStart();
+            return match.capturedStart() == 0;
+        }
+        else return true;
+    }
+
+};
+
 SdContentModel::SdContentModel(QObject *parent)
     : QFileSystemModel{parent}
 {
@@ -16,7 +43,8 @@ SdContentModel::SdContentModel(QObject *parent)
     setReadOnly(false);
 
     m_sdProxyModel.setSourceModel(this);
-    m_sdProxyModel.setFilterRegularExpression("SONGS");
+    m_sdProxyModel.setFilterCaseSensitivity(Qt::CaseInsensitive);
+    // m_sdProxyModel.setFilterRegularExpression("D");
 
     QAudioFormat format;
     format.setChannelConfig(QAudioFormat::ChannelConfigStereo);
@@ -37,10 +65,8 @@ QModelIndex SdContentModel::rootIndex() const
 
 void SdContentModel::setWorkspace(const QDir &workspaceDir)
 {
-    m_sdProxyModel.setFilterRegularExpression("");
     setRootPath(workspaceDir.absolutePath());
     emit rootIndexChanged();
-    m_sdProxyModel.setFilterRegularExpression("SONGS");
 }
 
 void SdContentModel::currentSelectionChanged(QModelIndex currentIndex)
@@ -264,4 +290,19 @@ void SdContentModel::setCanSetTrack(bool newCanSetTrack)
 QString SdContentModel::selectedPath() const
 {
     return m_selectedPath;
+}
+
+QString SdContentModel::filterString() const
+{
+    return m_filterString;
+}
+
+void SdContentModel::setFilterString(const QString &newFilterString)
+{
+    if (m_filterString == newFilterString)
+        return;
+    m_filterString = newFilterString;
+    emit filterStringChanged();
+
+    m_sdProxyModel.setFilterRegularExpression(m_filterString);
 }

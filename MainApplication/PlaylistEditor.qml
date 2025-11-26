@@ -79,7 +79,7 @@ Rectangle {
                         id: _delegateRoot
 
                         height: 20
-                        width: _listView.width
+                        width: _listView.width - 20
 
                         property int modelIndex
                         property int visualIndex: DelegateModel.itemsIndex
@@ -133,7 +133,7 @@ Rectangle {
                                 text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
                                        + ": " + t1Name
                                        + (t2Name !== "" ? " | " + t2Name : "")
-                                       + (playNext ? " |->" : "")
+                                       + (playNext ? " | ->" : "")
 
                             }
 
@@ -230,11 +230,28 @@ Rectangle {
 
             text: qsTr("Play next")
 
-            checked: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
-
             onClicked:{
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                 UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+            }
+
+            Binding{
+                target: _cbPlayNext
+                property: "checked"
+                value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+                restoreMode: Binding.RestoreBinding
+            }
+
+            Shortcut{
+                id: _shortcutPlayNext
+
+                sequence: "Ctrl+N"
+
+                onActivated: {
+                    _cbPlayNext.checked = !_cbPlayNext.checked
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+                }
             }
         }
 
@@ -439,7 +456,8 @@ Rectangle {
         text: qsTr("Add song: ") + _shortcutAddSong.sequence + "\n" +
               qsTr("Delete song: ") + _shortcutDeleteSong.sequence + "\n" +
               qsTr("Set track1 link: ") + _shortcutSetLink1.sequence + "\n" +
-              qsTr("Set track2 link: ") + _shortcutSetLink2.sequence + "\n"
+              qsTr("Set track2 link: ") + _shortcutSetLink2.sequence + "\n" +
+              qsTr("Toggle play next: ") + _shortcutPlayNext.sequence + "\n"
 
     }
 }

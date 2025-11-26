@@ -15,23 +15,7 @@ public:
 
 private:
 
-    virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override
-    {
-        QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent);
-
-        QFileSystemModel* srcModel = qobject_cast<QFileSystemModel*>(sourceModel());
-        QModelIndex rootIndex = srcModel->index(srcModel->rootPath());
-
-        if(rootIndex == sourceParent)
-        {
-            return sourceModel()->data(index0).toString().contains(filterRegularExpression());
-        }
-        else
-        {
-            return true;
-        }
-
-    };
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
 };
 
 class SdContentModel : public QFileSystemModel
@@ -44,6 +28,8 @@ class SdContentModel : public QFileSystemModel
 
     Q_PROPERTY(bool canSetTrack READ canSetTrack WRITE setCanSetTrack NOTIFY canSetTrackChanged FINAL)
     Q_PROPERTY(QString selectedPath READ selectedPath NOTIFY selectedPathChanged FINAL)
+
+    Q_PROPERTY(QString filterString READ filterString WRITE setFilterString NOTIFY filterStringChanged FINAL)
 public:
     explicit SdContentModel(QObject *parent = nullptr);
 
@@ -63,6 +49,9 @@ public:
 
     QString selectedPath() const;
 
+    QString filterString() const;
+    void setFilterString(const QString &newFilterString);
+
 signals:
     void rootIndexChanged();
 
@@ -75,6 +64,8 @@ signals:
     void canSetTrackChanged();
 
     void selectedPathChanged();
+
+    void filterStringChanged();
 
 public slots:
     void slBufferReady();
@@ -96,6 +87,7 @@ private:
     void addWav(QString dstPath, QList<QUrl> filesPathList);
     void addMidi(QString dstPath, QList<QUrl> filesPathList);
     QString m_selectedPath;
+    QString m_filterString;
 };
 
 #endif // SDCONTENTMODEL_H

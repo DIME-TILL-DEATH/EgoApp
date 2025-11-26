@@ -11,6 +11,44 @@ Item{
     ColumnLayout{
         anchors.fill: parent
 
+        Row{
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            spacing: 5
+
+            Label{
+                text: qsTr("Filter:")
+
+                height: parent.height
+
+                verticalAlignment: Label.AlignVCenter
+            }
+
+            TextField{
+
+                onTextEdited: {
+                    UiCore.sdContentModel.filterString = text
+                }
+            }
+
+            Button{
+                text: qsTr("Expand all")
+
+                onClicked: {
+                    _treeView.expandRecursively(0)
+                }
+            }
+
+            Button{
+                text: qsTr("Collapse all")
+
+                onClicked: {
+                    _treeView.collapseRecursively(0)
+                }
+            }
+        }
+
         TreeView{
             id: _treeView
 
