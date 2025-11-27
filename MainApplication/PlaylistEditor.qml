@@ -40,11 +40,15 @@ Rectangle {
             Button{
                 text: "+"
 
+                Layout.fillWidth: true
+
                 onClicked: _playlistNameDialog.open()
             }
 
             Button{
                 text: "-"
+
+                Layout.fillWidth: true
 
                 enabled: _plsCombo.count > 0
 

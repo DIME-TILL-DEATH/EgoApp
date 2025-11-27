@@ -25,7 +25,7 @@ elseif(APPLE) # MacOS
     project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
     set(PLATFORM_SPECIFIC_SOURCES
-       "${PROJECT_SOURCE_DIR}/icons/pangaea.icns")
+       "${PROJECT_SOURCE_DIR}/icons/spirit.icns")
 
    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 elseif(LINUX)
@@ -79,6 +79,7 @@ qt_add_qml_module(${PROJECT_NAME}
         SdContentEditor.qml
         VolumeControl.qml
         AppGlobals.qml
+        CheckResultWindow.qml
 
     SOURCES
         decodestream.h decodestream.cpp
@@ -101,7 +102,6 @@ qt_add_qml_module(${PROJECT_NAME}
         icons/sound-on.svg
         icons/stop.svg
         icons/next1.svg icons/next2.svg icons/next3.svg
-        QML_FILES CheckResultWindow.qml
 
 )
 
@@ -132,7 +132,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
-set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/PangaeaFrontend/qml)
+set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
 set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt Creator's code model" FORCE)
 
 
@@ -173,7 +173,7 @@ endif()
 
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Desktop/MacOS/Info.plist"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist"
         MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}")
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
@@ -191,13 +191,13 @@ if(APPLE)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/Desktop/qml"
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${RELEASE_APP_PATH}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/PangaeaCPPA.app")
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"

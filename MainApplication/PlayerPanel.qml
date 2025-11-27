@@ -32,6 +32,10 @@ Rectangle {
 
             x: 5
 
+            width: parent.width - 10
+
+            elide: Text.ElideMiddle
+
             text: "Label Player"
         }
 
