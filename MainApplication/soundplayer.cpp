@@ -55,7 +55,6 @@ void SoundPlayer::pauseResume()
 
 void SoundPlayer::stop()
 {
-
     m_audioSink->reset();
 
     m_streamTrack1->close();
@@ -89,6 +88,14 @@ void SoundPlayer::handlePlayerStateChanged(QtAudio::State state)
     }
     case QAudio::IdleState:
     {
+        // m_streamTrack1->close();
+        // m_streamTrack2->close();
+
+        samplePos = 0;
+        emit positionUpdated(samplePos * 1000/44100);
+
+        // m_state = State::Idle;
+        emit playingFinished();
         break;
     }
     }

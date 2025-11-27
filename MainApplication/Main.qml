@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 
-// import CppObjects
+import QtQml
 
 ApplicationWindow {
     id: _mainWindow
@@ -67,13 +67,23 @@ ApplicationWindow {
             MenuItem{
                 text: qsTr("AMT web site")
 
-                onTriggered: Qt.openUrlExternally("http://www.amtelectronics.ru/");
+                onTriggered: {
+                    if(Qt.locale().name === "ru_RU")
+                        Qt.openUrlExternally("http://www.amtelectronics.ru/")
+                    else
+                        Qt.openUrlExternally("https://media.amtelectronics.com/")
+                }
             }
 
             MenuItem{
-                text: qsTr("Pangaea web page")
+                text: qsTr("EgoGig web page")
 
-                onTriggered: Qt.openUrlExternally("https://media.amtelectronics.ru/amt-egogig-eg-4/")
+                onTriggered: {
+                    if(Qt.locale().name === "ru_RU")
+                        Qt.openUrlExternally("https://media.amtelectronics.ru/amt-egogig-eg-4/")
+                    else
+                        Qt.openUrlExternally("https://media.amtelectronics.com/amt-egogig-eg-4/")
+                }
             }
 
             MenuItem{
@@ -98,6 +108,7 @@ ApplicationWindow {
 
     GridLayout{
         anchors.fill: parent
+        anchors.margins: 5
 
         columns: 5
 
@@ -306,12 +317,17 @@ ApplicationWindow {
         title: qsTr("Error!")
     }
 
+    CheckResultWindow{
+        width: _mainWindow.width * 0.6
+        height: _mainWindow.height * 0.5
+
+        color: _mainWindow.color
+    }
+
     Connections{
         target: UiCore
 
         function onErrorOccured(description){
-            console.log("qml error dialog")
-
             _errorDialog.informativeText = description
             _errorDialog.open();
         }

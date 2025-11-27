@@ -16,6 +16,9 @@ class SoundCore : public QObject
     QML_ELEMENT
     QML_SINGLETON
 
+    Q_PROPERTY(QString egoSongPlaying READ egoSongPlaying NOTIFY playingStringChanged FINAL)
+    Q_PROPERTY(QString wavPlaying READ wavPlaying NOTIFY playingStringChanged FINAL)
+
     Q_PROPERTY(qint64 egoTrackDuration READ egoTrackDuration NOTIFY qmlTrackDurationChanged FINAL)
     Q_PROPERTY(qint64 sdTrackDuration READ sdTrackDuration NOTIFY qmlTrackDurationChanged FINAL)
 
@@ -88,9 +91,14 @@ public:
     bool sdTrackLMuted() const;
     void setSdTrackLMuted(bool newSdTrackMuted);
 
+    QString egoSongPlaying() const;
+
+    QString wavPlaying() const;
+
 public slots:
     void trackDurationChanged(qint64 duration);
     void trackPositionChanged(qint64 posisiton);
+    void playingFinished();
 
 signals:
     void track1VolumeChanged();
@@ -103,6 +111,10 @@ signals:
     void qmlTrackPositionChanged();
 
     void tracksMutedChanged();
+
+    void playingStringChanged();
+
+    void errorOccured(QString errorString);
 
 private:
     QSettings m_settings;
@@ -126,6 +138,8 @@ private:
     bool m_track1Muted{false};
     bool m_track2Muted{false};
     bool m_sdTrackMuted{false};
+    QString m_egoSongPlaying;
+    QString m_wavPlaying;
 };
 
 #endif // SOUNDCORE_H

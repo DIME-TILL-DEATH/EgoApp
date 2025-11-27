@@ -174,7 +174,7 @@ Item{
         }
 
         PlayerPanel{
-            label: qsTr("WAV player")
+            label: qsTr("WAV player") + ((SoundCore.wavPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.wavPlaying : "")
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8
@@ -192,6 +192,20 @@ Item{
 
             onMoved: {
                 SoundCore.setPosition(SoundPlayer.PlaySd, duration * position)
+            }
+
+            Shortcut{
+                id: _shortcutPlayEgo
+
+                sequence: "space"
+
+                onActivated: {
+                    SoundCore.playContent(_itemSelectionModel.currentIndex);
+                }
+
+                Component.onCompleted: {
+                    AppGlobals.playWavShortcut = _shortcutPlayEgo.nativeText
+                }
             }
         }
     }

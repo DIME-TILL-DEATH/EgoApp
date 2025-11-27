@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 1)
+set(MY_BUILD_NUMBER 2)
 
 if(WIN32)
     configure_file(
@@ -66,6 +66,8 @@ set(QT_QML_GENERATE_QMLLS_INI ON)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/EgoApp)
 set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt Creator's code model" FORCE)
 
+set_source_files_properties(AppGlobals.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(${PROJECT_NAME}
     URI EgoApp
@@ -76,6 +78,7 @@ qt_add_qml_module(${PROJECT_NAME}
         PlayerPanel.qml
         SdContentEditor.qml
         VolumeControl.qml
+        AppGlobals.qml
 
     SOURCES
         decodestream.h decodestream.cpp
@@ -97,6 +100,8 @@ qt_add_qml_module(${PROJECT_NAME}
         icons/sound-off.svg
         icons/sound-on.svg
         icons/stop.svg
+        icons/next1.svg icons/next2.svg icons/next3.svg
+        QML_FILES CheckResultWindow.qml
 
 )
 

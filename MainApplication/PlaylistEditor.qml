@@ -130,11 +130,24 @@ Rectangle {
                             }
 
                             Label{
+                                id: _text
+
                                 text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
                                        + ": " + t1Name
                                        + (t2Name !== "" ? " | " + t2Name : "")
-                                       + (playNext ? " | ->" : "")
+                            }
 
+                            Image{
+                                id: _nextImage
+
+                                height: parent.height
+                                width: height
+
+                                visible: playNext
+
+                                anchors.left: _text.right
+
+                                source: "icons/next3.svg"
                             }
 
                             states: State {
@@ -222,6 +235,10 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("CHECK")
+
+                onClicked: {
+                    UiCore.checkPlaylists()
+                }
             }
         }
 
@@ -362,10 +379,18 @@ Rectangle {
                     }
                 }
             }
+
+            Button{
+                text: qsTr("Clear")
+                onClicked: {
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 1, "");
+                }
+            }
         }
 
         PlayerPanel{
-            label: qsTr("EGO player")
+            label: qsTr("EGO player") + ((SoundCore.egoSongPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.egoSongPlaying : "")
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8
@@ -384,6 +409,17 @@ Rectangle {
 
             onMoved: {
                 SoundCore.setPosition(SoundPlayer.PlayEgo, duration * position)
+            }
+
+            Shortcut{
+                id: _shortcutPlayEgo
+
+                sequence: "Ctrl+space"
+
+                onActivated: {
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    SoundCore.playEgo(indx);
+                }
             }
         }
     }
@@ -453,11 +489,12 @@ Rectangle {
 
         title: qsTr("Hotkeys")
 
-        text: qsTr("Add song: ") + _shortcutAddSong.sequence + "\n" +
-              qsTr("Delete song: ") + _shortcutDeleteSong.sequence + "\n" +
-              qsTr("Set track1 link: ") + _shortcutSetLink1.sequence + "\n" +
-              qsTr("Set track2 link: ") + _shortcutSetLink2.sequence + "\n" +
-              qsTr("Toggle play next: ") + _shortcutPlayNext.sequence + "\n"
-
+        text: qsTr("Add song: ") + _shortcutAddSong.nativeText + "\n" +
+              qsTr("Delete song: ") + _shortcutDeleteSong.nativeText + "\n" +
+              qsTr("Set track1 link: ") + _shortcutSetLink1.nativeText + "\n" +
+              qsTr("Set track2 link: ") + _shortcutSetLink2.nativeText + "\n" +
+              qsTr("Toggle play next: ") + _shortcutPlayNext.nativeText + "\n" +
+              qsTr("Play EGO song: ") + _shortcutPlayEgo.nativeText + "\n" +
+              qsTr("Play WAV file: ") + AppGlobals.playWavShortcut
     }
 }

@@ -186,6 +186,59 @@ void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
     emit currentPlaylistIndexChanged();
 }
 
+void UiCore::checkPlaylists()
+{
+    QStringList result;
+    foreach(PlaylistModel* playlist, m_avaliablePlaylists)
+    {
+        quint32 songsCount = playlist->rowCount(QModelIndex());
+
+        result.append(playlist->playlistName() + ":");
+        QStringList errors;
+        for(int i=0; i < songsCount; i++)
+        {
+            QModelIndex index0 = playlist->index(i, 0, QModelIndex());
+
+            QString t1Path = m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString();
+            QString t2Path = m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString();
+
+            QFileInfo t1PathInfo(t1Path);
+            QFileInfo t2PathInfo(t2Path);
+
+
+            QString errString;
+            if(!t1PathInfo.exists())
+            {
+                errString.append(QObject::tr("\tSong ") + QString::number(i+1));
+
+                if(m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString() == "")
+                    errString.append(QObject::tr(" track 1 not settled"));
+                else
+                    errString.append(QObject::tr(" track 1 not found: ") + playlist->data(index0, PlaylistModel::T1PathRole).toString());
+            }
+
+            if(!errString.isEmpty()) errors.append(errString);
+
+            errString.clear();
+
+            if(!t2PathInfo.exists() && m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString() != "")
+            {
+                errString.append(QObject::tr("\tSong ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
+            }
+
+            if(!errString.isEmpty()) errors.append(errString);
+
+        }
+
+        if(errors.isEmpty()) result.append(QObject::tr("\tPlaylist is OK"));
+        else result.append(errors);
+
+        result.append("\n");
+    }
+
+    emit checkingPlaylistsFinished(result);
+}
+
 
 void UiCore::openManualExternally(QString fileName)
 {
@@ -194,6 +247,8 @@ void UiCore::openManualExternally(QString fileName)
     if(appLanguage=="autoselect")
     {
         appLanguage = QLocale().name().left(2);
+
+        if(appLanguage != "ru") appLanguage = "en";
     }
 
     QString fullFileName =  fileName + "_" + appLanguage + ".pdf";
@@ -273,4 +328,3 @@ void UiCore::runWavConvertor()
     qDebug() << "Run converter, path" << path << "result:" << irConvertorProcess.startDetached(path);
 #endif
 }
-
