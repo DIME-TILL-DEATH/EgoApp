@@ -193,6 +193,20 @@ Item{
             onMoved: {
                 SoundCore.setPosition(SoundPlayer.PlaySd, duration * position)
             }
+
+            Shortcut{
+                id: _shortcutPlayEgo
+
+                sequence: "space"
+
+                onActivated: {
+                    SoundCore.playContent(_itemSelectionModel.currentIndex);
+                }
+
+                Component.onCompleted: {
+                    AppGlobals.playWavShortcut = _shortcutPlayEgo.nativeText
+                }
+            }
         }
     }
 

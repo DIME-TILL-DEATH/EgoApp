@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>docs/EgoGig_manual.pdf</file>
+        <file>docs/EgoGig_manual_en.pdf</file>
+        <file>docs/EgoGig_manual_ru.pdf</file>
     </qresource>
 </RCC>

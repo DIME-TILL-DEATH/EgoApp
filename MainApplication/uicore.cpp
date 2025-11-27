@@ -194,6 +194,8 @@ void UiCore::openManualExternally(QString fileName)
     if(appLanguage=="autoselect")
     {
         appLanguage = QLocale().name().left(2);
+
+        if(appLanguage != "ru" || appLanguage != "en") appLanguage = "en";
     }
 
     QString fullFileName =  fileName + "_" + appLanguage + ".pdf";
