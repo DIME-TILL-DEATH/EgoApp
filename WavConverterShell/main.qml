@@ -332,10 +332,10 @@ ApplicationWindow
 
                 if(_core.setDestinationPath(destFolder.text))
                 {
-                    _core.setOutputFormat(cbSampleRate.currentText,
-                                          cbBitRate.currentText,
-                                          cbChanels.currentText,
-                                          tfMaxFileSize.text);
+                    _core.setOutputFormat(44100,
+                                          16,
+                                          2,
+                                          0);
                     _core.setPrefixSuffix(tfPrefix.text, tfSuffix.text);
                     _core.startConvert(fileList);
                     main.wait = true;

@@ -21,8 +21,7 @@ bool SdProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourcePare
         if(fileInfo.isFile())
         {
             QRegularExpressionMatch match;
-            fileSystemModel->data(index0, QFileSystemModel::FileNameRole).toString().contains(filterRegularExpression(), &match);
-            // qDebug() << filterRegularExpression() << match.capturedStart();
+            bool rtnValue = fileSystemModel->data(index0, QFileSystemModel::FileNameRole).toString().contains(filterRegularExpression(), &match);
             return match.capturedStart() == 0;
         }
         else return true;
@@ -161,7 +160,12 @@ void SdContentModel::startDecoding()
         QString filePath = wavUrl.toLocalFile();
         QFileInfo fileInfo(filePath);
 
-        dstWavFile.setFileName(dstWavFolderPath + fileInfo.fileName());
+
+        QString resultFileName = fileInfo.fileName();
+        resultFileName.chop(3); // remove WAV or MP3
+        resultFileName += "wav";
+
+        dstWavFile.setFileName(dstWavFolderPath + resultFileName);
 
         if(dstWavFile.open(QIODevice::WriteOnly)) dstWavFile.close();
 
@@ -221,17 +225,17 @@ void SdContentModel::slDecodingChanged(bool isDecoding)
 
                 QByteArray fileData;
 
-                fileData.append(QString("RIFF").toUtf8());                        //chunkId
+                fileData.append(QString("RIFF").toUtf8());                        //chunkId = RIFF
                 fileData.append(baChunkSize);                                     //chunkSize
-                fileData.append(QString("WAVE").toUtf8());                        //format
-                fileData.append(QString("fmt ").toUtf8());                        //subchunk1Id
-                fileData.append(QByteArray::fromRawData("\x10\x00\x00\x00", 4));  //subchunk1Size
-                fileData.append(QByteArray::fromRawData("\x01\x00", 2));          //audioFormat
-                fileData.append(QByteArray::fromRawData("\x02\x00", 2));          //numChannels
-                fileData.append(QByteArray::fromRawData("\x44\xAC\x00\x00", 4));  //sampleRate
-                fileData.append(QByteArray::fromRawData("\x10\xB1\x02\x00", 4));  //byteRate
+                fileData.append(QString("WAVE").toUtf8());                        //format = WAVE
+                fileData.append(QString("fmt ").toUtf8());                        //subchunk1Id = fmt
+                fileData.append(QByteArray::fromRawData("\x10\x00\x00\x00", 4));  //subchunk1Size = 16 for PCM
+                fileData.append(QByteArray::fromRawData("\x01\x00", 2));          //audioFormat = 1 linear PCM
+                fileData.append(QByteArray::fromRawData("\x02\x00", 2));          //numChannels = 2 stereo
+                fileData.append(QByteArray::fromRawData("\x44\xAC\x00\x00", 4));  //sampleRate = 44100
+                fileData.append(QByteArray::fromRawData("\x10\xB1\x02\x00", 4));  //byteRate =
                 fileData.append(QByteArray::fromRawData("\x04\x00", 2));          //blockAlign
-                fileData.append(QByteArray::fromRawData("\x10\x00", 2));          //bitsPerSample
+                fileData.append(QByteArray::fromRawData("\x10\x00", 2));          //bitsPerSample = 16
                 fileData.append(QString("data").toUtf8());                        //subchunk2Id
                 fileData.append(baFileSize);    //subchunk2Size
 
