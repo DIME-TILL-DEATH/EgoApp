@@ -50,6 +50,8 @@ signals:
 
     void positionUpdated(qint64 newTimePosition);
 
+    void playingFinished();
+
 private slots:
     void handlePlayerStateChanged(QtAudio::State state);
 

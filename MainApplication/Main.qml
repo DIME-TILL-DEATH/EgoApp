@@ -317,12 +317,17 @@ ApplicationWindow {
         title: qsTr("Error!")
     }
 
+    CheckResultWindow{
+        width: _mainWindow.width * 0.6
+        height: _mainWindow.height * 0.5
+
+        color: _mainWindow.color
+    }
+
     Connections{
         target: UiCore
 
         function onErrorOccured(description){
-            console.log("qml error dialog")
-
             _errorDialog.informativeText = description
             _errorDialog.open();
         }

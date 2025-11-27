@@ -38,6 +38,8 @@ public:
     Q_INVOKABLE void openManualExternally(QString fileName);
     Q_INVOKABLE void runWavConvertor();
 
+    Q_INVOKABLE void checkPlaylists();
+
 signals:
 
     void workspaceChanged();
@@ -46,6 +48,8 @@ signals:
     void currentPlaylistChanged();
 
     void currentPlaylistIndexChanged();
+
+    void checkingPlaylistsFinished(QStringList result);
 
 private:
     SdContentModel m_sdContentModel{this};

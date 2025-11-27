@@ -174,7 +174,7 @@ Item{
         }
 
         PlayerPanel{
-            label: qsTr("WAV player")
+            label: qsTr("WAV player") + ((SoundCore.wavPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.wavPlaying : "")
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8

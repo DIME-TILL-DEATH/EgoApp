@@ -235,6 +235,10 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("CHECK")
+
+                onClicked: {
+                    UiCore.checkPlaylists()
+                }
             }
         }
 
@@ -375,10 +379,18 @@ Rectangle {
                     }
                 }
             }
+
+            Button{
+                text: qsTr("Clear")
+                onClicked: {
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 1, "");
+                }
+            }
         }
 
         PlayerPanel{
-            label: qsTr("EGO player")
+            label: qsTr("EGO player") + ((SoundCore.egoSongPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.egoSongPlaying : "")
 
             Layout.preferredWidth: parent.width
             Layout.preferredHeight: parent.height/8

@@ -30,6 +30,7 @@ SoundCore::SoundCore(QObject *parent)
 
     connect(&m_soundPlayer, &SoundPlayer::track1DurationChanged, this, &SoundCore::trackDurationChanged);
     connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
+    connect(&m_soundPlayer, &SoundPlayer::playingFinished, this, &SoundCore::playingFinished);
 }
 
 void SoundCore::playContent(const QModelIndex &contentIndex)
@@ -49,6 +50,10 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
             if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0)
             {
                 m_soundPlayer.play(SoundPlayer::PlaySd, sdModel->rootPath() + sdModel->selectedPath());
+
+                m_wavPlaying = sdModel->selectedPath();
+                m_egoSongPlaying = "";
+                emit playingStringChanged();
             }
         }
     }
@@ -65,11 +70,29 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
     QString t1Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T1PathRole).toString();
     QString t2Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T2PathRole).toString();
 
+    m_egoSongPlaying = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
+    if(!plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString().isEmpty())
+        m_egoSongPlaying += "|" + plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
+    m_wavPlaying = "";
+    emit playingStringChanged();
+
+    QString errorString;
+    QFileInfo t1Info(t1Path);
+    QFileInfo t2Info(t2Path);
+    if(!t1Info.exists()) errorString.append(QObject::tr("Track1 not found!\n"));
+    if(!t2Info.exists()) errorString.append(QObject::tr("Track2 not found!"));
+
+    if(!errorString.isEmpty()) emit errorOccured(errorString);
+
     m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path);
 }
 
 void SoundCore::stop()
 {
+    m_egoSongPlaying = "";
+    m_wavPlaying = "";
+    emit playingStringChanged();
+
     m_soundPlayer.stop();
 }
 
@@ -147,6 +170,13 @@ void SoundCore::trackPositionChanged(qint64 posisiton)
     }
 
     emit qmlTrackPositionChanged();
+}
+
+void SoundCore::playingFinished()
+{
+    m_egoSongPlaying = "";
+    m_wavPlaying = "";
+    emit playingStringChanged();
 }
 
 //----------------------Getters/setters-------------------
@@ -361,4 +391,14 @@ void SoundCore::setSdTrackLMuted(bool newSdTrackMuted)
 
     m_settings.setValue("sdTrackMuted", m_sdTrackMuted);
     m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
+}
+
+QString SoundCore::egoSongPlaying() const
+{
+    return m_egoSongPlaying;
+}
+
+QString SoundCore::wavPlaying() const
+{
+    return m_wavPlaying;
 }

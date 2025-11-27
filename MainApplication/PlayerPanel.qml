@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 Rectangle {
     id: _root
@@ -79,6 +80,21 @@ Rectangle {
                 text:  Math.trunc(_slider.value / 1000 / 60).toString().padStart(2, '0') + ":"
                        + Math.trunc(_slider.value / 1000 % 60).toString().padStart(2, '0')
             }
+        }
+    }
+
+    MessageDialog{
+        id: _errorDialog
+
+        title: qsTr("Error!")
+    }
+
+    Connections{
+        target: SoundCore
+
+        function onErrorOccured(description){
+            _errorDialog.informativeText = description
+            _errorDialog.open();
         }
     }
 }

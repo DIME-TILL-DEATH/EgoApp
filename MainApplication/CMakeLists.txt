@@ -101,6 +101,7 @@ qt_add_qml_module(${PROJECT_NAME}
         icons/sound-on.svg
         icons/stop.svg
         icons/next1.svg icons/next2.svg icons/next3.svg
+        QML_FILES CheckResultWindow.qml
 
 )
 
