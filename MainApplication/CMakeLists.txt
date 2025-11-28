@@ -25,7 +25,7 @@ elseif(APPLE) # MacOS
     project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
     set(PLATFORM_SPECIFIC_SOURCES
-       "${PROJECT_SOURCE_DIR}/icons/spirit.icns")
+       "${PROJECT_SOURCE_DIR}/icons/EgoGIG-App.icns")
 
    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 elseif(LINUX)
