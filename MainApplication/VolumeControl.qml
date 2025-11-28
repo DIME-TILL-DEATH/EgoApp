@@ -27,7 +27,7 @@ Rectangle {
             orientation: Qt.Vertical
 
             Layout.preferredWidth: parent.width
-            Layout.preferredHeight: parent.height * 3/4
+            Layout.fillHeight: true
             Layout.alignment: Text.AlignHCenter
 
             from: 0.0
@@ -49,8 +49,6 @@ Rectangle {
 
             Layout.preferredWidth: parent.width * 2/4
             Layout.alignment: Text.AlignHCenter
-            Layout.verticalStretchFactor: 2
-            Layout.fillHeight: true
 
             onClicked: {
                 _root.trackMuteChanged()
@@ -61,16 +59,13 @@ Rectangle {
             id: _indicatorLabel
 
             Layout.preferredWidth: parent.width
-            Layout.verticalStretchFactor: 1
-            Layout.fillHeight: true
 
             horizontalAlignment: Text.AlignHCenter
         }
 
         Row{
             Layout.preferredWidth: parent.width
-            Layout.verticalStretchFactor: 2
-            Layout.fillHeight: true
+            Layout.preferredHeight: _chkBoxL.implicitHeight
             Layout.bottomMargin: 5
 
             CheckBox{

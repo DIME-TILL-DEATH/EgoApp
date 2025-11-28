@@ -58,6 +58,10 @@ Item{
         TreeView{
             id: _treeView
 
+            Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 3
+
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             rootIndex: UiCore.sdContentModel.rootIndex
@@ -111,10 +115,6 @@ Item{
                     color: palette.highlight
                 }
             }
-
-            Layout.preferredWidth: parent.width
-            Layout.fillHeight: true
-            Layout.verticalStretchFactor: 3
 
             // Connections{
             //     target: UiCore.sdContentModel.sdProxyModel
