@@ -293,7 +293,6 @@ void UiCore::loadTranslator(QString languageCode)
 
     if (m_translator.load(pathFromCode.value(languageCode)))
     {
-        qDebug() << __FUNCTION__ << true;
         QCoreApplication::installTranslator(&m_translator);
 
         emit translatorChanged(languageCode);
@@ -342,8 +341,6 @@ void UiCore::openManualExternally(QString fileName)
     QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/" + fullFileName;
     pdfFile.copy(temporallyPath);
 
-    qDebug() << "Final manual path: " << temporallyPath;
-
     QJniObject::callStaticMethod<void>(
         "com.amtelectronics.utils/JavaFile", "openFileExternally",
         "(Ljava/lang/String;Landroid/content/Context;)V",
@@ -355,7 +352,6 @@ void UiCore::openManualExternally(QString fileName)
 
     if(!pdfFile.exists())
     {
-        qDebug() << "Manual finded inresources";
         fullFileName = fileName + ".pdf";
         filePath = ":/docs/" + fullFileName;
         pdfFile.setFileName(filePath);
@@ -364,7 +360,6 @@ void UiCore::openManualExternally(QString fileName)
     QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/" + fullFileName;
     pdfFile.copy(temporallyPath);
 
-    qDebug() << "Final manual path: " << temporallyPath;
     QDesktopServices::openUrl(QUrl::fromLocalFile(temporallyPath));
 #elif defined(Q_OS_LINUX)
     QString filePath = QCoreApplication::applicationDirPath() + "/../docs/" + fullFileName;
@@ -394,12 +389,10 @@ void UiCore::runWavConvertor()
 
 #ifdef Q_OS_MACOS
     QProcess irConvertorProcess;
-    qDebug() << "Run converter" << irConvertorProcess.startDetached(QCoreApplication::applicationDirPath() + "/IrConverter");
 #endif
 
 #ifdef Q_OS_LINUX
     QProcess irConvertorProcess;
     QString path = QCoreApplication::applicationDirPath() + "/IrConverter";
-    qDebug() << "Run converter, path" << path << "result:" << irConvertorProcess.startDetached(path);
 #endif
 }

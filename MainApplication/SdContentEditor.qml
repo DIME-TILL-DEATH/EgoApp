@@ -120,7 +120,6 @@ Item{
                 target: UiCore.sdContentModel
 
                 function onRootIndexChanged(){
-                    console.log("Root index changed", UiCore.sdContentModel.rootIndex)
                     _treeView.expandToIndex(UiCore.sdContentModel.rootIndex)
                 }
             }
