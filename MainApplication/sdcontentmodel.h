@@ -74,6 +74,7 @@ public slots:
 
 private:
     SdProxyModel m_sdProxyModel{this};
+
     QAudioDecoder decoder{this};
 
     void startDecoding();

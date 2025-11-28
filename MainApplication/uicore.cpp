@@ -22,7 +22,7 @@ UiCore::UiCore(QObject *parent)
         workspacePath += "/AMT/EgoGIG/Default_workspace/";
 
         QDir dir(workspacePath);
-        bool result = dir.mkpath(workspacePath);
+        dir.mkpath(workspacePath);
     }
 
     m_workspaceDir = QDir(workspacePath);

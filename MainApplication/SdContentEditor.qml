@@ -116,13 +116,14 @@ Item{
                 }
             }
 
-            // Connections{
-            //     target: UiCore.sdContentModel.sdProxyModel
+            Connections{
+                target: UiCore.sdContentModel
 
-            //     function onLayoutChanged(parents, hint){
-            //         _treeView.expand(0)
-            //     }
-            // }
+                function onRootIndexChanged(){
+                    console.log("Root index changed", UiCore.sdContentModel.rootIndex)
+                    _treeView.expandToIndex(UiCore.sdContentModel.rootIndex)
+                }
+            }
 
             Menu{
                 id: _contextMenu
