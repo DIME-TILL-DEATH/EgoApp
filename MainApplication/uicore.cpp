@@ -1,7 +1,9 @@
 #include "uicore.h"
 
+#include <QResource>
 #include <QStandardPaths>
 #include <QDesktopServices>
+#include <QFileInfo>
 
 #include <QProcess>
 #include <QCoreApplication>
@@ -13,6 +15,16 @@ UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
     QString workspacePath = m_settings.value("workspace_path").toString();
+
+    if(workspacePath.isEmpty())
+    {
+        workspacePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+        workspacePath += "/AMT/EgoGIG/Default_workspace/";
+
+        QDir dir(workspacePath);
+        dir.mkpath(workspacePath);
+    }
+
     m_workspaceDir = QDir(workspacePath);
     m_sdContentModel.setWorkspace(workspacePath);
 
@@ -20,6 +32,14 @@ UiCore::UiCore(QObject *parent)
 
     readPlaylistFolder();
     setCurrentPlaylistIndex(0);
+
+    QString appLanguage = m_settings.value("application_language", "autoselect").toString();
+
+    if(appLanguage=="autoselect")
+    {
+        appLanguage = QLocale().name().left(2);
+    }
+    setLanguage(appLanguage);
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
@@ -41,6 +61,13 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
 void UiCore::addPlaylist(QString plsName)
 {
+    QFileInfo dirInfo(m_workspaceDir.absolutePath() + "/PLAYLIST/" + plsName);
+    if(dirInfo.exists())
+    {
+        emit errorOccured(QObject::tr("Playlist already exist"));
+        return;
+    }
+
     m_workspaceDir.mkpath("PLAYLIST/" + plsName);
     readPlaylistFolder();
 
@@ -209,7 +236,8 @@ void UiCore::checkPlaylists()
             QString errString;
             if(!t1PathInfo.exists())
             {
-                errString.append(QObject::tr("\tSong ") + QString::number(i+1));
+                errString.append("\t");
+                errString.append(QObject::tr("Song ") + QString::number(i+1));
 
                 if(m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString() == "")
                     errString.append(QObject::tr(" track 1 not settled"));
@@ -223,14 +251,15 @@ void UiCore::checkPlaylists()
 
             if(!t2PathInfo.exists() && m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString() != "")
             {
-                errString.append(QObject::tr("\tSong ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
+                errString.append("\t");
+                errString.append(QObject::tr("Song ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
             }
 
             if(!errString.isEmpty()) errors.append(errString);
 
         }
 
-        if(errors.isEmpty()) result.append(QObject::tr("\tPlaylist is OK"));
+        if(errors.isEmpty()) result.append("\t" + QObject::tr("Playlist is OK"));
         else result.append(errors);
 
         result.append("\n");
@@ -239,6 +268,51 @@ void UiCore::checkPlaylists()
     emit checkingPlaylistsFinished(result);
 }
 
+void UiCore::setLanguage(QString languageCode)
+{
+    m_settings.setValue("application_language", languageCode);
+    m_settings.sync();
+
+    loadTranslator(languageCode);
+}
+
+QString UiCore::appLanguageCode()
+{
+    return m_settings.value("application_language", "en").toString();
+}
+
+void UiCore::loadTranslator(QString languageCode)
+{
+    QCoreApplication::removeTranslator(&m_translator);
+
+    if(languageCode=="autoselect")
+    {
+        loadDefaultTranslator();
+        return;
+    }
+
+    if (m_translator.load(pathFromCode.value(languageCode)))
+    {
+        QCoreApplication::installTranslator(&m_translator);
+
+        emit translatorChanged(languageCode);
+    }
+
+    QQmlEngine* engine = qmlEngine(this);
+    if(engine)
+    {
+        engine->retranslate();
+    }
+}
+
+void UiCore::loadDefaultTranslator()
+{
+    if (m_translator.load(QLocale(), QLatin1String("EgoGIG"), QLatin1String("_"), ":/translations/"))
+    {
+        QCoreApplication::installTranslator(&m_translator);
+        emit translatorChanged(QLocale().nativeLanguageName());
+    }
+}
 
 void UiCore::openManualExternally(QString fileName)
 {
@@ -267,8 +341,6 @@ void UiCore::openManualExternally(QString fileName)
     QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/" + fullFileName;
     pdfFile.copy(temporallyPath);
 
-    qDebug() << "Final manual path: " << temporallyPath;
-
     QJniObject::callStaticMethod<void>(
         "com.amtelectronics.utils/JavaFile", "openFileExternally",
         "(Ljava/lang/String;Landroid/content/Context;)V",
@@ -280,7 +352,6 @@ void UiCore::openManualExternally(QString fileName)
 
     if(!pdfFile.exists())
     {
-        qDebug() << "Manual finded inresources";
         fullFileName = fileName + ".pdf";
         filePath = ":/docs/" + fullFileName;
         pdfFile.setFileName(filePath);
@@ -289,7 +360,6 @@ void UiCore::openManualExternally(QString fileName)
     QString temporallyPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/" + fullFileName;
     pdfFile.copy(temporallyPath);
 
-    qDebug() << "Final manual path: " << temporallyPath;
     QDesktopServices::openUrl(QUrl::fromLocalFile(temporallyPath));
 #elif defined(Q_OS_LINUX)
     QString filePath = QCoreApplication::applicationDirPath() + "/../docs/" + fullFileName;
@@ -319,12 +389,10 @@ void UiCore::runWavConvertor()
 
 #ifdef Q_OS_MACOS
     QProcess irConvertorProcess;
-    qDebug() << "Run converter" << irConvertorProcess.startDetached(QCoreApplication::applicationDirPath() + "/IrConverter");
 #endif
 
 #ifdef Q_OS_LINUX
     QProcess irConvertorProcess;
     QString path = QCoreApplication::applicationDirPath() + "/IrConverter";
-    qDebug() << "Run converter, path" << path << "result:" << irConvertorProcess.startDetached(path);
 #endif
 }

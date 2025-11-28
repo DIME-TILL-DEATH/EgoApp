@@ -14,7 +14,6 @@
 *.so.*
 *_pch.h.cpp
 *_resource.rc
-*.qm
 .#*
 *.*#
 core
@@ -81,3 +80,5 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 /deploy_windows/release/
+
+*.dmg

@@ -6,7 +6,7 @@
 #define MyAppNameUn "Uninstall AMT EgoGIG"
 
 ;#define MyAppVersionREPLACE
-#define MyAppVersion "1.1.2.0"
+#define MyAppVersion "1.1.3.0"
 #define MyAppPublisher "AMT Electronics"
 #define MyAppURL "http://www.amtelectronics.ru/"
 #define MyAppExeName "EgoGIG.exe"
@@ -28,7 +28,7 @@ DefaultGroupName={#MyAppPublisher}
 ;DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputBaseFilename=EgoGIG_Setup
-SetupIconFile=.\resources\spirit.ico
+SetupIconFile=.\resources\EgoGIG-App.ico
 Compression=lzma
 SolidCompression=yes
 DisableDirPage=no

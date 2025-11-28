@@ -47,6 +47,20 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
             return path.mid(fileNamePos+1);
         }
 
+        case ListRoles::MidiExistRole:
+        {
+            QDir wrkSpaceDir = m_dir;
+            wrkSpaceDir.cd("../..");
+            QString wrkSpacePath = wrkSpaceDir.absolutePath();
+
+            QString midiPath = wrkSpacePath +  m_songList.at(index.row()).t1Path;
+            midiPath.chop(3);
+            midiPath += "mid";
+
+            QFileInfo midiFileInfo(midiPath);
+            return midiFileInfo.exists();
+        }
+
         default:
         {
             qWarning() << __FUNCTION__ << "no role";
@@ -65,6 +79,7 @@ QHash<int, QByteArray> PlaylistModel::roleNames() const
     roles[ListRoles::T2PathRole] = "t2Path";
     roles[ListRoles::T1NameRole] = "t1Name";
     roles[ListRoles::T2NameRole] = "t2Name";
+    roles[ListRoles::MidiExistRole] = "midiExist";
 
     return roles;
 }

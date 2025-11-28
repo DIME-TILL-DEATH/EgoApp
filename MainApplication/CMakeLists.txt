@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 2)
+set(MY_BUILD_NUMBER 3)
 
 if(WIN32)
     configure_file(
@@ -25,7 +25,7 @@ elseif(APPLE) # MacOS
     project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
     set(PLATFORM_SPECIFIC_SOURCES
-       "${PROJECT_SOURCE_DIR}/icons/pangaea.icns")
+       "${PROJECT_SOURCE_DIR}/icons/EgoGIG-App.icns")
 
    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 elseif(LINUX)
@@ -69,6 +69,12 @@ set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt
 set_source_files_properties(AppGlobals.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
+qt6_add_resources(RCC_FILES
+    docs.qrc
+    icons.qrc
+    translations.qrc
+)
+
 qt_add_qml_module(${PROJECT_NAME}
     URI EgoApp
     VERSION 1.0
@@ -79,6 +85,7 @@ qt_add_qml_module(${PROJECT_NAME}
         SdContentEditor.qml
         VolumeControl.qml
         AppGlobals.qml
+        CheckResultWindow.qml
 
     SOURCES
         decodestream.h decodestream.cpp
@@ -89,20 +96,8 @@ qt_add_qml_module(${PROJECT_NAME}
         soundplayer.h soundplayer.cpp
         uicore.h uicore.cpp
 
-    RESOURCES
-        docs.qrc
-        icons.qrc
-
-        icons/pause.svg
-        icons/play.svg
-        icons/sound-max.svg
-        icons/sound-min.svg
-        icons/sound-off.svg
-        icons/sound-on.svg
-        icons/stop.svg
-        icons/next1.svg icons/next2.svg icons/next3.svg
-        QML_FILES CheckResultWindow.qml
-
+        ${RCC_FILES}
+        QML_FILES MainMenu.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -132,7 +127,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
-set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/PangaeaFrontend/qml)
+set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
 set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt Creator's code model" FORCE)
 
 
@@ -173,7 +168,7 @@ endif()
 
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Desktop/MacOS/Info.plist"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist"
         MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}")
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
@@ -191,13 +186,13 @@ if(APPLE)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/Desktop/qml"
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${RELEASE_APP_PATH}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/PangaeaCPPA.app")
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"

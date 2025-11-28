@@ -9,7 +9,7 @@ Core::Core(QObject *parent)
     : QObject{parent}
 {
 
-    QString folderPath = QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0)+"/AMT/pangaeaCPPA/convertedIR";
+    QString folderPath = QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0)+"/AMT/EgoGIG/convertedWAV";
 
     if(!QDir(folderPath).exists())
     {

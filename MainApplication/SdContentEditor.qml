@@ -11,7 +11,7 @@ Item{
     ColumnLayout{
         anchors.fill: parent
 
-        Row{
+        RowLayout{
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -20,12 +20,14 @@ Item{
             Label{
                 text: qsTr("Filter:")
 
-                height: parent.height
+                Layout.preferredHeight: parent.height
 
                 verticalAlignment: Label.AlignVCenter
             }
 
             TextField{
+
+                Layout.preferredWidth: parent.width/3
 
                 onTextEdited: {
                     UiCore.sdContentModel.filterString = text
@@ -35,6 +37,8 @@ Item{
             Button{
                 text: qsTr("Expand all")
 
+                Layout.fillWidth: true
+
                 onClicked: {
                     _treeView.expandRecursively(0)
                 }
@@ -42,6 +46,8 @@ Item{
 
             Button{
                 text: qsTr("Collapse all")
+
+                Layout.fillWidth: true
 
                 onClicked: {
                     _treeView.collapseRecursively(0)
@@ -51,6 +57,10 @@ Item{
 
         TreeView{
             id: _treeView
+
+            Layout.preferredWidth: parent.width
+            Layout.fillHeight: true
+            Layout.verticalStretchFactor: 3
 
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -106,17 +116,13 @@ Item{
                 }
             }
 
-            Layout.preferredWidth: parent.width
-            Layout.fillHeight: true
-            Layout.verticalStretchFactor: 3
+            Connections{
+                target: UiCore.sdContentModel
 
-            // Connections{
-            //     target: UiCore.sdContentModel.sdProxyModel
-
-            //     function onLayoutChanged(parents, hint){
-            //         _treeView.expand(0)
-            //     }
-            // }
+                function onRootIndexChanged(){
+                    _treeView.expandToIndex(UiCore.sdContentModel.rootIndex)
+                }
+            }
 
             Menu{
                 id: _contextMenu
@@ -195,7 +201,7 @@ Item{
             }
 
             Shortcut{
-                id: _shortcutPlayEgo
+                id: _shortcutPlayWav
 
                 sequence: "space"
 
@@ -204,7 +210,7 @@ Item{
                 }
 
                 Component.onCompleted: {
-                    AppGlobals.playWavShortcut = _shortcutPlayEgo.nativeText
+                    AppGlobals.playWavShortcut = _shortcutPlayWav.nativeText
                 }
             }
         }

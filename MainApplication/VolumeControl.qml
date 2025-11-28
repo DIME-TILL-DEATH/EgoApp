@@ -27,7 +27,7 @@ Rectangle {
             orientation: Qt.Vertical
 
             Layout.preferredWidth: parent.width
-            Layout.preferredHeight: parent.height * 3/4
+            Layout.fillHeight: true
             Layout.alignment: Text.AlignHCenter
 
             from: 0.0
@@ -43,14 +43,12 @@ Rectangle {
         Button{
             id: _muteButton
 
-            icon.source: muted ? "icons/sound-off.svg" : "icons/sound-on.svg"
+            icon.source: muted ? "qrc:/icons/sound-off.svg" : "qrc:/icons/sound-on.svg"
 
             property bool muted: false
 
             Layout.preferredWidth: parent.width * 2/4
             Layout.alignment: Text.AlignHCenter
-            Layout.verticalStretchFactor: 2
-            Layout.fillHeight: true
 
             onClicked: {
                 _root.trackMuteChanged()
@@ -61,16 +59,13 @@ Rectangle {
             id: _indicatorLabel
 
             Layout.preferredWidth: parent.width
-            Layout.verticalStretchFactor: 1
-            Layout.fillHeight: true
 
             horizontalAlignment: Text.AlignHCenter
         }
 
         Row{
             Layout.preferredWidth: parent.width
-            Layout.verticalStretchFactor: 2
-            Layout.fillHeight: true
+            Layout.preferredHeight: _chkBoxL.implicitHeight
             Layout.bottomMargin: 5
 
             CheckBox{
@@ -86,9 +81,10 @@ Rectangle {
                 contentItem: Label {
                     text: _chkBoxL.text
                     font: _chkBoxL.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    topPadding: _chkBoxL.indicator.height + _chkBoxL.spacing + 2
+                    // horizontalAlignment: Text.AlignHCenter
+                    // verticalAlignment: Text.AlignBottom
+                    leftPadding: 4
+                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 5
                 }
 
                 onClicked: {
@@ -107,11 +103,13 @@ Rectangle {
                 checked: true
 
                 contentItem: Label {
+
                     text: _chkBoxR.text
                     font: _chkBoxR.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 2
+                    // horizontalAlignment: Text.AlignHCenter
+                    // verticalAlignment: Text.AlignBottom
+                    leftPadding: 4
+                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 5
                 }
 
                 onClicked: {

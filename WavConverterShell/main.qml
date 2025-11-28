@@ -384,7 +384,7 @@ ApplicationWindow
         visible: false
         title:  "Choose a dest folder"
 
-        currentFolder: Labs.StandardPaths.writableLocation(Labs.StandardPaths.DocumentsLocation) + "/AMT/pangaeaCPPA/convertedIR"
+        currentFolder: Labs.StandardPaths.writableLocation(Labs.StandardPaths.DocumentsLocation) + "/AMT/EgoGIG/convertedWAV"
 
         onAccepted:
         {

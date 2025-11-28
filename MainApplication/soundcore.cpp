@@ -79,7 +79,7 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
     QString errorString;
     QFileInfo t1Info(t1Path);
     QFileInfo t2Info(t2Path);
-    if(!t1Info.exists()) errorString.append(QObject::tr("Track1 not found!\n"));
+    if(!t1Info.exists()) errorString.append(QObject::tr("Track1 not found!") + "\n");
     if(!t2Info.exists()) errorString.append(QObject::tr("Track2 not found!"));
 
     if(!errorString.isEmpty()) emit errorOccured(errorString);

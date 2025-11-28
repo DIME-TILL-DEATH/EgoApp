@@ -32,8 +32,6 @@ bool SdProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourcePare
 SdContentModel::SdContentModel(QObject *parent)
     : QFileSystemModel{parent}
 {
-    setRootPath("C:/");
-
     QStringList filter;
     filter.append("*.wav");
     filter.append("*.mid");
@@ -43,7 +41,8 @@ SdContentModel::SdContentModel(QObject *parent)
 
     m_sdProxyModel.setSourceModel(this);
     m_sdProxyModel.setFilterCaseSensitivity(Qt::CaseInsensitive);
-    // m_sdProxyModel.setFilterRegularExpression("D");
+
+    // connect(this, &QFileSystemModel::directoryLoaded, this, &SdContentModel::rootIndexChanged);
 
     QAudioFormat format;
     format.setChannelConfig(QAudioFormat::ChannelConfigStereo);
@@ -65,6 +64,8 @@ QModelIndex SdContentModel::rootIndex() const
 void SdContentModel::setWorkspace(const QDir &workspaceDir)
 {
     setRootPath(workspaceDir.absolutePath());
+    m_sdProxyModel.invalidate();
+
     emit rootIndexChanged();
 }
 
@@ -137,7 +138,15 @@ void SdContentModel::addFolder(QModelIndex parentIndex, QString name)
         realIndex = mkdir(index(rootPath()), "SONGS");
     }
 
+    QFileInfo dirInfo(this->filePath(realIndex) + "/" + name);
+    if(dirInfo.exists())
+    {
+        emit errorOccured(QObject::tr("Folder already exist"));
+        return;
+    }
+
     mkdir(realIndex, name);
+    m_sdProxyModel.invalidate();
 }
 
 void SdContentModel::addWav(QString dstPath, QList<QUrl> filesPathList)
@@ -162,7 +171,7 @@ void SdContentModel::startDecoding()
 
 
         QString resultFileName = fileInfo.fileName();
-        resultFileName.chop(3); // remove WAV or MP3
+        resultFileName.chop(3); // remove WAV or MP3 suffix
         resultFileName += "wav";
 
         dstWavFile.setFileName(dstWavFolderPath + resultFileName);
@@ -176,6 +185,7 @@ void SdContentModel::startDecoding()
     {
         dstWavFile.setFileName("");
         emit decodingFinished();
+        m_sdProxyModel.invalidate();
     }
 }
 
@@ -276,6 +286,8 @@ void SdContentModel::deleteObject(QModelIndex index)
 {
     QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
     remove(realIndex);
+    m_sdProxyModel.invalidate();
+    emit dataChanged(realIndex, realIndex);
 }
 
 bool SdContentModel::canSetTrack() const
