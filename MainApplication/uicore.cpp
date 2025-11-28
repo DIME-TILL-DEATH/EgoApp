@@ -9,10 +9,22 @@
 
 #include <QCollator>
 
+#include <QStandardPaths>
+
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
     QString workspacePath = m_settings.value("workspace_path").toString();
+
+    if(workspacePath.isEmpty())
+    {
+        workspacePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+        workspacePath += "/AMT/EgoGIG/Default_workspace/";
+
+        QDir dir(workspacePath);
+        bool result = dir.mkpath(workspacePath);
+    }
+
     m_workspaceDir = QDir(workspacePath);
     m_sdContentModel.setWorkspace(workspacePath);
 

@@ -129,6 +129,8 @@ ApplicationWindow {
             FolderDialog{
                 id: _folderDialog
 
+                // currentFolder: UiCore.workspacePath
+
                 onAccepted: UiCore.setWorkspace(_folderDialog.selectedFolder)
             }
         }
