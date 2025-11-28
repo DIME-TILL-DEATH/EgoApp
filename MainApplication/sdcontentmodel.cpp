@@ -138,6 +138,13 @@ void SdContentModel::addFolder(QModelIndex parentIndex, QString name)
         realIndex = mkdir(index(rootPath()), "SONGS");
     }
 
+    QFileInfo dirInfo(this->filePath(realIndex) + "/" + name);
+    if(dirInfo.exists())
+    {
+        emit errorOccured(QObject::tr("Folder already exist"));
+        return;
+    }
+
     mkdir(realIndex, name);
     m_sdProxyModel.invalidate();
 }
@@ -164,7 +171,7 @@ void SdContentModel::startDecoding()
 
 
         QString resultFileName = fileInfo.fileName();
-        resultFileName.chop(3); // remove WAV or MP3
+        resultFileName.chop(3); // remove WAV or MP3 suffix
         resultFileName += "wav";
 
         dstWavFile.setFileName(dstWavFolderPath + resultFileName);

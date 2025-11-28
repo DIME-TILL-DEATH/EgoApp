@@ -19,7 +19,8 @@ public:
         T1PathRole,
         T2PathRole,
         T1NameRole,
-        T2NameRole
+        T2NameRole,
+        MidiExistRole
     };
     Q_ENUM(ListRoles)
 

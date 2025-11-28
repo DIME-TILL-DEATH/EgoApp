@@ -133,25 +133,45 @@ Rectangle {
                                 onReleased: _thing.Drag.drop()
                             }
 
-                            Label{
-                                id: _text
-
-                                text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
-                                       + ": " + t1Name
-                                       + (t2Name !== "" ? " | " + t2Name : "")
-                            }
-
-                            Image{
-                                id: _nextImage
-
+                            Row{
+                                width: parent.width
                                 height: parent.height
-                                width: height
 
-                                visible: playNext
+                                Label{
+                                    id: _text
 
-                                anchors.left: _text.right
 
-                                source: "icons/next3.svg"
+                                    text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
+                                           + ": " + t1Name
+                                           + (t2Name !== "" ? " | " + t2Name : "")
+                                            // + (midiExist ? "|have midi file" : "")
+                                }
+
+                                Image{
+                                    id: _midiImage
+
+                                    height: parent.height
+                                    width: height
+
+                                    visible: midiExist
+
+                                    // anchors.left: _text.right
+
+                                    source: "icons/midi.svg"
+                                }
+
+                                Image{
+                                    id: _nextImage
+
+                                    height: parent.height
+                                    width: height
+
+                                    visible: playNext
+
+                                    // anchors.left: _text.right
+
+                                    source: "icons/next.svg"
+                                }
                             }
 
                             states: State {

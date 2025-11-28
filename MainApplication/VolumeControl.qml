@@ -81,9 +81,10 @@ Rectangle {
                 contentItem: Label {
                     text: _chkBoxL.text
                     font: _chkBoxL.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    topPadding: _chkBoxL.indicator.height + _chkBoxL.spacing + 2
+                    // horizontalAlignment: Text.AlignHCenter
+                    // verticalAlignment: Text.AlignBottom
+                    leftPadding: 4
+                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 5
                 }
 
                 onClicked: {
@@ -102,11 +103,13 @@ Rectangle {
                 checked: true
 
                 contentItem: Label {
+
                     text: _chkBoxR.text
                     font: _chkBoxR.font
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 2
+                    // horizontalAlignment: Text.AlignHCenter
+                    // verticalAlignment: Text.AlignBottom
+                    leftPadding: 4
+                    topPadding: _chkBoxR.indicator.height + _chkBoxR.spacing + 5
                 }
 
                 onClicked: {

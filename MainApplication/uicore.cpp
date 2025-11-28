@@ -2,14 +2,13 @@
 
 #include <QStandardPaths>
 #include <QDesktopServices>
+#include <QFileInfo>
 
 #include <QProcess>
 #include <QCoreApplication>
 #include <QUrl>
 
 #include <QCollator>
-
-#include <QStandardPaths>
 
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
@@ -53,6 +52,13 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
 void UiCore::addPlaylist(QString plsName)
 {
+    QFileInfo dirInfo(m_workspaceDir.absolutePath() + "/PLAYLIST/" + plsName);
+    if(dirInfo.exists())
+    {
+        emit errorOccured(QObject::tr("Playlist already exist"));
+        return;
+    }
+
     m_workspaceDir.mkpath("PLAYLIST/" + plsName);
     readPlaylistFolder();
 

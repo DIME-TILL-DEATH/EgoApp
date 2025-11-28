@@ -101,7 +101,8 @@ qt_add_qml_module(${PROJECT_NAME}
         icons/sound-off.svg
         icons/sound-on.svg
         icons/stop.svg
-        icons/next1.svg icons/next2.svg icons/next3.svg
+        icons/next.svg
+        icons/midi.svg
 
 )
 
