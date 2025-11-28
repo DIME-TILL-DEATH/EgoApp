@@ -216,6 +216,10 @@ void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
 void UiCore::checkPlaylists()
 {
     QStringList result;
+
+    QRegularExpression englishRegex("^[a-zA-Z0-9\\\\:/._\\-\\s()&]+$");
+
+
     foreach(PlaylistModel* playlist, m_avaliablePlaylists)
     {
         quint32 songsCount = playlist->rowCount(QModelIndex());
@@ -247,6 +251,9 @@ void UiCore::checkPlaylists()
 
             if(!errString.isEmpty()) errors.append(errString);
 
+            if (!englishRegex.match(t1Path).hasMatch()) errors.append("\t"
+                              + QObject::tr("Song ") + QString::number(i+1) +QObject::tr(" track1 contains non latin symbols."));
+
             errString.clear();
 
             if(!t2PathInfo.exists() && m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString() != "")
@@ -254,6 +261,9 @@ void UiCore::checkPlaylists()
                 errString.append("\t");
                 errString.append(QObject::tr("Song ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
             }
+
+            if (!englishRegex.match(t2Path).hasMatch()) errors.append("\t"
+                              + QObject::tr("Song ") + QString::number(i+1) +QObject::tr(" track2 contains non latin symbols."));
 
             if(!errString.isEmpty()) errors.append(errString);
 

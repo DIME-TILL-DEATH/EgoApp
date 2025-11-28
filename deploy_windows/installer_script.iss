@@ -6,7 +6,7 @@
 #define MyAppNameUn "Uninstall AMT EgoGIG"
 
 ;#define MyAppVersionREPLACE
-#define MyAppVersion "1.1.3.0"
+#define MyAppVersion "1.1.4.0"
 #define MyAppPublisher "AMT Electronics"
 #define MyAppURL "http://www.amtelectronics.ru/"
 #define MyAppExeName "EgoGIG.exe"
