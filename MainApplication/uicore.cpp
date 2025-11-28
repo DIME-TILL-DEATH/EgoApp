@@ -283,7 +283,6 @@ QString UiCore::appLanguageCode()
 
 void UiCore::loadTranslator(QString languageCode)
 {
-    qDebug() << __FUNCTION__ << languageCode;
     QCoreApplication::removeTranslator(&m_translator);
 
     if(languageCode=="autoselect")
