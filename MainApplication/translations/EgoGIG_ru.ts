@@ -261,28 +261,40 @@
         <translation>Плейлист уже существует</translation>
     </message>
     <message>
-        <location filename="../uicore.cpp" line="240"/>
+        <location filename="../uicore.cpp" line="244"/>
         <location filename="../uicore.cpp" line="255"/>
+        <location filename="../uicore.cpp" line="262"/>
+        <location filename="../uicore.cpp" line="266"/>
         <source>Song </source>
         <translation>Песня </translation>
     </message>
     <message>
-        <location filename="../uicore.cpp" line="243"/>
+        <location filename="../uicore.cpp" line="247"/>
         <source> track 1 not settled</source>
         <translation> трек 1 не установлен</translation>
     </message>
     <message>
-        <location filename="../uicore.cpp" line="245"/>
+        <location filename="../uicore.cpp" line="249"/>
         <source> track 1 not found: </source>
         <translation> трек 1 не найден: </translation>
     </message>
     <message>
         <location filename="../uicore.cpp" line="255"/>
+        <source> track1 contains non latin symbols.</source>
+        <translation> трек1 содержит не латинские символы.</translation>
+    </message>
+    <message>
+        <location filename="../uicore.cpp" line="262"/>
         <source> track 2 not found: </source>
         <translation> трек2 не найден: </translation>
     </message>
     <message>
-        <location filename="../uicore.cpp" line="262"/>
+        <location filename="../uicore.cpp" line="266"/>
+        <source> track2 contains non latin symbols.</source>
+        <translation> трек2 содержит не латинские символы.</translation>
+    </message>
+    <message>
+        <location filename="../uicore.cpp" line="272"/>
         <source>Playlist is OK</source>
         <translation>Ошибок не найдено</translation>
     </message>
@@ -305,57 +317,57 @@
         <translation>Свернуть всё</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="132"/>
+        <location filename="../SdContentEditor.qml" line="131"/>
         <source>Set track 1 link</source>
         <translation>Установить трек 1</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="140"/>
+        <location filename="../SdContentEditor.qml" line="139"/>
         <source>Set track 2 link</source>
         <translation>Установить трек 2</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="151"/>
+        <location filename="../SdContentEditor.qml" line="150"/>
         <source>ADD FOLDER</source>
         <translation>ДОБАВИТЬ ПАПКУ</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="159"/>
+        <location filename="../SdContentEditor.qml" line="158"/>
         <source>ADD WAV</source>
         <translation>ДОБАВИТЬ WAV</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="167"/>
+        <location filename="../SdContentEditor.qml" line="166"/>
         <source>ADD MIDI</source>
         <translation>ДОБАВИТЬ MIDI</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="175"/>
+        <location filename="../SdContentEditor.qml" line="174"/>
         <source>DELETE</source>
         <translation>УДАЛИТЬ</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="184"/>
+        <location filename="../SdContentEditor.qml" line="183"/>
         <source>WAV player</source>
         <translation>Проигрыватель WAV</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="184"/>
+        <location filename="../SdContentEditor.qml" line="183"/>
         <source>, now playing: </source>
         <translation>, сейчас играет: </translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="223"/>
+        <location filename="../SdContentEditor.qml" line="222"/>
         <source>Enter folder name</source>
         <translation>Введите название папки</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="282"/>
+        <location filename="../SdContentEditor.qml" line="281"/>
         <source>Remove item?</source>
         <translation>Удалить объект?</translation>
     </message>
     <message>
-        <location filename="../SdContentEditor.qml" line="284"/>
+        <location filename="../SdContentEditor.qml" line="283"/>
         <source>Do you really want to delete object?</source>
         <translation>Вы точно хотите удалить объект?</translation>
     </message>
