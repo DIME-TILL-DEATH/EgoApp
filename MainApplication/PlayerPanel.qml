@@ -51,7 +51,7 @@ Rectangle {
                 Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
-                icon.source: "icons/play.svg"
+                icon.source: "qrc:/icons/play.svg"
 
                 onClicked: _root.playPause()
             }
@@ -60,7 +60,7 @@ Rectangle {
                 Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
-                icon.source: "icons/stop.svg"
+                icon.source: "qrc:/icons/stop.svg"
 
                 onClicked: _root.stop()
             }

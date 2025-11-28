@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>translations/EgoGIG_en.qm</file>
+        <file>translations/EgoGIG_ru.qm</file>
+    </qresource>
+</RCC>

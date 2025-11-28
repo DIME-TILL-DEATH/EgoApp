@@ -202,7 +202,7 @@ Item{
             }
 
             Shortcut{
-                id: _shortcutPlayEgo
+                id: _shortcutPlayWav
 
                 sequence: "space"
 
@@ -211,7 +211,7 @@ Item{
                 }
 
                 Component.onCompleted: {
-                    AppGlobals.playWavShortcut = _shortcutPlayEgo.nativeText
+                    AppGlobals.playWavShortcut = _shortcutPlayWav.nativeText
                 }
             }
         }

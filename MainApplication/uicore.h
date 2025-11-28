@@ -1,8 +1,8 @@
 #ifndef UICORE_H
 #define UICORE_H
 
-#include <QObject>
 #include <QSettings>
+#include <QTranslator>
 
 #include "sdcontentmodel.h"
 #include "playlistmodel.h"
@@ -18,6 +18,8 @@ class UiCore : public QObject
     Q_PROPERTY(QStringList avaliablePlaylists READ avaliablePlaylists NOTIFY workspaceChanged FINAL)
     Q_PROPERTY(QString workspacePath READ workspacePath NOTIFY workspaceChanged FINAL)
     Q_PROPERTY(qint16 currentPlaylistIndex READ currentPlaylistIndex WRITE setCurrentPlaylistIndex NOTIFY currentPlaylistIndexChanged FINAL)
+
+    Q_PROPERTY(QString appLanguageCode READ appLanguageCode NOTIFY translatorChanged)
 public:
     explicit UiCore(QObject *parent = nullptr);
 
@@ -40,27 +42,40 @@ public:
 
     Q_INVOKABLE void checkPlaylists();
 
-signals:
+    Q_INVOKABLE void setLanguage(QString languageCode);
+    QString appLanguageCode();
 
+signals:
     void workspaceChanged();
     void errorOccured(QString errorString);
 
     void currentPlaylistChanged();
-
     void currentPlaylistIndexChanged();
 
     void checkingPlaylistsFinished(QStringList result);
+
+    void translatorChanged(QString langaugeCode);
 
 private:
     SdContentModel m_sdContentModel{this};
     QDir m_workspaceDir;
     QSettings m_settings;
 
+    QTranslator m_translator;
+    QMap<QString, QString> pathFromCode
+    {
+        {"en", ":/translations/EgoGIG_en.qm"},
+        {"ru", ":/translations/EgoGIG_ru.qm"},
+    };
+
     QList<PlaylistModel*> m_avaliablePlaylists;
     PlaylistModel* m_currentPlaylist{nullptr};
 
     void readPlaylistFolder();
     quint16 m_currentPlaylistIndex{0};
+
+    void loadTranslator(QString languageCode);
+    void loadDefaultTranslator();
 };
 
 #endif // UICORE_H

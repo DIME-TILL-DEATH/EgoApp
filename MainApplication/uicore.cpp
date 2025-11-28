@@ -1,5 +1,6 @@
 #include "uicore.h"
 
+#include <QResource>
 #include <QStandardPaths>
 #include <QDesktopServices>
 #include <QFileInfo>
@@ -31,6 +32,14 @@ UiCore::UiCore(QObject *parent)
 
     readPlaylistFolder();
     setCurrentPlaylistIndex(0);
+
+    QString appLanguage = m_settings.value("application_language", "autoselect").toString();
+
+    if(appLanguage=="autoselect")
+    {
+        appLanguage = QLocale().name().left(2);
+    }
+    setLanguage(appLanguage);
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
@@ -227,7 +236,8 @@ void UiCore::checkPlaylists()
             QString errString;
             if(!t1PathInfo.exists())
             {
-                errString.append(QObject::tr("\tSong ") + QString::number(i+1));
+                errString.append("\t");
+                errString.append(QObject::tr("Song ") + QString::number(i+1));
 
                 if(m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString() == "")
                     errString.append(QObject::tr(" track 1 not settled"));
@@ -241,14 +251,15 @@ void UiCore::checkPlaylists()
 
             if(!t2PathInfo.exists() && m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString() != "")
             {
-                errString.append(QObject::tr("\tSong ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
+                errString.append("\t");
+                errString.append(QObject::tr("Song ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
             }
 
             if(!errString.isEmpty()) errors.append(errString);
 
         }
 
-        if(errors.isEmpty()) result.append(QObject::tr("\tPlaylist is OK"));
+        if(errors.isEmpty()) result.append("\t" + QObject::tr("Playlist is OK"));
         else result.append(errors);
 
         result.append("\n");
@@ -257,6 +268,53 @@ void UiCore::checkPlaylists()
     emit checkingPlaylistsFinished(result);
 }
 
+void UiCore::setLanguage(QString languageCode)
+{
+    m_settings.setValue("application_language", languageCode);
+    m_settings.sync();
+
+    loadTranslator(languageCode);
+}
+
+QString UiCore::appLanguageCode()
+{
+    return m_settings.value("application_language", "en").toString();
+}
+
+void UiCore::loadTranslator(QString languageCode)
+{
+    qDebug() << __FUNCTION__ << languageCode;
+    QCoreApplication::removeTranslator(&m_translator);
+
+    if(languageCode=="autoselect")
+    {
+        loadDefaultTranslator();
+        return;
+    }
+
+    if (m_translator.load(pathFromCode.value(languageCode)))
+    {
+        qDebug() << __FUNCTION__ << true;
+        QCoreApplication::installTranslator(&m_translator);
+
+        emit translatorChanged(languageCode);
+    }
+
+    QQmlEngine* engine = qmlEngine(this);
+    if(engine)
+    {
+        engine->retranslate();
+    }
+}
+
+void UiCore::loadDefaultTranslator()
+{
+    if (m_translator.load(QLocale(), QLatin1String("EgoGIG"), QLatin1String("_"), ":/translations/"))
+    {
+        QCoreApplication::installTranslator(&m_translator);
+        emit translatorChanged(QLocale().nativeLanguageName());
+    }
+}
 
 void UiCore::openManualExternally(QString fileName)
 {

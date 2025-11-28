@@ -10,8 +10,6 @@ Rectangle {
 
     color: "transparent"
 
-    property alias hotKeysDialog: _hotKeysDialog
-
     ColumnLayout{
         anchors.fill: parent
 
@@ -157,7 +155,7 @@ Rectangle {
 
                                     // anchors.left: _text.right
 
-                                    source: "icons/midi.svg"
+                                    source: ":/icons/midi.svg"
                                 }
 
                                 Image{
@@ -170,7 +168,7 @@ Rectangle {
 
                                     // anchors.left: _text.right
 
-                                    source: "icons/next.svg"
+                                    source: ":/icons/next.svg"
                                 }
                             }
 
@@ -229,6 +227,10 @@ Rectangle {
                         if(_btnAddSong.enabled)
                             _btnAddSong.clicked();
                     }
+
+                    Component.onCompleted: {
+                        AppGlobals.addSongShortcut = _shortcutAddSong.nativeText
+                    }
                 }
             }
 
@@ -251,6 +253,10 @@ Rectangle {
                     onActivated: {
                         if(_btnDeleteSong.enabled)
                             _btnDeleteSong.clicked();
+                    }
+
+                    Component.onCompleted: {
+                        AppGlobals.deleteSongShortcut = _shortcutDeleteSong.nativeText
                     }
                 }
             }
@@ -292,6 +298,10 @@ Rectangle {
                     _cbPlayNext.checked = !_cbPlayNext.checked
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+                }
+
+                Component.onCompleted: {
+                    AppGlobals.togglePlayNextShortcut = _shortcutPlayNext.nativeText
                 }
             }
         }
@@ -347,6 +357,10 @@ Rectangle {
                         if(_btnSetLinkT1.enabled)
                             _btnSetLinkT1.clicked();
                     }
+
+                    Component.onCompleted: {
+                        AppGlobals.setLink1Shortcut = _shortcutSetLink1.nativeText
+                    }
                 }
             }
         }
@@ -401,6 +415,10 @@ Rectangle {
                         if(_btnSetLinkT2.enabled)
                             _btnSetLinkT2.clicked();
                     }
+
+                    Component.onCompleted: {
+                        AppGlobals.setLink2Shortcut = _shortcutSetLink2.nativeText
+                    }
                 }
             }
 
@@ -443,6 +461,10 @@ Rectangle {
                 onActivated: {
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     SoundCore.playEgo(indx);
+                }
+
+                Component.onCompleted: {
+                    AppGlobals.playEgoShortcut = _shortcutPlayEgo.nativeText
                 }
             }
         }
@@ -506,19 +528,5 @@ Rectangle {
             UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);
             _listView.currentIndex = _listView.currentIndex - 1
         }
-    }
-
-    QmlDialogs.MessageDialog{
-        id: _hotKeysDialog
-
-        title: qsTr("Hotkeys")
-
-        text: qsTr("Add song: ") + _shortcutAddSong.nativeText + "\n" +
-              qsTr("Delete song: ") + _shortcutDeleteSong.nativeText + "\n" +
-              qsTr("Set track1 link: ") + _shortcutSetLink1.nativeText + "\n" +
-              qsTr("Set track2 link: ") + _shortcutSetLink2.nativeText + "\n" +
-              qsTr("Toggle play next: ") + _shortcutPlayNext.nativeText + "\n" +
-              qsTr("Play EGO song: ") + _shortcutPlayEgo.nativeText + "\n" +
-              qsTr("Play WAV file: ") + AppGlobals.playWavShortcut
     }
 }

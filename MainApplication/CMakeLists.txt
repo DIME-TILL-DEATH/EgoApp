@@ -69,6 +69,12 @@ set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt
 set_source_files_properties(AppGlobals.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
+qt6_add_resources(RCC_FILES
+    docs.qrc
+    icons.qrc
+    translations.qrc
+)
+
 qt_add_qml_module(${PROJECT_NAME}
     URI EgoApp
     VERSION 1.0
@@ -90,20 +96,8 @@ qt_add_qml_module(${PROJECT_NAME}
         soundplayer.h soundplayer.cpp
         uicore.h uicore.cpp
 
-    RESOURCES
-        docs.qrc
-        icons.qrc
-
-        icons/pause.svg
-        icons/play.svg
-        icons/sound-max.svg
-        icons/sound-min.svg
-        icons/sound-off.svg
-        icons/sound-on.svg
-        icons/stop.svg
-        icons/next.svg
-        icons/midi.svg
-
+        ${RCC_FILES}
+        QML_FILES MainMenu.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

@@ -43,7 +43,7 @@ Rectangle {
         Button{
             id: _muteButton
 
-            icon.source: muted ? "icons/sound-off.svg" : "icons/sound-on.svg"
+            icon.source: muted ? "qrc:/icons/sound-off.svg" : "qrc:/icons/sound-on.svg"
 
             property bool muted: false
 

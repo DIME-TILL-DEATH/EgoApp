@@ -28,81 +28,7 @@ ApplicationWindow {
     }
 
 
-    header: MenuBar{
-        id: mainMenu
-
-        Menu{
-            title: qsTr("File")
-
-            MenuSeparator{}
-            MenuItem{
-                text: qsTr("Quit")
-                onTriggered: {Qt.quit()}
-            }
-        }
-
-        Menu{
-            title: qsTr("Interface")
-
-            MenuItem{
-                text: qsTr("Show hotkeys")
-
-                onTriggered: _playlistEditor.hotKeysDialog.open()
-            }
-        }
-
-        Menu{
-            title: qsTr("Tools")
-
-            MenuItem{
-                text: qsTr("Legacy WAV convertor")
-
-                onTriggered: UiCore.runWavConvertor();
-            }
-        }
-
-        Menu{
-            title: qsTr("Help")
-
-            MenuItem{
-                text: qsTr("AMT web site")
-
-                onTriggered: {
-                    if(Qt.locale().name === "ru_RU")
-                        Qt.openUrlExternally("http://www.amtelectronics.ru/")
-                    else
-                        Qt.openUrlExternally("https://media.amtelectronics.com/")
-                }
-            }
-
-            MenuItem{
-                text: qsTr("EgoGig web page")
-
-                onTriggered: {
-                    if(Qt.locale().name === "ru_RU")
-                        Qt.openUrlExternally("https://media.amtelectronics.ru/amt-egogig-eg-4/")
-                    else
-                        Qt.openUrlExternally("https://media.amtelectronics.com/amt-egogig-eg-4/")
-                }
-            }
-
-            MenuItem{
-                id: menuDeviceManual
-
-                property string strManualBaseName: "EgoGIG_manual"
-
-                text: qsTr("Device manual")
-
-                onTriggered: {
-                    UiCore.openManualExternally(strManualBaseName)
-                }
-            }
-            MenuSeparator{}
-            MenuItem{
-                text: qsTr("About...")
-                onTriggered: aboutDialog.open()
-            }
-        }
+    header: MainMenu{
 
     }
 
@@ -300,17 +226,6 @@ ApplicationWindow {
                 _wait.close()
             }
         }
-    }
-
-    MessageDialog{
-        id: aboutDialog
-
-        title: qsTr("About...")
-        text: qsTr("AMT EgoGIG")
-        informativeText: qsTr("Desktop application") + "\n" +
-              qsTr("Version: ") + Qt.application.version + "\n"
-              + qsTr("(c) 2025")
-
     }
 
     MessageDialog{
