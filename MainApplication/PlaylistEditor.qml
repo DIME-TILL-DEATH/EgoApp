@@ -86,14 +86,17 @@ Rectangle {
                         property int modelIndex
                         property int visualIndex: DelegateModel.itemsIndex
 
+
                         onEntered: function (drag) {
-                            var from = drag.source.visualIndex;
-                            var to = _thing.visualIndex;
-                            _visualModel.items.move(from, to);
+                            if(drag.source.Drag.active){
+                                var from = drag.source.visualIndex;
+                                var to = _thing.visualIndex;
+                                _visualModel.items.move(from, to);
+                            }
                         }
 
                         onDropped: function (drag) {
-                            var from = modelIndex;
+                            var from = (drag.source as Item).dragParent.modelIndex;
                             var to = (drag.source as Item).visualIndex;
                             UiCore.currentPlaylist.moveSong(from, to);
                         }
@@ -123,12 +126,44 @@ Rectangle {
                                 drag.target: _thing
                                 drag.axis: Drag.YAxis
 
-                                onPressed:
+                                drag.minimumY: _listView.y
+                                drag.maximumY: _listView.y + _listView.height - height
+
+                                onPressed: (mouse) =>
                                 {
                                     _listView.currentIndex = index
-                                    _delegateRoot.modelIndex = visualIndex
+                                    _delegateRoot.modelIndex = _thing.visualIndex
                                 }
-                                onReleased: _thing.Drag.drop()
+
+                                onReleased:
+                                {
+
+                                    _thing.Drag.drop()
+                                }
+
+                                onPositionChanged: (mouse) =>
+                                {
+                                    if(!_slowDownTimer.running){
+                                        if(mapToItem(_listView ,mouse.x, mouse.y).y < _listView.y && _listView.contentY > _delegateRoot.height)
+                                        {
+                                            _listView.contentY = _listView.contentY - _delegateRoot.height
+                                        }
+
+                                        if(mapToItem(_listView ,mouse.x, mouse.y).y > _listView.y + _listView.height - height
+                                           && _listView.contentY < _listView.contentHeight - _listView.height - height)
+                                        {
+                                           _listView.contentY = _listView.contentY + _delegateRoot.height
+                                        }
+
+                                        _slowDownTimer.start();
+                                    }
+                                }
+
+                                Timer{
+                                    id: _slowDownTimer
+
+                                    interval: 10
+                                }
                             }
 
                             Row{
@@ -153,8 +188,6 @@ Rectangle {
 
                                     visible: midiExist
 
-                                    // anchors.left: _text.right
-
                                     source: "qrc:/icons/midi.svg"
                                 }
 
@@ -165,8 +198,6 @@ Rectangle {
                                     width: height
 
                                     visible: playNext
-
-                                    // anchors.left: _text.right
 
                                     source: "qrc:/icons/next.svg"
                                 }
