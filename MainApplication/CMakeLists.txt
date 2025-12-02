@@ -182,23 +182,30 @@ if(APPLE)
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
 
+
+        add_custom_command( TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND cp "-a"
+            "${RELEASE_APP_PATH}"
+            "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/")
+
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND codesign "--deep" "-f" "-s"
                 "${APPLE_CERTIFICATE}"
                 "--options"
                 "runtime"
-                "EgoGIG.app"
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
                 VERBATIM)
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${RELEASE_APP_PATH}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app")
 
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
                 COMMAND sh "package_script.sh")
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign "--deep" "-f" "-s"
+                "${APPLE_CERTIFICATE}"
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/EgoGIG.dmg"
+                VERBATIM)
     endif()
 endif()
 

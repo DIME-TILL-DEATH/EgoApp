@@ -84,7 +84,7 @@ sync
 hdiutil detach ${device}
 
 # finalize image
-hdiutil convert "${DMG_NAME_TMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_NAME}"
+hdiutil convert "${DMG_NAME_TMP}" -format UDRO -o "${DMG_NAME}"
 
 echo "*** Removing temporary image... "
 rm -f "${DMG_NAME_TMP}"
