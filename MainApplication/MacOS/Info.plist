@@ -7,7 +7,7 @@
 	<key>CFBundleIconFile</key>
 	<string>EgoGIG-App.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.AMT.EgoGIG</string>
+	<string>com.amtelectronics.EgoGIG</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>

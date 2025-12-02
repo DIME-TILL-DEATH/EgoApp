@@ -53,10 +53,6 @@ qt_add_executable(${PROJECT_NAME}
 # target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
 
 # )
 
@@ -104,7 +100,7 @@ qt_add_qml_module(${PROJECT_NAME}
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 set_target_properties(${PROJECT_NAME} PROPERTIES
-#    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.appEgoApp
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.EgoGIG
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -113,10 +109,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick
     QuickControls2 LinguistTools Svg Multimedia)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Quick
@@ -184,15 +176,25 @@ if(APPLE)
                 "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
                 "${RELEASE_APP_PATH}/Contents/MacOS/")
 
+        set(APPLE_CERTIFICATE "Apple Development: Dmitrii Kostiuchik (YQL3455AFP)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign "--deep" "-f" "-s"
+                "${APPLE_CERTIFICATE}"
+                "--options"
+                "runtime"
+                "EgoGIG.app"
+                VERBATIM)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${RELEASE_APP_PATH}"
                 "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app")
+
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
