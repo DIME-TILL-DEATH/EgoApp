@@ -215,26 +215,27 @@ if(LINUX)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/MainApplication/EgoGIG"
-            "${DEPLOY_PATH}/app/bin/EgoGIG")
+            "${CMAKE_BINARY_DIR}/MainApplication/EgoGig"
+            "${DEPLOY_PATH}app/bin/EgoGIG")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${PROJECT_SOURCE_DIR}/docs"
-            "${DEPLOY_PATH}/app/docs/")
+            "${DEPLOY_PATH}app/docs/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${DEPLOY_PATH}/libxcb-cursor.so.0"
-            "${DEPLOY_PATH}/app/lib/libxcb-cursor.so.0")
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${DEPLOY_PATH}/libs"
+            "${DEPLOY_PATH}/app/lib")
 
 
         # using cqtdeployer, installed from snap
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND cqtdeployer -bin "${DEPLOY_PATH}/app/bin/EgoGIG"
                                 -targetDir "${DEPLOY_PATH}/app/"
-                                -libDir "${PROJECT_SOURCE_DIR}/sox_lib/lib.linux"
-                                -qmlDir "${PROJECT_SOURCE_DIR}/Desktop/qml"
+                                -libDir "${PROJECT_SOURCE_DIR}/../sox_lib/lib.linux"
+                                -extralibs "libavformat"
+                                -qmlDir "${PROJECT_SOURCE_DIR}/"
                                 -qmake "~/Qt/6.8.1/gcc_64/bin/qmake")
 
         # make tarball archive

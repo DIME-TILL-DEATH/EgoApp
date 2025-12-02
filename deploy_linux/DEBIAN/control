@@ -1,0 +1,6 @@
+Package: EgoGIG
+Version: @MY_PRODUCT_NUMBER@.@MY_PRODUCT_VERSION@.@MY_BUILD_NUMBER@
+Maintainer: AMT electronics
+Architecture: all
+Description: Application for editing EgoGIG4 playlists
+
