@@ -5,9 +5,9 @@
 	<key>CFBundleExecutable</key>
 	<string>EgoGIG</string>
 	<key>CFBundleIconFile</key>
-	<string>spirit.icns</string>
+	<string>EgoGIG-App.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.AMT.EgoGIG</string>
+	<string>com.amtelectronics.EgoGIG</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>

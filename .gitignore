@@ -10,8 +10,6 @@
 *.obj
 *.orig
 *.rej
-*.so
-*.so.*
 *_pch.h.cpp
 *_resource.rc
 .#*
@@ -80,5 +78,12 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 /deploy_windows/release/
+/deploy_linux/app/
+/deploy_linux/debian_deploy/
 
 *.dmg
+*.tar.gz
+*.app
+*.deb
+
+MainApplication/.qmlls.ini

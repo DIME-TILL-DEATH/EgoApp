@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 3)
+set(MY_BUILD_NUMBER 5)
 
 if(WIN32)
     configure_file(
@@ -52,10 +52,6 @@ qt_add_executable(${PROJECT_NAME}
 
 # target_include_directories(${PROJECT_NAME} PUBLIC
 
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
 target_link_libraries(EgoGig PRIVATE Qt6::Core)
 
 # )
@@ -104,7 +100,7 @@ qt_add_qml_module(${PROJECT_NAME}
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 set_target_properties(${PROJECT_NAME} PROPERTIES
-#    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.appEgoApp
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.EgoGIG
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -113,10 +109,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick
     QuickControls2 LinguistTools Svg Multimedia)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Quick
@@ -184,19 +176,36 @@ if(APPLE)
                 "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
                 "${RELEASE_APP_PATH}/Contents/MacOS/")
 
+        set(APPLE_CERTIFICATE "Apple Development: Dmitrii Kostiuchik (YQL3455AFP)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
 
+
+        add_custom_command( TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND cp "-a"
+            "${RELEASE_APP_PATH}"
+            "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/")
+
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${RELEASE_APP_PATH}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app")
+                COMMAND codesign "--deep" "-f" "-s"
+                "${APPLE_CERTIFICATE}"
+                "--options"
+                "runtime"
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
+                VERBATIM)
+
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
                 COMMAND sh "package_script.sh")
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign "--deep" "-f" "-s"
+                "${APPLE_CERTIFICATE}"
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/EgoGIG.dmg"
+                VERBATIM)
     endif()
 endif()
 
@@ -206,26 +215,27 @@ if(LINUX)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/MainApplication/EgoGIG"
-            "${DEPLOY_PATH}/app/bin/EgoGIG")
+            "${CMAKE_BINARY_DIR}/MainApplication/EgoGig"
+            "${DEPLOY_PATH}app/bin/EgoGIG")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${PROJECT_SOURCE_DIR}/docs"
-            "${DEPLOY_PATH}/app/docs/")
+            "${DEPLOY_PATH}app/docs/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${DEPLOY_PATH}/libxcb-cursor.so.0"
-            "${DEPLOY_PATH}/app/lib/libxcb-cursor.so.0")
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${DEPLOY_PATH}/libs"
+            "${DEPLOY_PATH}/app/lib")
 
 
         # using cqtdeployer, installed from snap
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND cqtdeployer -bin "${DEPLOY_PATH}/app/bin/EgoGIG"
                                 -targetDir "${DEPLOY_PATH}/app/"
-                                -libDir "${PROJECT_SOURCE_DIR}/sox_lib/lib.linux"
-                                -qmlDir "${PROJECT_SOURCE_DIR}/Desktop/qml"
+                                -libDir "${PROJECT_SOURCE_DIR}/../sox_lib/lib.linux"
+                                -extralibs "libavformat"
+                                -qmlDir "${PROJECT_SOURCE_DIR}/"
                                 -qmake "~/Qt/6.8.1/gcc_64/bin/qmake")
 
         # make tarball archive

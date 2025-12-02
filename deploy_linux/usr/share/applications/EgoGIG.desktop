@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.1.5
+Type=Application
+Name=EgoGIG
+Icon=EgoGIG
+Exec=/usr/local/EgoGIG/EgoGIG.sh
+Comment=Application for forming playlosts for EgoGIG4
+Terminal=false
