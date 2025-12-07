@@ -22,7 +22,7 @@ if(WIN32)
     )
 
 elseif(APPLE) # MacOS
-    project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
+    project(egogig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
     set(PLATFORM_SPECIFIC_SOURCES
        "${PROJECT_SOURCE_DIR}/icons/EgoGIG-App.icns")
@@ -49,12 +49,6 @@ qt_add_executable(${PROJECT_NAME}
     ${PLATFORM_SPECIFIC_SOURCES}
     ${RCC_FILES}
 )
-
-# target_include_directories(${PROJECT_NAME} PUBLIC
-
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-
-# )
 
 qt_policy(SET QTP0001 NEW)
 
@@ -100,7 +94,7 @@ qt_add_qml_module(${PROJECT_NAME}
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.EgoGIG
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.egogig
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -166,17 +160,18 @@ if(APPLE)
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${PROJECT_SOURCE_DIR}/docs"
-                "${RELEASE_APP_PATH}/Contents/MacOS/docs")
+        # ditto, no cp to preserve symlinks
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #         COMMAND ${CMAKE_COMMAND} -E copy_directory
+        #         "${PROJECT_SOURCE_DIR}/docs"
+        #         "${RELEASE_APP_PATH}/Contents/MacOS/docs")
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
-                "${RELEASE_APP_PATH}/Contents/MacOS/")
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #         COMMAND ${CMAKE_COMMAND} -E copy
+        #         "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
+        #         "${RELEASE_APP_PATH}/Contents/MacOS/")
 
-        set(APPLE_CERTIFICATE "Apple Development: Dmitrii Kostiuchik (YQL3455AFP)")
+        set(APPLE_CERTIFICATE_PKG "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
@@ -189,23 +184,18 @@ if(APPLE)
             "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/")
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "--deep" "-f" "-s"
-                "${APPLE_CERTIFICATE}"
-                "--options"
-                "runtime"
+                COMMAND codesign "-s" #"-f" #"--deep"
+                "${APPLE_CERTIFICATE_PKG}"
+                # "--options"
+                # "runtime"
                 "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
                 VERBATIM)
 
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
-                COMMAND sh "package_script.sh")
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #         COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
+        #         COMMAND sh "package_script.sh")
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "--deep" "-f" "-s"
-                "${APPLE_CERTIFICATE}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/EgoGIG.dmg"
-                VERBATIM)
     endif()
 endif()
 
