@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 5)
+set(MY_BUILD_NUMBER 6)
 
 if(WIN32)
     configure_file(
@@ -161,21 +161,19 @@ if(APPLE)
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
 
         # ditto, no cp to preserve symlinks
-        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        #         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        #         "${PROJECT_SOURCE_DIR}/docs"
-        #         "${RELEASE_APP_PATH}/Contents/MacOS/docs")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${PROJECT_SOURCE_DIR}/docs"
+                "${RELEASE_APP_PATH}/Contents/Resources/docs")
 
         # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         #         COMMAND ${CMAKE_COMMAND} -E copy
         #         "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
         #         "${RELEASE_APP_PATH}/Contents/MacOS/")
 
-        set(APPLE_CERTIFICATE_PKG "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
-                                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/")
 
 
         add_custom_command( TARGET ${PROJECT_NAME}  POST_BUILD
@@ -183,14 +181,28 @@ if(APPLE)
             "${RELEASE_APP_PATH}"
             "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/")
 
+        set(DEPLOY_PATH /Applications)
+        add_custom_command( TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND cp "-a"
+            "${RELEASE_APP_PATH}"
+            "${DEPLOY_PATH}")
+
+        set(APPLE_CERTIFICATE_DELIVER "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "-s" #"-f" #"--deep"
-                "${APPLE_CERTIFICATE_PKG}"
+                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_DELIVER}"
                 # "--options"
                 # "runtime"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
+                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
+                "${DEPLOY_PATH}/EgoGIG.app" #"${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
                 VERBATIM)
 
+            set(APPLE_CERTIFICATE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                    COMMAND productbuild "--sign"
+                    "${APPLE_CERTIFICATE_PKG}"
+                    "--component" "${DEPLOY_PATH}/EgoGig.app"
+                    "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGig.pkg"
+                    VERBATIM)
 
         # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         #         COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"

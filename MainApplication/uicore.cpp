@@ -382,6 +382,10 @@ void UiCore::openManualExternally(QString fileName)
     proc.setProgram("evince");
     proc.setArguments(QStringList(filePath));
     proc.startDetached();
+#elif defined(Q_OS_MACOS)
+    QString filePath =  QCoreApplication::applicationDirPath() + "/../Resources/docs/" + fullFileName;
+    qDebug() << filePath;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
 #else
     QString filePath =  QCoreApplication::applicationDirPath() + "/docs/" + fullFileName;
     QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
