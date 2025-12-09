@@ -84,6 +84,7 @@ CMakeLists.txt.user*
 *.dmg
 *.tar.gz
 *.app
+*.pkg
 *.deb
 
 MainApplication/.qmlls.ini

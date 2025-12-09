@@ -137,8 +137,8 @@ Rectangle {
 
                                 onReleased:
                                 {
-
                                     _thing.Drag.drop()
+                                    _listView.currentIndex = index
                                 }
 
                                 onPositionChanged: (mouse) =>

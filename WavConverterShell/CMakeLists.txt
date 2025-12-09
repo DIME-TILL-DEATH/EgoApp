@@ -6,14 +6,22 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(WavConverter VERSION 1.0.0 LANGUAGES CXX)
 
 if(WIN32)
+    project(WavConverter VERSION 1.0.0 LANGUAGES CXX)
     add_compile_definitions(WAVCONVERTERLIB_LIBRARY)
 
     set(PLATFORM_SPECIFIC_SOURCES
         resources.rc
     )
+
+elseif(APPLE)
+    project(wavconverter VERSION 1.0.0 LANGUAGES CXX)
+
+    set(PLATFORM_SPECIFIC_SOURCES
+       "${PROJECT_SOURCE_DIR}/icons/EgoGig-Converter.icns")
+
+    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 
 qt6_add_resources(RCC_FILES
@@ -26,6 +34,14 @@ qt_add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE
 
     ${RCC_FILES}
     ${PLATFORM_SPECIFIC_SOURCES}
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -44,19 +60,34 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 )
 
 if(WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.exe"
-            "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe")
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.exe"
+                "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe")
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE} "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe"
-                                --qmldir "${PROJECT_SOURCE_DIR}/")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${WINDEPLOYQT_EXECUTABLE} "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverter.exe"
+                                    --qmldir "${PROJECT_SOURCE_DIR}/")
+    endif()
+endif()
+
+if(APPLE)
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+        set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
+                    "-qmldir=${PROJECT_SOURCE_DIR}/"
+                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
+    endif()
 endif()
 
 if(LINUX)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter"
-            "${PROJECT_SOURCE_DIR}/../deploy_linux/app/bin/WavConverter")
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter"
+                "${PROJECT_SOURCE_DIR}/../deploy_linux/app/bin/WavConverter")
+    endif()
 endif()
