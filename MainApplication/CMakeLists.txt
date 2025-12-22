@@ -204,6 +204,8 @@ if(APPLE)
         set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+                "--options=runtime"
+                "--timestamp"
                 "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
                 "${DEPLOY_PATH}/EgoGIG.app"
                 # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
@@ -216,6 +218,7 @@ if(APPLE)
             "--component" "${DEPLOY_PATH}/EgoGig.app"
             "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
             VERBATIM)
+
     endif()
 endif()
 
