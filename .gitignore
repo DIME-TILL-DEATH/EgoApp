@@ -76,10 +76,11 @@ CMakeLists.txt.user*
 .pch/
 .rcc/
 .uic/
-/build*/
-/deploy_windows/release/
-/deploy_linux/app/
-/deploy_linux/debian_deploy/
+build*/
+deploy_windows/release/
+deploy_windows/installer_script.iss
+deploy_linux/app/
+deploy_linux/debian_deploy/
 
 *.dmg
 *.tar.gz
@@ -88,3 +89,5 @@ CMakeLists.txt.user*
 *.deb
 
 MainApplication/.qmlls.ini
+MainApplication/version.rc
+

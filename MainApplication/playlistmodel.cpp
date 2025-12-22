@@ -116,7 +116,7 @@ bool PlaylistModel::insertRows(int position, int count, const QModelIndex &paren
                 oldSong[i].fileNum++;
 
                 if(m_songList.size() == i+1) break;
-                if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) break;
+                if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) continue;
             }
 
             m_songList.insert(position, newSong);
@@ -157,7 +157,7 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
             oldSong[i].fileNum--;
 
             if(m_songList.size() == i+1) break;
-            if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) break;
+            if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) continue;
         }
     }
 
