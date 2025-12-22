@@ -18,7 +18,11 @@ UiCore::UiCore(QObject *parent)
 
     if(workspacePath.isEmpty())
     {
+#ifdef Q_OS_MACOS
+        workspacePath = QDir::homePath() + "/Documents";
+#else
         workspacePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#endif
         workspacePath += "/AMT/EgoGIG/Default_workspace/";
 
         QDir dir(workspacePath);
