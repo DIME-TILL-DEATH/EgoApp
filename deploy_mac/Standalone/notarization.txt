@@ -1,0 +1,20 @@
+
+Step 1:
+xcrun notarytool submit EgoGig.pkg --keychain-profile "xtxf-uant-kdvf-scdw" --wait
+
+Step 2:
+xcrun stapler staple "EgoGig.pkg"
+
+Step error:
+xcrun notarytool log ***id*** --keychain-profile "xtxf-uant-kdvf-scdw" developer_log.json
+
+
+Check notarisation:
+stapler validate myfile.pkg 
+
+
+Check pkg sign: 
+pkgutil --check-signature EgoGig.pkg
+
+Check app sign:
+codesign -dv --verbose=4 /Applications/EgoGIG.app

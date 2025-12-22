@@ -18,7 +18,11 @@ UiCore::UiCore(QObject *parent)
 
     if(workspacePath.isEmpty())
     {
+#ifdef Q_OS_MACOS
+        workspacePath = QDir::homePath() + "/Documents";
+#else
         workspacePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#endif
         workspacePath += "/AMT/EgoGIG/Default_workspace/";
 
         QDir dir(workspacePath);
@@ -382,6 +386,10 @@ void UiCore::openManualExternally(QString fileName)
     proc.setProgram("evince");
     proc.setArguments(QStringList(filePath));
     proc.startDetached();
+#elif defined(Q_OS_MACOS)
+    QString filePath =  QCoreApplication::applicationDirPath() + "/../Resources/docs/" + fullFileName;
+    qDebug() << filePath;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
 #else
     QString filePath =  QCoreApplication::applicationDirPath() + "/docs/" + fullFileName;
     QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
@@ -391,14 +399,16 @@ void UiCore::openManualExternally(QString fileName)
 void UiCore::runWavConvertor()
 {
 #ifdef Q_OS_WIN
-    QProcess WavConvertorProcess;
-    WavConvertorProcess.setWorkingDirectory(QCoreApplication::applicationDirPath());
-    WavConvertorProcess.setProgram("WavConverter.exe");
-    WavConvertorProcess.startDetached();
+    QProcess wavConvertorProcess;
+    wavConvertorProcess.setWorkingDirectory(QCoreApplication::applicationDirPath());
+    wavConvertorProcess.setProgram("WavConverter.exe");
+    wavConvertorProcess.startDetached();
 #endif
 
 #ifdef Q_OS_MACOS
-    QProcess irConvertorProcess;
+    QProcess wavConvertorProcess;
+    wavConvertorProcess.setProgram(QCoreApplication::applicationDirPath() + "/wavconverter.app");
+    wavConvertorProcess.startDetached();
 #endif
 
 #ifdef Q_OS_LINUX

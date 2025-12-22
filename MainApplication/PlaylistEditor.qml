@@ -72,10 +72,24 @@ Rectangle {
 
                 spacing: 2
 
+                DropArea{
+                    anchors.fill: parent
+
+                    z: -5
+
+                    onDropped: function (drag) {
+                        // handling drop cancel
+                        var from = drag.source.visualIndex;
+                        var to = (drag.source as Item).dragParent.modelIndex;
+                        _visualModel.items.move(from, to);
+                    }
+                }
+
                 model: DelegateModel{
                     id: _visualModel
 
                     model: UiCore.currentPlaylist
+
 
                     delegate: DropArea{
                         id: _delegateRoot
@@ -127,7 +141,9 @@ Rectangle {
                                 drag.axis: Drag.YAxis
 
                                 drag.minimumY: _listView.y
-                                drag.maximumY: _listView.y + _listView.height - height
+                                drag.maximumY: _listView.y +_listView.height - height
+                                               // (_listView.contentHeight < _listView.height ? _listView.contentHeight : _listView.height)
+                                               //      - height
 
                                 onPressed: (mouse) =>
                                 {
@@ -137,8 +153,9 @@ Rectangle {
 
                                 onReleased:
                                 {
-
+                                    console.log(_thing.Drag)
                                     _thing.Drag.drop()
+                                    _listView.currentIndex = index
                                 }
 
                                 onPositionChanged: (mouse) =>

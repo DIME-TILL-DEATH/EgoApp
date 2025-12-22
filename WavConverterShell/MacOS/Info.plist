@@ -6,24 +6,22 @@
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<key>CFBundleDisplayName</key>
-	<string>EgoGIG</string>
 	<key>CFBundleName</key>
-	<string>AMT EgoGig</string>
+	<string>AMT wavconverter</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.amtelectronics.EgoGIG</string>
+	<string>com.amtelectronics.wavconverter</string>
 	<key>CFBundleExecutable</key>
-	<string>egogig</string>
+	<string>wavconverter</string>
 	<key>CFBundleVersion</key>
-	<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+	<string>1.0.0</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
+	<string>1.0</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>12</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>AMT Electronics</string>
 	<key>CFBundleIconFile</key>
-	<string>EgoGIG-App.icns</string>
+	<string>EgoGig-Converter.icns</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleAllowMixedLocalizations</key>

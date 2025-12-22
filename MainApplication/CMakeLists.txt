@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 5)
+set(MY_BUILD_NUMBER 10)
 
 if(WIN32)
     configure_file(
@@ -22,12 +22,12 @@ if(WIN32)
     )
 
 elseif(APPLE) # MacOS
-    project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
+    project(egogig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
     set(PLATFORM_SPECIFIC_SOURCES
        "${PROJECT_SOURCE_DIR}/icons/EgoGIG-App.icns")
 
-   set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 elseif(LINUX)
     project(EgoGig VERSION ${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER} LANGUAGES CXX)
 
@@ -50,12 +50,6 @@ qt_add_executable(${PROJECT_NAME}
     ${RCC_FILES}
 )
 
-# target_include_directories(${PROJECT_NAME} PUBLIC
-
-target_link_libraries(EgoGig PRIVATE Qt6::Core)
-
-# )
-
 qt_policy(SET QTP0001 NEW)
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
@@ -66,7 +60,7 @@ set_source_files_properties(AppGlobals.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt6_add_resources(RCC_FILES
-    docs.qrc
+    # docs.qrc
     icons.qrc
     translations.qrc
 )
@@ -100,7 +94,7 @@ qt_add_qml_module(${PROJECT_NAME}
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.EgoGIG
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.egogig
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -169,43 +163,62 @@ if(APPLE)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${PROJECT_SOURCE_DIR}/docs"
-                "${RELEASE_APP_PATH}/Contents/MacOS/docs")
+                "${RELEASE_APP_PATH}/Contents/Resources/docs")
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app/Contents/MacOS/WavConverter"
-                "${RELEASE_APP_PATH}/Contents/MacOS/")
-
-        set(APPLE_CERTIFICATE "Apple Development: Dmitrii Kostiuchik (YQL3455AFP)")
+        # ditto, no cp to preserve symlinks
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
-                                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/")
 
+        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND ditto #cp "-a"
+            "${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter.app"
+            "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
 
-        add_custom_command( TARGET ${PROJECT_NAME}  POST_BUILD
-            COMMAND cp "-a"
+        set(DEPLOY_PATH /Applications/)
+        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND ditto #cp "-a"
             "${RELEASE_APP_PATH}"
-            "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/")
+            "${DEPLOY_PATH}/EgoGIG.app")
 
+        set(APPLE_CERTIFICATE_APP_STORE "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "--deep" "-f" "-s"
-                "${APPLE_CERTIFICATE}"
-                "--options"
-                "runtime"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/dmg_content/EgoGIG.app"
+                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
+                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
+                "${DEPLOY_PATH}/EgoGIG.app"
+                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
+                VERBATIM)
+
+        # pkgbuild --identifier "com.amtelectronics.egogig.pkg" --version $VERSION --component "${{ env.AU_PATH }}" --install-location "/Library/Audio/Plug-Ins/Components" "packaging/${{ env.PRODUCT_NAME }}.au.pkg"
+
+
+        set(APPLE_CERTIFICATE_APP_STORE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND productbuild "--sign"
+                "${APPLE_CERTIFICATE_APP_STORE_PKG}"
+                "--component" "${DEPLOY_PATH}/EgoGig.app"
+                "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.pkg"
                 VERBATIM)
 
 
+        set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND cd "${PROJECT_SOURCE_DIR}/../deploy_mac"
-                COMMAND sh "package_script.sh")
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "--deep" "-f" "-s"
-                "${APPLE_CERTIFICATE}"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/EgoGIG.dmg"
+                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+                "--options=runtime"
+                "--timestamp"
+                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
+                "${DEPLOY_PATH}/EgoGIG.app"
+                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
                 VERBATIM)
+
+        set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND productbuild "--sign"
+            "${APPLE_CERTIFICATE_STANDALONE_PKG}"
+            "--component" "${DEPLOY_PATH}/EgoGig.app"
+            "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
+            VERBATIM)
+
     endif()
 endif()
 

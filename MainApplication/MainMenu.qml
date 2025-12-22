@@ -59,10 +59,14 @@ MenuBar{
     Menu{
         title: qsTr("Tools")
 
+
         MenuItem{
             text: qsTr("Legacy WAV convertor")
 
-            onTriggered: UiCore.runWavConvertor();
+            onTriggered:
+            {
+                UiCore.runWavConvertor();
+            }
         }
     }
 
