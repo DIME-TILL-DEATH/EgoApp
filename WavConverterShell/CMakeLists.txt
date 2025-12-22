@@ -77,13 +77,17 @@ if(WIN32)
 endif()
 
 if(APPLE)
+    # set_target_properties(${PROJECT_NAME} PROPERTIES
+    #     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist")
+
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                     "-qmldir=${PROJECT_SOURCE_DIR}/"
-                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/")
+                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/"
+                    "-appstore-compliant")
     endif()
 endif()
 

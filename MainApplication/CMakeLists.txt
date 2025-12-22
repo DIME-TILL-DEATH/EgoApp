@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 10)
+set(MY_BUILD_NUMBER 11)
 
 if(WIN32)
     configure_file(
@@ -168,7 +168,8 @@ if(APPLE)
         # ditto, no cp to preserve symlinks
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/")
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
+                                    "-appstore-compliant")
 
         add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
             COMMAND ditto #cp "-a"
