@@ -15,10 +15,6 @@ if(WIN32)
         resources.rc
     )
 
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        WIN32_EXECUTABLE TRUE
-    )
-
 elseif(APPLE)
     project(wavconverter VERSION 1.0.0 LANGUAGES CXX)
 
@@ -27,12 +23,7 @@ elseif(APPLE)
 
     set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-        MACOSX_BUNDLE TRUE
-    )
+
 endif()
 
 qt6_add_resources(RCC_FILES
@@ -62,6 +53,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt6::Qml
 
     converter-lib
+)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
 )
 
 if(WIN32)
