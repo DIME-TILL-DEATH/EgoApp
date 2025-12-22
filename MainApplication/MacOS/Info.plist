@@ -6,6 +6,8 @@
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleDisplayName</key>
+	<string>EgoGIG</string>
 	<key>CFBundleName</key>
 	<string>AMT EgoGig</string>
 	<key>CFBundleIdentifier</key>

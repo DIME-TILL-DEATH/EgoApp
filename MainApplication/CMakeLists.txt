@@ -175,47 +175,47 @@ if(APPLE)
             "${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter.app"
             "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
 
-        # add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
-        #     COMMAND ditto #cp "-a"
-        #     "${RELEASE_APP_PATH}"
-        #     "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGIG.app")
-
-        # set(DEPLOY_PATH /Applications)
-        # add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
-        #     COMMAND rm "-r"
-        #     "${DEPLOY_PATH}/EgoGIG.app")
-
+        set(DEPLOY_PATH /Applications/)
         add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
             COMMAND ditto #cp "-a"
             "${RELEASE_APP_PATH}"
             "${DEPLOY_PATH}/EgoGIG.app")
 
-        set(APPLE_CERTIFICATE_DELIVER "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
+        set(APPLE_CERTIFICATE_APP_STORE "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_DELIVER}"
+                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
                 "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
                 "${DEPLOY_PATH}/EgoGIG.app"
                 # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
                 VERBATIM)
 
-            # pkgbuild --identifier "com.amtelectronics.egogig.pkg" --version $VERSION --component "${{ env.AU_PATH }}" --install-location "/Library/Audio/Plug-Ins/Components" "packaging/${{ env.PRODUCT_NAME }}.au.pkg"
+        # pkgbuild --identifier "com.amtelectronics.egogig.pkg" --version $VERSION --component "${{ env.AU_PATH }}" --install-location "/Library/Audio/Plug-Ins/Components" "packaging/${{ env.PRODUCT_NAME }}.au.pkg"
 
 
-        set(APPLE_CERTIFICATE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+        set(APPLE_CERTIFICATE_APP_STORE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND productbuild "--sign"
-                "${APPLE_CERTIFICATE_PKG}"
+                "${APPLE_CERTIFICATE_APP_STORE_PKG}"
                 "--component" "${DEPLOY_PATH}/EgoGig.app"
                 "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.pkg"
                 VERBATIM)
 
-        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        #         COMMAND pkgbuild "--sign"
-        #         "${APPLE_CERTIFICATE_PKG}"
-        #         "--component" "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
-        #         "--install-location" "/Applications"
-        #         "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.pkg"
-        #         VERBATIM)
+
+        set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
+                "${DEPLOY_PATH}/EgoGIG.app"
+                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
+                VERBATIM)
+
+        set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND productbuild "--sign"
+            "${APPLE_CERTIFICATE_STANDALONE_PKG}"
+            "--component" "${DEPLOY_PATH}/EgoGig.app"
+            "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
+            VERBATIM)
     endif()
 endif()
 
