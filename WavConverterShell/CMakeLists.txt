@@ -15,6 +15,10 @@ if(WIN32)
         resources.rc
     )
 
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+
 elseif(APPLE)
     project(wavconverter VERSION 1.0.0 LANGUAGES CXX)
 
@@ -22,6 +26,13 @@ elseif(APPLE)
        "${PROJECT_SOURCE_DIR}/icons/EgoGig-Converter.icns")
 
     set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        MACOSX_BUNDLE TRUE
+    )
 endif()
 
 qt6_add_resources(RCC_FILES
@@ -36,13 +47,7 @@ qt_add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE
     ${PLATFORM_SPECIFIC_SOURCES}
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
+
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ../WavConverterLib/
