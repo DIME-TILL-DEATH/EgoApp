@@ -207,9 +207,7 @@ if(APPLE)
                 COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
                 "--options=runtime"
                 "--timestamp"
-                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
                 "${DEPLOY_PATH}/EgoGIG.app"
-                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
                 VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
