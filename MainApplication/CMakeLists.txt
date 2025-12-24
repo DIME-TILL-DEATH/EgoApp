@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 10)
+set(MY_BUILD_NUMBER 12)
 
 if(WIN32)
     configure_file(
@@ -155,7 +155,8 @@ endif()
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist"
-        MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}")
+        MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER})
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
@@ -168,7 +169,8 @@ if(APPLE)
         # ditto, no cp to preserve symlinks
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                                    "-qmldir=${PROJECT_SOURCE_DIR}/")
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/"
+                                    "-appstore-compliant")
 
         add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
             COMMAND ditto #cp "-a"
@@ -206,9 +208,7 @@ if(APPLE)
                 COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
                 "--options=runtime"
                 "--timestamp"
-                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
                 "${DEPLOY_PATH}/EgoGIG.app"
-                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
                 VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
@@ -218,6 +218,10 @@ if(APPLE)
             "--component" "${DEPLOY_PATH}/EgoGig.app"
             "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
             VERBATIM)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND rm -r
+                "${DEPLOY_PATH}/EgoGig.app")
 
     endif()
 endif()
