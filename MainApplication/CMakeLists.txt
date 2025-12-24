@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 11)
+set(MY_BUILD_NUMBER 12)
 
 if(WIN32)
     configure_file(
@@ -155,7 +155,8 @@ endif()
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist"
-        MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}")
+        MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER})
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
@@ -217,6 +218,10 @@ if(APPLE)
             "--component" "${DEPLOY_PATH}/EgoGig.app"
             "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
             VERBATIM)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND rm -r
+                "${DEPLOY_PATH}/EgoGig.app")
 
     endif()
 endif()
