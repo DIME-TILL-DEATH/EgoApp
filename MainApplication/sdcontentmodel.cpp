@@ -95,6 +95,11 @@ void SdContentModel::currentSelectionChanged(QModelIndex currentIndex)
 
 void SdContentModel::addContent(QModelIndex parentIndex, QList<QUrl> filesPathList)
 {
+    QDir rootDir(rootPath());
+    qDebug() << rootDir << rootDir.absolutePath() << rootDir.exists("/SONGS");
+    if(!rootDir.exists("SONGS")) rootDir.mkdir("SONGS");
+
+
     QModelIndex realIndex = m_sdProxyModel.mapToSource(parentIndex);
     if(realIndex.row() == -1) realIndex = index(rootPath() + "/SONGS");
 

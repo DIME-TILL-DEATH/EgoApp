@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 12)
+set(MY_BUILD_NUMBER 13)
 
 if(WIN32)
     configure_file(
@@ -34,13 +34,8 @@ elseif(LINUX)
     add_definitions(-DVERSION_STRING="${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}")
 endif()
 
-# qt6_add_resources(RCC_FILES
-#     "images.qrc"
-#     "translations.qrc"
-# )
 
 find_package(Qt6 REQUIRED COMPONENTS Quick)
-
 
 
 qt_add_executable(${PROJECT_NAME}
@@ -90,16 +85,6 @@ qt_add_qml_module(${PROJECT_NAME}
         QML_FILES MainMenu.qml
 )
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.egogig
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick
     QuickControls2 LinguistTools Svg Multimedia)
@@ -117,14 +102,11 @@ set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/)
 set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "Import paths for Qt Creator's code model" FORCE)
 
 
-# include(GNUInstallDirs)
-# install(TARGETS ${PROJECT_NAME}
-#     BUNDLE DESTINATION .
-#     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-# )
-
 if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(DEPLOY_PATH ${PROJECT_SOURCE_DIR}/../deploy_windows/)
 
@@ -155,8 +137,10 @@ endif()
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist"
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.egogig
         MACOSX_BUNDLE_BUNDLE_VERSION "${MY_PRODUCT_NUMBER}.${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER})
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}
+        MACOSX_BUNDLE TRUE)
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
@@ -166,17 +150,18 @@ if(APPLE)
                 "${PROJECT_SOURCE_DIR}/docs"
                 "${RELEASE_APP_PATH}/Contents/Resources/docs")
 
-        # ditto, no cp to preserve symlinks
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
                                     "-appstore-compliant")
 
+        # ditto, no cp to preserve symlinks
         add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
             COMMAND ditto #cp "-a"
             "${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter.app"
             "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
 
+        #################### App store ######################
         set(DEPLOY_PATH /Applications/)
         add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
             COMMAND ditto #cp "-a"
@@ -191,9 +176,6 @@ if(APPLE)
                 # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
                 VERBATIM)
 
-        # pkgbuild --identifier "com.amtelectronics.egogig.pkg" --version $VERSION --component "${{ env.AU_PATH }}" --install-location "/Library/Audio/Plug-Ins/Components" "packaging/${{ env.PRODUCT_NAME }}.au.pkg"
-
-
         set(APPLE_CERTIFICATE_APP_STORE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND productbuild "--sign"
@@ -202,26 +184,46 @@ if(APPLE)
                 "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.pkg"
                 VERBATIM)
 
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND rm -r
+                "${DEPLOY_PATH}/EgoGig.app")
+
+        ##################### STANDALONE ###################################
+        set(DEPLOY_PATH_STANDALONE ${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/)
+        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+            COMMAND ditto #cp "-a"
+            "${RELEASE_APP_PATH}"
+            "${DEPLOY_PATH_STANDALONE}/Payload/EgoGIG.app")
 
         set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
                 "--options=runtime"
                 "--timestamp"
-                "${DEPLOY_PATH}/EgoGIG.app"
+                "${DEPLOY_PATH_STANDALONE}/Payload/EgoGIG.app"
                 VERBATIM)
+
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND pkgbuild
+            "--identifier" "com.amtelectronics.egogig"
+            "--root" "${DEPLOY_PATH_STANDALONE}/Payload/"
+            "--component-plist" "${DEPLOY_PATH_STANDALONE}/pkg.plist"
+            "--install-location" "/Applications"
+            "${DEPLOY_PATH_STANDALONE}/EgoGig-unsigned.pkg"
+            VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND productbuild "--sign"
             "${APPLE_CERTIFICATE_STANDALONE_PKG}"
-            "--component" "${DEPLOY_PATH}/EgoGig.app"
-            "${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/EgoGig.pkg"
+            "--package" "${DEPLOY_PATH_STANDALONE}/EgoGig-unsigned.pkg"
+            "${DEPLOY_PATH_STANDALONE}/EgoGig.pkg"
             VERBATIM)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND rm -r
-                "${DEPLOY_PATH}/EgoGig.app")
+                "${DEPLOY_PATH_STANDALONE}/Payload")
 
     endif()
 endif()

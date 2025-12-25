@@ -153,7 +153,6 @@ Rectangle {
 
                                 onReleased:
                                 {
-                                    console.log(_thing.Drag)
                                     _thing.Drag.drop()
                                     _listView.currentIndex = index
                                 }
