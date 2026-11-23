@@ -65,13 +65,23 @@ if(WIN32)
             "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverterLib.dll")
 endif()
 
+
 if(APPLE)
+    # libsox.a собрана с обработчиком CoreAudio, ему нужны системные фреймворки
+    find_library(COREAUDIO_FRAMEWORK CoreAudio REQUIRED)
+    find_library(AUDIOTOOLBOX_FRAMEWORK AudioToolbox REQUIRED)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+
     target_link_libraries(converter-lib PUBLIC
         Qt6::Core
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.mac/libsox.a
+        ${COREAUDIO_FRAMEWORK}
+        ${AUDIOTOOLBOX_FRAMEWORK}
+        ${COREFOUNDATION_FRAMEWORK}
     )
 endif()
+
 
 target_include_directories(converter-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/include/
