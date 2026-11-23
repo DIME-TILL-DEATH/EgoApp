@@ -3,6 +3,7 @@
 #include <QAudioDecoder>
 #include <QThread>
 
+
 bool SdProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent);
@@ -287,10 +288,34 @@ void SdContentModel::addMidi(QString dstPath, QList<QUrl> filesPathList)
     }
 }
 
+QString SdContentModel::fileNameAt(QModelIndex index) const
+{
+    if(!index.isValid()) return {};
+    return fileName(m_sdProxyModel.mapToSource(index));
+}
+
 void SdContentModel::deleteObject(QModelIndex index)
 {
-    QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
-    remove(realIndex);
+    if(!index.isValid()) return;
+
+    const QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
+    if(!realIndex.isValid()) return;
+
+    const QString path = filePath(realIndex);
+    if(path.isEmpty()) return;
+
+    // Только строго внутри <workspace>/SONGS (canonicalFilePath раскрывает symlink и "..")
+    const QString songsRoot = QFileInfo(rootPath() + "/SONGS").canonicalFilePath();
+    const QString target = QFileInfo(path).canonicalFilePath();
+    if(songsRoot.isEmpty() || target.isEmpty() || !target.startsWith(songsRoot + "/"))
+    {
+        emit errorOccured(QObject::tr("Refusing to delete an item outside of the SONGS folder"));
+        return;
+    }
+
+    if(!remove(realIndex))
+        emit errorOccured(QObject::tr("Can't delete: ") + target);
+
     m_sdProxyModel.invalidate();
     emit dataChanged(realIndex, realIndex);
 }

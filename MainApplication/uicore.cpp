@@ -11,10 +11,34 @@
 
 #include <QCollator>
 
+// Рабочая папка не должна быть корнем, домашней папкой или системной/библиотечной
+// директорией: приложение создаёт там SONGS/PLAYLIST и умеет удалять их содержимое.
+static bool isSafeWorkspace(const QString &path)
+{
+    const QString p = QDir::cleanPath(path);
+    if(p.isEmpty() || p == "/" || p == ".") return false;
+
+    const QString home = QDir::cleanPath(QDir::homePath());
+    if(p == home) return false;
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_LINUX)
+    static const QStringList forbidden = {"/System", "/Library", "/Applications", "/usr",
+                                          "/bin", "/sbin", "/etc", "/var", "/private", "/opt"};
+    for(const QString &f : forbidden)
+        if(p == f || p.startsWith(f + "/")) return false;
+
+    if(p == home + "/Library" || p.startsWith(home + "/Library/")) return false;
+#endif
+    return true;
+}
+
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
     QString workspacePath = m_settings.value("workspace_path").toString();
+
+    if(!workspacePath.isEmpty() && !isSafeWorkspace(workspacePath))
+        workspacePath.clear();   // небезопасный путь из старых настроек -> папка по умолчанию
 
     if(workspacePath.isEmpty())
     {
@@ -52,6 +76,12 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 #ifdef Q_OS_WINDOWS
     path = path.removeFirst();
 #endif
+    if(!isSafeWorkspace(path))
+    {
+        emit errorOccured(QObject::tr("This folder can't be used as a workspace"));
+        return;
+    }
+
     m_workspaceDir = QDir(path);
     m_sdContentModel.setWorkspace(path);
 
@@ -87,19 +117,27 @@ void UiCore::addPlaylist(QString plsName)
 
 void UiCore::deletePlaylist(quint16 index)
 {
-    QDir playlistDir = m_workspaceDir;
-    if(playlistDir.cd("PLAYLIST"))
-    {
-        if(index < m_avaliablePlaylists.size())
-        {
-            QDir plsDir(playlistDir.absolutePath() + "/" + m_avaliablePlaylists.at(index)->playlistName());
-            plsDir.removeRecursively();
-            readPlaylistFolder();
-            emit workspaceChanged();
+    if(index >= m_avaliablePlaylists.size()) return;
 
-            setCurrentPlaylistIndex(0);
-        }
+    const QString name = m_avaliablePlaylists.at(index)->playlistName();
+    if(name.isEmpty() || name.startsWith('.') || name.contains('/') || name.contains('\\')) return;
+
+    // Удаляем только <workspace>/PLAYLIST/<name> и только если он реально внутри PLAYLIST.
+    const QString plsRoot = QFileInfo(m_workspaceDir.absolutePath() + "/PLAYLIST").canonicalFilePath();
+    const QString target = QFileInfo(plsRoot + "/" + name).canonicalFilePath();
+    if(plsRoot.isEmpty() || target.isEmpty() || !target.startsWith(plsRoot + "/"))
+    {
+        emit errorOccured(QObject::tr("Refusing to delete a folder outside of PLAYLIST"));
+        return;
     }
+
+    if(!QDir(target).removeRecursively())
+        emit errorOccured(QObject::tr("Can't delete: ") + target);
+
+    readPlaylistFolder();
+    emit workspaceChanged();
+
+    setCurrentPlaylistIndex(0);
 }
 
 QString UiCore::workspacePath() const

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(MY_PRODUCT_NUMBER 1)
 set(MY_PRODUCT_VERSION 1)
-set(MY_BUILD_NUMBER 13)
+set(MY_BUILD_NUMBER 14)
 
 if(WIN32)
     configure_file(
@@ -71,6 +71,7 @@ qt_add_qml_module(${PROJECT_NAME}
         VolumeControl.qml
         AppGlobals.qml
         CheckResultWindow.qml
+        MainMenu.qml
 
     SOURCES
         decodestream.h decodestream.cpp
@@ -82,7 +83,6 @@ qt_add_qml_module(${PROJECT_NAME}
         uicore.h uicore.cpp
 
         ${RCC_FILES}
-        QML_FILES MainMenu.qml
 )
 
 

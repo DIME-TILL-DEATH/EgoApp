@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs as QmlDialogs
 
-// import CppObjects 1.0
 
 Rectangle {
     id: _root
@@ -287,6 +286,8 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("DELETE SONG")
+
+                enabled: _listView.currentIndex !== -1
 
                 onClicked: {
                     _removeSongConfirmationDialog.open()
