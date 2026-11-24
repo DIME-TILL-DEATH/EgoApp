@@ -142,8 +142,20 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${MY_PRODUCT_VERSION}.${MY_BUILD_NUMBER}
         MACOSX_BUNDLE TRUE)
 
+
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
+
+        add_dependencies(${PROJECT_NAME} wavconverter)
+
+        # Вся промежуточная упаковка — только внутри папки сборки.
+        set(MAC_STAGING ${CMAKE_BINARY_DIR}/mac_staging)
+        cmake_path(IS_PREFIX CMAKE_BINARY_DIR "${MAC_STAGING}" NORMALIZE MAC_STAGING_INSIDE_BUILD)
+        if(NOT MAC_STAGING_INSIDE_BUILD)
+            message(FATAL_ERROR "MAC_STAGING must be inside the build dir: ${MAC_STAGING}")
+        endif()
+
+        set(MAC_DEPLOY_DIR ${PROJECT_SOURCE_DIR}/../deploy_mac)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -162,68 +174,62 @@ if(APPLE)
             "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
 
         #################### App store ######################
-        set(DEPLOY_PATH /Applications/)
-        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
-            COMMAND ditto #cp "-a"
-            "${RELEASE_APP_PATH}"
-            "${DEPLOY_PATH}/EgoGIG.app")
+        set(MAS_DIR ${MAC_STAGING}/appstore)
+        set(MAS_APP ${MAS_DIR}/EgoGIG.app)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rm -rf "${MAS_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${MAS_DIR}"
+            COMMAND ditto "${RELEASE_APP_PATH}" "${MAS_APP}"
+            VERBATIM)
 
         set(APPLE_CERTIFICATE_APP_STORE "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
-                "--entitlements" "${PROJECT_SOURCE_DIR}/../deploy_mac/entitlements.xml"
-                "${DEPLOY_PATH}/EgoGIG.app"
-                # "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.app"
-                VERBATIM)
+            COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
+                    "--entitlements" "${MAC_DEPLOY_DIR}/entitlements.xml"
+                    "${MAS_APP}"
+            VERBATIM)
 
         set(APPLE_CERTIFICATE_APP_STORE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND productbuild "--sign"
-                "${APPLE_CERTIFICATE_APP_STORE_PKG}"
-                "--component" "${DEPLOY_PATH}/EgoGig.app"
-                "${PROJECT_SOURCE_DIR}/../deploy_mac/AppStore/EgoGig.pkg"
-                VERBATIM)
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND rm -r
-                "${DEPLOY_PATH}/EgoGig.app")
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${MAC_DEPLOY_DIR}/AppStore"
+            COMMAND productbuild "--sign" "${APPLE_CERTIFICATE_APP_STORE_PKG}"
+                    "--component" "${MAS_APP}" "/Applications"
+                    "${MAC_DEPLOY_DIR}/AppStore/EgoGig.pkg"
+            VERBATIM)
 
         ##################### STANDALONE ###################################
-        set(DEPLOY_PATH_STANDALONE ${PROJECT_SOURCE_DIR}/../deploy_mac/Standalone/)
-        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
-            COMMAND ditto #cp "-a"
-            "${RELEASE_APP_PATH}"
-            "${DEPLOY_PATH_STANDALONE}/Payload/EgoGIG.app")
+        set(STANDALONE_ROOT ${MAC_STAGING}/standalone)
+        set(STANDALONE_APP ${STANDALONE_ROOT}/Payload/EgoGIG.app)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rm -rf "${STANDALONE_ROOT}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${STANDALONE_ROOT}/Payload"
+            COMMAND ditto "${RELEASE_APP_PATH}" "${STANDALONE_APP}"
+            VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
-                "--options=runtime"
-                "--timestamp"
-                "${DEPLOY_PATH_STANDALONE}/Payload/EgoGIG.app"
-                VERBATIM)
-
+            COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+                    "--options=runtime" "--timestamp"
+                    "${STANDALONE_APP}"
+            VERBATIM)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND pkgbuild
-            "--identifier" "com.amtelectronics.egogig"
-            "--root" "${DEPLOY_PATH_STANDALONE}/Payload/"
-            "--component-plist" "${DEPLOY_PATH_STANDALONE}/pkg.plist"
-            "--install-location" "/Applications"
-            "${DEPLOY_PATH_STANDALONE}/EgoGig-unsigned.pkg"
+                    "--identifier" "com.amtelectronics.egogig"
+                    "--root" "${STANDALONE_ROOT}/Payload"
+                    "--component-plist" "${MAC_DEPLOY_DIR}/Standalone/pkg.plist"
+                    "--install-location" "/Applications"
+                    "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
             VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND productbuild "--sign"
-            "${APPLE_CERTIFICATE_STANDALONE_PKG}"
-            "--package" "${DEPLOY_PATH_STANDALONE}/EgoGig-unsigned.pkg"
-            "${DEPLOY_PATH_STANDALONE}/EgoGig.pkg"
+            COMMAND productbuild "--sign" "${APPLE_CERTIFICATE_STANDALONE_PKG}"
+                    "--package" "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
+                    "${MAC_DEPLOY_DIR}/Standalone/EgoGig.pkg"
             VERBATIM)
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND rm -r
-                "${DEPLOY_PATH_STANDALONE}/Payload")
 
     endif()
 endif()
