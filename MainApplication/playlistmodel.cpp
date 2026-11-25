@@ -33,6 +33,15 @@ int PlaylistModel::rowCount(const QModelIndex &parent) const
     return m_songList.size();
 }
 
+bool PlaylistModel::isTrackMissing(const QString &path) const
+{
+    if(path.isEmpty()) return false;
+
+    QDir wrkSpaceDir = m_dir;
+    wrkSpaceDir.cd("../..");
+    return !QFileInfo::exists(wrkSpaceDir.absolutePath() + path);
+}
+
 QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 {
     if(!index.isValid() || index.row() < 0 || index.row() >= rowCount(QModelIndex()))
@@ -74,6 +83,11 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
             return midiFileInfo.exists();
         }
 
+        case ListRoles::FileMissingRole: return isTrackMissing(m_songList.at(index.row()).t1Path)
+                                             || isTrackMissing(m_songList.at(index.row()).t2Path);
+        case ListRoles::T1MissingRole: return isTrackMissing(m_songList.at(index.row()).t1Path);
+        case ListRoles::T2MissingRole: return isTrackMissing(m_songList.at(index.row()).t2Path);
+
         default:
         {
             qWarning() << __FUNCTION__ << "no role";
@@ -93,6 +107,9 @@ QHash<int, QByteArray> PlaylistModel::roleNames() const
     roles[ListRoles::T1NameRole] = "t1Name";
     roles[ListRoles::T2NameRole] = "t2Name";
     roles[ListRoles::MidiExistRole] = "midiExist";
+    roles[ListRoles::FileMissingRole] = "fileMissing";
+    roles[ListRoles::T1MissingRole] = "t1Missing";
+    roles[ListRoles::T2MissingRole] = "t2Missing";
 
     return roles;
 }

@@ -20,7 +20,10 @@ public:
         T2PathRole,
         T1NameRole,
         T2NameRole,
-        MidiExistRole
+        MidiExistRole,
+        FileMissingRole,
+        T1MissingRole,
+        T2MissingRole
     };
     Q_ENUM(ListRoles)
 
@@ -55,6 +58,7 @@ private:
 
     QDir m_dir;
 
+    bool isTrackMissing(const QString& path) const;
     bool writeEgoFile(const Song& song);
     bool persistSongList(const QList<Song>& songList);
 

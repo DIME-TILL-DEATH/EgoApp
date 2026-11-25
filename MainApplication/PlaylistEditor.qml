@@ -99,6 +99,11 @@ Rectangle {
                         property int modelIndex
                         property int visualIndex: DelegateModel.itemsIndex
 
+                        property string trackT1Path: t1Path
+                        property string trackT2Path: t2Path
+                        property bool trackT1Missing: t1Missing
+                        property bool trackT2Missing: t2Missing
+
 
                         onEntered: function (drag) {
                             if(drag.source.Drag.active){
@@ -188,11 +193,11 @@ Rectangle {
                                 Label{
                                     id: _text
 
+                                    color: fileMissing ? "red" : palette.text
 
                                     text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
                                            + ": " + t1Name
                                            + (t2Name !== "" ? " | " + t2Name : "")
-                                            // + (midiExist ? "|have midi file" : "")
                                 }
 
                                 Image{
@@ -369,19 +374,8 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                Connections{
-                    target: UiCore.currentPlaylist
-
-                    function onDataChanged(){
-                        _t1PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
-                    }
-                }
-                Binding{
-                    target: _t1PathFiled
-                    property: "text"
-                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
-                    restoreMode: Binding.RestoreBinding
-                }
+                text: _listView.currentItem ? _listView.currentItem.trackT1Path : ""
+                color: _listView.currentItem && _listView.currentItem.trackT1Missing ? "red" : palette.text
             }
 
             Button{
@@ -428,19 +422,8 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                Connections{
-                    target: UiCore.currentPlaylist
-
-                    function onDataChanged(){
-                        _t2PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
-                    }
-                }
-                Binding{
-                    target: _t2PathFiled
-                    property: "text"
-                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
-                    restoreMode: Binding.RestoreBinding
-                }
+                text: _listView.currentItem ? _listView.currentItem.trackT2Path : ""
+                color: _listView.currentItem && _listView.currentItem.trackT2Missing ? "red" : palette.text
             }
 
             Button{
