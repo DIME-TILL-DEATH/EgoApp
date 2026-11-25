@@ -1,6 +1,19 @@
 #include "playlistmodel.h"
 
 #include <QFile>
+#include <limits>
+#include <QSaveFile>
+#include <QSet>
+
+namespace
+{
+bool incrementFileNum(quint16 &value)
+{
+    if(value == std::numeric_limits<quint16>::max()) return false;
+    ++value;
+    return true;
+}
+}
 
 PlaylistModel::PlaylistModel(QObject *parent)
     : QAbstractListModel{parent}
@@ -22,7 +35,7 @@ int PlaylistModel::rowCount(const QModelIndex &parent) const
 
 QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid() || index.row() > rowCount(index))
+    if(!index.isValid() || index.row() < 0 || index.row() >= rowCount(QModelIndex()))
     {
         return {};
     }
@@ -91,81 +104,104 @@ void PlaylistModel::refreshModel(const QList<Song> &songList)
 
 bool PlaylistModel::insertRows(int position, int count, const QModelIndex &parent)
 {
-    if(position < 0) position = 0;
+    if(parent.isValid() || count <= 0) return false;
 
-    beginInsertRows(parent, position, position + count - 1);
-    for(int rowNumber = 0; rowNumber < count; ++rowNumber)
+    const int insertPosition = qBound(0, position, m_songList.size());
+    QList<Song> updatedSongs = m_songList;
+
+    for(int offset = 0; offset < count; ++offset)
     {
+        const int currentPosition = insertPosition + offset;
         Song newSong;
-        Song* oldSong = m_songList.data();
-        // newSong.fileNum = 0;
 
-        if(position < m_songList.size()) //!m_songList.empty() &&
+        if(updatedSongs.isEmpty())
         {
-            newSong.fileNum = m_songList.at(position).fileNum + rowNumber;
+            newSong.fileNum = 0;
+        }
+        else if(currentPosition == updatedSongs.size())
+        {
+            quint16 lastNum = updatedSongs.last().fileNum;
+            if(!incrementFileNum(lastNum))
+            {
+                emit errorOccured(QObject::tr("Can't insert song: playlist numbering limit reached"));
+                return false;
+            }
+            newSong.fileNum = lastNum;
+        }
+        else if(currentPosition == 0)
+        {
+            if(updatedSongs.first().fileNum > 0)
+            {
+                newSong.fileNum = updatedSongs.first().fileNum - 1;
+            }
+            else
+            {
+                for(int i = updatedSongs.size() - 1; i >= 0; --i)
+                {
+                    quint16 value = updatedSongs[i].fileNum;
+                    if(!incrementFileNum(value))
+                    {
+                        emit errorOccured(QObject::tr("Can't insert song: playlist numbering limit reached"));
+                        return false;
+                    }
+                    updatedSongs[i].fileNum = value;
+                }
+                newSong.fileNum = 0;
+            }
         }
         else
         {
-            newSong.fileNum = m_songList.size();
-        }
-
-        if(position < m_songList.size())
-        {
-            for(int i = position + rowNumber; i < m_songList.size(); ++i)
+            const quint16 previousNum = updatedSongs.at(currentPosition - 1).fileNum;
+            const quint16 nextNum = updatedSongs.at(currentPosition).fileNum;
+            if(previousNum == std::numeric_limits<quint16>::max())
             {
-                oldSong[i].fileNum++;
-
-                if(m_songList.size() == i+1) break;
-                if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) continue;
+                emit errorOccured(QObject::tr("Can't insert song: playlist numbering limit reached"));
+                return false;
             }
 
-            m_songList.insert(position, newSong);
+            if(nextNum > previousNum + 1)
+            {
+                newSong.fileNum = previousNum + 1;
+            }
+            else
+            {
+                for(int i = updatedSongs.size() - 1; i >= currentPosition; --i)
+                {
+                    quint16 value = updatedSongs[i].fileNum;
+                    if(!incrementFileNum(value))
+                    {
+                        emit errorOccured(QObject::tr("Can't insert song: playlist numbering limit reached"));
+                        return false;
+                    }
+                    updatedSongs[i].fileNum = value;
+                }
+                newSong.fileNum = previousNum + 1;
+            }
         }
-        else
-        {
-            m_songList.append(newSong);
-        }
+
+        updatedSongs.insert(currentPosition, newSong);
     }
 
-    for(int i=0; i < m_songList.size(); ++i)
-    {
-        writeEgoFile(m_songList.at(i));
-    }
+    if(!persistSongList(updatedSongs)) return false;
 
+    beginInsertRows(parent, insertPosition, insertPosition + count - 1);
+    m_songList = updatedSongs;
     endInsertRows();
     return true;
 }
 
 bool PlaylistModel::removeRows(int position, int count, const QModelIndex &parent)
 {
-    if(position < 0 || position > m_songList.size() - 1) return false;
+    if(parent.isValid() || count <= 0 || position < 0 || position + count > m_songList.size()) return false;
+
+    QList<Song> updatedSongs = m_songList;
+    for(int i = 0; i < count; ++i)
+        updatedSongs.removeAt(position);
+
+    if(!persistSongList(updatedSongs)) return false;
 
     beginRemoveRows(parent, position, position + count - 1);
-    foreach(auto song, m_songList)
-    {
-        QFile file(m_dir.absolutePath() + "/" + QString::number(song.fileNum) + ".ego");
-        file.remove();
-    }
-
-    for(int rowNumber = 0; rowNumber < count; ++rowNumber)
-    {
-        m_songList.remove(position, 1);
-
-        Song* oldSong = m_songList.data();
-        for(int i = position + rowNumber; i < m_songList.size(); ++i)
-        {
-            oldSong[i].fileNum--;
-
-            if(m_songList.size() == i+1) break;
-            if((oldSong[i+1].fileNum - oldSong[i].fileNum) != 1) continue;
-        }
-    }
-
-    for(int i=0; i < m_songList.size(); ++i)
-    {
-        writeEgoFile(m_songList.at(i));
-    }
-
+    m_songList = updatedSongs;
     endRemoveRows();
     return true;
 }
@@ -177,55 +213,28 @@ void PlaylistModel::moveSong(quint16 fromPosition, quint16 toPosition)
 
 bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild)
 {
+    if(sourceParent.isValid() || destinationParent.isValid()) return false;
+    if(count != 1) return false;
+    if(sourceRow < 0 || sourceRow >= m_songList.size()) return false;
+    if(destinationChild < 0 || destinationChild >= m_songList.size()) return false;
     if(sourceRow == destinationChild) return false;
 
+    QList<Song> updatedSongs = m_songList;
+    updatedSongs.move(sourceRow, destinationChild);
 
-    Song* song = m_songList.data();
-    if(sourceRow < destinationChild)
-    {
-        beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild + 1);
+    QList<quint16> numberingScheme;
+    numberingScheme.reserve(m_songList.size());
+    for(const Song &song : m_songList)
+        numberingScheme.append(song.fileNum);
 
-        for(int i = sourceRow; i <= destinationChild; i++)
-        {
-            if(i > m_songList.size() - 1) continue;
-            QFile file(m_dir.absolutePath() + "/" + QString::number(m_songList.at(i).fileNum) + ".ego");
+    for(int i = 0; i < updatedSongs.size(); ++i)
+        updatedSongs[i].fileNum = numberingScheme.at(i);
 
-            if(i == sourceRow)
-            {
-                file.remove();
-                song[i].fileNum = song[destinationChild].fileNum;
-            }
-            else
-            {
-                if(i != destinationChild) file.remove();
-                song[i].fileNum--;
-            }
-            writeEgoFile(song[i]);
-        }
-    }
-    else
-    {
-        beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild);
-        for(int i = sourceRow; i >= destinationChild; i--)
-        {
-            if(i < 0) continue;
-            QFile file(m_dir.absolutePath() + "/" + QString::number(m_songList.at(i).fileNum) + ".ego");
+    if(!persistSongList(updatedSongs)) return false;
 
-            if(i == sourceRow)
-            {
-                file.remove();
-                song[i].fileNum = song[destinationChild].fileNum;
-            }
-            else
-            {
-                if(i != destinationChild) file.remove();
-                song[i].fileNum++;
-            }
-            writeEgoFile(song[i]);
-        }
-    }
-    m_songList.move(sourceRow, destinationChild);
-
+    const int destinationRow = sourceRow < destinationChild ? destinationChild + 1 : destinationChild;
+    beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationRow);
+    m_songList = updatedSongs;
     endMoveRows();
     return true;
 }
@@ -233,32 +242,29 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
 void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)
 {
     if(!index.isValid()) return;
-    quint16 songNum = index.row();
+    const int songNum = index.row();
+    if(songNum < 0 || songNum >= m_songList.size()) return;
 
-    if(songNum > m_songList.size()) return;
+    QList<Song> updatedSongs = m_songList;
+    updatedSongs[songNum].setPath(trackNum, path);
+    if(!persistSongList(updatedSongs)) return;
 
-    Song* song = m_songList.data();
-    song[songNum].setPath(trackNum, path);
-
+    m_songList = updatedSongs;
     emit dataChanged(index, index);
-
-    writeEgoFile(song[songNum]);
-
 }
 
 void PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
 {
     if(!index.isValid()) return;
-    quint16 songNum = index.row();
+    const int songNum = index.row();
+    if(songNum < 0 || songNum >= m_songList.size()) return;
 
-    if(songNum > m_songList.size()) return;
+    QList<Song> updatedSongs = m_songList;
+    updatedSongs[songNum].playNext = state;
+    if(!persistSongList(updatedSongs)) return;
 
-    Song* song = m_songList.data();
-    song[songNum].playNext = state;
-
+    m_songList = updatedSongs;
     emit dataChanged(index, index);
-
-    writeEgoFile(song[songNum]);
 }
 
 QDir PlaylistModel::dir() const
@@ -271,12 +277,49 @@ void PlaylistModel::setDir(const QDir &newDir)
     m_dir = newDir;
 }
 
-void PlaylistModel::writeEgoFile(const Song &song)
+bool PlaylistModel::writeEgoFile(const Song &song)
 {
-    QFile egoFile(m_dir.absolutePath() + "/" + QString::number(song.fileNum) + ".ego");
-    if(egoFile.open(QIODevice::WriteOnly))
+    const QString filePath = m_dir.absoluteFilePath(QString::number(song.fileNum) + ".ego");
+    QSaveFile egoFile(filePath);
+    if(!egoFile.open(QIODevice::WriteOnly))
     {
-        egoFile.write(song.generateFileContent());
-        egoFile.close();
+        emit errorOccured(QObject::tr("Can't open playlist file for writing: ") + filePath);
+        return false;
     }
+
+    const QByteArray content = song.generateFileContent();
+    if(egoFile.write(content) != content.size())
+    {
+        egoFile.cancelWriting();
+        emit errorOccured(QObject::tr("Can't write playlist file: ") + filePath);
+        return false;
+    }
+
+    if(!egoFile.commit())
+    {
+        emit errorOccured(QObject::tr("Can't finalize playlist file: ") + filePath);
+        return false;
+    }
+
+    return true;
+}
+
+bool PlaylistModel::persistSongList(const QList<Song> &songList)
+{
+    QSet<QString> expectedFiles;
+    for(const Song &song : songList)
+    {
+        expectedFiles.insert(QString::number(song.fileNum) + ".ego");
+        if(!writeEgoFile(song)) return false;
+    }
+
+    const QStringList existingFiles = m_dir.entryList(QStringList() << "*.ego", QDir::Files, QDir::Name);
+    for(const QString &fileName : existingFiles)
+    {
+        if(expectedFiles.contains(fileName)) continue;
+        if(!QFile::remove(m_dir.absoluteFilePath(fileName)))
+            emit errorOccured(QObject::tr("Can't remove stale playlist file: ") + fileName);
+    }
+
+    return true;
 }

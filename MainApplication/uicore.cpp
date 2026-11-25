@@ -220,6 +220,7 @@ void UiCore::readPlaylistFolder()
             }
             PlaylistModel* playListModel = new PlaylistModel(songList, this);
             playListModel->setPlaylistName(plsDirName);
+            connect(playListModel, &PlaylistModel::errorOccured, this, &UiCore::errorOccured);
 
             QDir playlistDir(roorPlstDir);
             playlistDir.cd(plsDirName);
