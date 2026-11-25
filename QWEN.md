@@ -1,0 +1,1 @@
+Before working, read `AGENTS.md` and `docs/AI_CONTEXT.md`. Follow data-integrity, Qt Model/View, resource-lifetime, audio, and platform rules. Do not modify third-party SoX internals; Qt is the primary audio path.

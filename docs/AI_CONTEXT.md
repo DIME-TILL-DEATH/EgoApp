@@ -1,0 +1,43 @@
+# EgoApp Project Context
+
+EgoApp is AMT's desktop application for AMT EgoGig4 users. It manages playlists and prepares media on an SD card or local folder for later transfer.
+
+## Constraints
+- User-data preservation is critical.
+- macOS: Qt 6.7, minimum macOS 11.
+- Windows: Qt 6.11/6.12, minimum Windows 10 1809.
+- Linux: Qt 6.11/6.12; mininmum Ubuntu 22.04.
+- Primary audio conversion uses Qt.
+- SoX converter is legacy; do not modify third-party SoX library internals.
+
+## Source map
+Verify paths against the current tree.
+| Area | Files |
+|---|---|
+| PlaylistModel | `MainApplication/playlistmodel.cpp/.h` |
+| SdContentModel | `MainApplication/sdcontentmodel.cpp/.h` |
+| UiCore | `MainApplication/uicore.cpp/.h` |
+| Player | `MainApplication/soundplayer.cpp/.h` |
+| Decoder | `MainApplication/decodestream.cpp/.h` |
+| Song | `MainApplication/song.cpp` |
+| QML editor | `MainApplication/PlaylistEditor.qml` |
+| Entry point | `MainApplication/main.cpp` |
+| Legacy resampler | `WavConverterLib/resampler.cpp/.h` |
+| Legacy shell | `WavConverterShell/CMakeLists.txt` |
+
+## Data paths
+**Playlists:** trace QML → UiCore → PlaylistModel → serialization/write; check indexes, signals, reorder, and save errors.
+
+**Audio import:** Qt is the primary conversion path. On failure, source data and previous destination assignment must remain available.
+
+**Playback:** check decoder/stream ownership, track switching, stop, errors, teardown, and buffering of long files.
+
+## Previous static-audit areas
+These are areas to re-check, not confirmed defects in current HEAD:
+- PlaylistModel index bounds.
+- Failure-safe `.ego` writes.
+- Preserving previous destination on failed import.
+- Import queue terminal state after errors.
+- Player/decoder lifetime and memory growth.
+- UiCore/SdContentModel responsibility split.
+- Tests and CI on minimum OS versions.

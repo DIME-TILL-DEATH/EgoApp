@@ -1,0 +1,1 @@
+Before working, read `AGENTS.md` and `docs/AI_CONTEXT.md`. Follow data-preservation, platform-compatibility, and testing requirements. Read relevant `docs/` files for architecture/platform changes. Source code is authoritative.
