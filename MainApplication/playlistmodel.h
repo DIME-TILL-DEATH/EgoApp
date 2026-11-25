@@ -46,13 +46,17 @@ public:
     QDir dir() const;
     void setDir(const QDir &newDir);
 
+signals:
+    void errorOccured(QString errorString);
+
 private:
     QString m_playlistName;
     QList<Song> m_songList;
 
     QDir m_dir;
 
-    void writeEgoFile(const Song& song);
+    bool writeEgoFile(const Song& song);
+    bool persistSongList(const QList<Song>& songList);
 
     bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
 };
