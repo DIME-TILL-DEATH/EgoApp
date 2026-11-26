@@ -541,7 +541,7 @@ Rectangle {
                 if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
                     return;
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                SoundCore.playEgo(indx);
+                SoundCore.PlayPause(SoundPlayer.PlayEgo, indx);
             }
 
             onStop: {
@@ -561,7 +561,7 @@ Rectangle {
                     if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
                         return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    SoundCore.playEgo(indx);
+                    SoundCore.PlayPause(SoundPlayer.PlayEgo, indx);
                 }
 
                 Component.onCompleted: {

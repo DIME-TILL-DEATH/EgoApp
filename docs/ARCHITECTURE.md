@@ -15,9 +15,13 @@ flowchart TD
  SD --> FS
  CORE --> IMP[Qt audio import / conversion]
  IMP --> FS
- QML --> PLAYER[SoundPlayer]
- PLAYER --> DEC[DecodeStream]
- DEC --> OUT[Qt audio output]
+ QML --> CORE
+ CORE --> PLAYER[SoundPlayer]
+ PLAYER --> DEC1[DecodeStream: Track 1]
+ PLAYER --> DEC2[DecodeStream: Track 2]
+ DEC1 --> MIX[AudioMixer]
+ DEC2 --> MIX
+ MIX --> OUT[QAudioSink]
  LEGACY[Legacy SoX converter] -. isolated legacy .-> FS
 ```
 
@@ -40,7 +44,7 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.
 - PlaylistModel: one playlist’s song state and Qt Model/View contracts. It delegates persistence to PlaylistStorage and does not implement file-format parsing or filesystem discovery. It receives the workspace root explicitly so media links resolve correctly regardless of playlist nesting depth. It also exposes a structural `corrupted` state derived only from `.ego` load, filename, and numbering errors; missing WAV/media files do not set this state. Corrupted playlists are read-only at every model mutation entry point and cannot be played; QML warns on selection and visually dims the selector entry and editor controls.
 - SdContentModel: selected media/folder contents.
-- SoundCore: validates playlist playback requests and resolves stored media paths through the PlaylistModel's workspace-rooted resolver; it rejects corrupted playlists and missing/non-file tracks. SoundPlayer/DecodeStream: playback, decoding, and resource ownership.
+- SoundCore: validates playlist playback requests and resolves stored media paths through the PlaylistModel's workspace-rooted resolver; it rejects corrupted playlists and missing/non-file tracks and exposes playback state to QML. SoundPlayer: coordinates decoder streams, the audio mixer, and QAudioSink state transitions. DecodeStream: decodes one source file, owns its source and temporary PCM spool, and reports data arrival, completion, duration, and errors. Its spool access is mutex-protected because decoder writes and audio-output reads may occur on different threads. AudioMixer: reads and mixes PCM from zero, one, or two streams, applies channel/volume/mute settings, and reports the consumed playback position; it has no audio-device dependency.
 - Qt audio conversion: primary audio-preparation path.
 - SoX: isolated legacy component, not the primary audio path; do not modify third-party internals.
 
@@ -62,8 +66,9 @@ Repository operations reject traversal and symbolic-link components and verify c
 3. Propagate file errors and do not report stale-file cleanup failure as success.
 4. Keep model data and signals consistent.
 5. Keep complex file operations and playlist validation out of QML and Qt item models.
-6. Make async-object and temporary-file lifetimes explicit.
-7. Never change the existing .ego format when implementing playlist features.
+6. Make async-object and temporary-file lifetimes explicit. Decoder starvation while a source is still decoding is not end-of-stream; output starts or resumes when decoded data arrives and playback finishes only after every active decoder has finished, its buffered PCM has drained, and QAudioSink has drained its output queue.
+7. Keep audio mixing independent from the physical audio output so it can be tested without an audio device.
+8. Never change the existing .ego format when implementing playlist features.
 
 ## File operations and recovery
 Individual .ego changes use QSaveFile. PlaylistStorage compares old and proposed records and writes only files whose numbered filename or serialized content changed. Multi-file updates first copy every affected existing .ego file into a temporary directory outside PLAYLIST, then replace/create changed records and remove obsolete records. If a write or removal fails, the storage layer attempts to restore every affected file; the reported error distinguishes successful restoration from incomplete restoration and advises checking the SD card. If restoration is incomplete, the temporary backup is deliberately retained and its path is included in the error message for manual recovery. This is rollback after a detected filesystem error, not crash-atomicity: abrupt power loss or process termination during a batch can still leave an intermediate state. Single-record changes do not create a backup directory.
@@ -118,3 +123,6 @@ A playlist song may link track 1 only, track 2 only, or both. At least one track
 
 ## Playlist QML safety
 All song-editing controls require an active playlist and a valid selected row. The Play next role binding returns an unchecked state when no row is selected, and a failed persistence operation restores the checkbox from the model. The playlist model intentionally supports moving one song per operation; grouped row moves are rejected.
+
+
+QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.

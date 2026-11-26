@@ -109,6 +109,8 @@ qt_add_qml_module(${PROJECT_NAME}
         ${QML_FILES}
 
     SOURCES
+        audiomixer.h
+        audiomixer.cpp
         decodestream.h
         decodestream.cpp
         playlists/playlistmodel.h

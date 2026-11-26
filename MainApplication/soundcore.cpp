@@ -33,6 +33,7 @@ SoundCore::SoundCore(QObject *parent)
     connect(&m_soundPlayer, &SoundPlayer::playbackDurationChanged, this, &SoundCore::trackDurationChanged);
     connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this, &SoundCore::errorOccured);
     connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
+    connect(&m_soundPlayer, &SoundPlayer::playbackStateChanged, this, &SoundCore::playbackStateChanged);
     connect(&m_soundPlayer, &SoundPlayer::playingFinished, this, &SoundCore::playingFinished);
 }
 
@@ -59,8 +60,17 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
                     return;
                 }
 
+    m_egoTrackPosition = 0;
+    m_sdTrackPosition = 0;
+    m_egoTrackDuration = 0;
+    m_sdTrackDuration = 0;
+    emit qmlTrackPositionChanged();
+    emit qmlTrackDurationChanged();
+
                 m_wavPlaying = sdModel->selectedPath();
                 m_egoSongPlaying = "";
+                m_playingEgoTrack1Path.clear();
+                m_playingEgoTrack2Path.clear();
                 emit playingStringChanged();
             }
         }
@@ -134,20 +144,68 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
         return;
     }
 
+    m_egoTrackPosition = 0;
+    m_sdTrackPosition = 0;
+    m_egoTrackDuration = 0;
+    m_sdTrackDuration = 0;
+    emit qmlTrackPositionChanged();
+    emit qmlTrackDurationChanged();
+
     const QString t1Name = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
     const QString t2Name = plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
     m_egoSongPlaying = t1Name.isEmpty() ? t2Name
                                         : (t2Name.isEmpty() ? t1Name : t1Name + "|" + t2Name);
+    m_playingEgoTrack1Path = t1StoredPath;
+    m_playingEgoTrack2Path = t2StoredPath;
 
     m_wavPlaying.clear();
     emit playingStringChanged();
 
 }
 
+void SoundCore::PlayPause(SoundPlayer::State mode, const QModelIndex &contentIndex)
+{
+    if (mode == SoundPlayer::PlayEgo)
+    {
+        const auto *model = qobject_cast<const PlaylistModel *>(contentIndex.model());
+        if (!model || !contentIndex.isValid())
+            return;
+
+        const QString track1 = model->data(contentIndex, PlaylistModel::T1PathRole).toString();
+        const QString track2 = model->data(contentIndex, PlaylistModel::T2PathRole).toString();
+        if (m_soundPlayer.state() == mode
+            && m_playingEgoTrack1Path == track1
+            && m_playingEgoTrack2Path == track2)
+            m_soundPlayer.pauseResume();
+        else
+            playEgo(contentIndex);
+        return;
+    }
+
+    if (mode == SoundPlayer::PlaySd)
+    {
+        const auto *proxy = qobject_cast<const SdProxyModel *>(contentIndex.model());
+        if (!proxy || !contentIndex.isValid())
+            return;
+
+        const auto *model = qobject_cast<const SdContentModel *>(proxy->sourceModel());
+        if (!model)
+            return;
+
+        const QString requestedPath = model->selectedPath();
+        if (m_soundPlayer.state() == mode && m_wavPlaying == requestedPath)
+            m_soundPlayer.pauseResume();
+        else
+            playContent(contentIndex);
+    }
+}
+
 void SoundCore::stop()
 {
     m_egoSongPlaying = "";
     m_wavPlaying = "";
+    m_playingEgoTrack1Path.clear();
+    m_playingEgoTrack2Path.clear();
     emit playingStringChanged();
 
     m_soundPlayer.stop();
@@ -155,28 +213,10 @@ void SoundCore::stop()
 
 void SoundCore::setPosition(SoundPlayer::State mode, qint64 msPosition)
 {
-    if(mode != m_soundPlayer.state()) return;
-
-    switch (m_soundPlayer.state())
-    {
-    case SoundPlayer::PlayEgo:
-    {
-        m_egoTrackPosition = msPosition;
-        break;
-    }
-
-    case SoundPlayer::PlaySd:
-    {
-        m_sdTrackPosition = msPosition;
-        break;
-    }
-
-    default:
-        break;
-    }
+    if (mode != m_soundPlayer.state())
+        return;
 
     m_soundPlayer.setPlayPosition(msPosition);
-    emit qmlTrackPositionChanged();
 }
 
 void SoundCore::trackDurationChanged(qint64 duration)
@@ -237,6 +277,16 @@ void SoundCore::playingFinished()
 }
 
 //----------------------Getters/setters-------------------
+bool SoundCore::playbackActive() const
+{
+    return m_soundPlayer.state() != SoundPlayer::Idle;
+}
+
+bool SoundCore::playbackPaused() const
+{
+    return m_soundPlayer.isPaused();
+}
+
 float SoundCore::track1Volume() const
 {
     return m_track1Volume;

@@ -2,23 +2,22 @@
 #define SOUNDPLAYER_H
 
 #include <QObject>
-#include <QIODevice>
-
 #include <QAudioFormat>
 #include <QAudioSink>
 
+#include <audiomixer.h>
 #include <decodestream.h>
 #include <qqmlintegration.h>
 
-class DecodeStream;
-
-class SoundPlayer : public QIODevice
+// QML_ELEMENT types must remain inheritable: Qt generates a QQmlElement<T> wrapper.
+class SoundPlayer : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
 
 public:
-    enum State{
+    enum State
+    {
         Idle,
         PlaySd,
         PlayEgo
@@ -26,50 +25,51 @@ public:
     Q_ENUM(State)
 
     explicit SoundPlayer(QObject *parent = nullptr);
-    ~SoundPlayer();
+    ~SoundPlayer() override = default;
 
-    bool play(State mode, const QString& track1Path, const QString& track2Path = "");
+    bool play(State mode, const QString &track1Path, const QString &track2Path = {});
     void pauseResume();
+    bool isPaused() const;
     void stop();
-
     void setPlayPosition(qint64 msPosition);
-
-    qint64 readData(char *data, qint64 maxSize) override;
-    qint64 writeData(const char *data, qint64 maxSize) override;
-    qint64 bytesAvailable() const override;
 
     State state() const;
 
-    void setTracksVolume(State mode, float track1Volume, float track2Volume = 1.0);
+    void setTracksVolume(State mode, float track1Volume, float track2Volume = 1.0f);
     void setTracksEn(State mode, bool track1LeftEnabled, bool track1RightEnabled,
-                        bool track2LeftEnabled = false, bool track2RightEnabled = false);
+                     bool track2LeftEnabled = false, bool track2RightEnabled = false);
     void setMuted(bool track1Mute, bool track2Mute, bool sdMute);
+
 signals:
+    void playbackStateChanged();
     void track1DurationChanged(qint64 duration);
     void track2DurationChanged(qint64 duration);
     void playbackDurationChanged(qint64 duration);
     void errorOccurred(QString errorString);
-
     void positionUpdated(qint64 newTimePosition);
-
     void playingFinished();
 
 private slots:
     void handlePlayerStateChanged(QtAudio::State state);
+    void handleTrackDataAvailable();
+    void handleTrackFinished();
 
 private:
+    bool allTracksFinishedAndDrained() const;
+    void startOutputIfReady();
+    void finishPlayback();
+    void updateMixerSettings();
+
     State m_state{State::Idle};
-
-    DecodeStream* m_streamTrack1;
-    DecodeStream* m_streamTrack2;
-
+    DecodeStream m_streamTrack1;
+    DecodeStream m_streamTrack2;
+    AudioMixer m_mixer;
     QAudioFormat m_format;
+    QAudioSink *m_audioSink{nullptr};
 
-    QAudioSink* m_audioSink{nullptr};
-
-    float egoT1Volume{1};
-    float egoT2Volume{1};
-    float sdVolume{1};
+    float egoT1Volume{1.0f};
+    float egoT2Volume{1.0f};
+    float sdVolume{1.0f};
 
     bool egoT1Muted{false};
     bool egoT2Muted{false};
@@ -82,22 +82,13 @@ private:
     bool sdLeftEnabled{true};
     bool sdRightEnabled{true};
 
-    qint64 samplePos{0};
+    bool m_hasTrack1{false};
+    bool m_hasTrack2{false};
+    bool m_stopping{false};
+    bool m_paused{false};
+    bool m_outputStarted{false};
     qint64 m_track1Duration{0};
     qint64 m_track2Duration{0};
-    bool m_stopping{false};
-
-    inline qint16 combineSamples(qint32 samp1, qint32 samp2)
-    {
-        const auto sum = samp1 + samp2;
-        if (std::numeric_limits<qint16>::max() < sum)
-            return std::numeric_limits<qint16>::max();
-
-        if (std::numeric_limits<qint16>::min() > sum)
-            return std::numeric_limits<qint16>::min();
-
-        return sum;
-    }
 };
 
 #endif // SOUNDPLAYER_H

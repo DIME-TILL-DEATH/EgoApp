@@ -44,7 +44,7 @@ Verify paths against the current tree.
 - moveSong() reports success. PlaylistEditor.qml restores the DelegateModel visual ordering when the source-model move fails, and adjusts the selected row only after successful insertion/removal.
 
 **Audio import:** Qt is the primary conversion path. On failure, source data and previous destination assignment must remain available.
-**Playback:** check decoder/stream ownership, track switching, stop, errors, teardown, and buffering of long files.
+**Playback:** `SoundCore` validates workspace-backed media paths, selects the requested source, and exposes playback state to QML. Its `PlayPause(mode, index)` method starts a new source when the selected item differs from the active one and toggles pause/resume when it matches. `playbackActive` and `playbackPaused` properties keep the QML play/pause icon synchronized with the SoundPlayer lifecycle. `SoundPlayer` coordinates decoder streams and `QAudioSink`; `DecodeStream` decodes one file and spools PCM to a temporary file so seeking does not require retaining the complete decoded audio in RAM. Access to the spool and mixer state is serialized because decoder callbacks and the QAudioSink pull path may run on different threads. `AudioMixer` is a hardware-independent `QIODevice` that mixes two PCM streams, applies per-track channel/volume/mute settings, and reports consumed playback position. The position signal chain is `AudioMixer::positionUpdated` → `SoundPlayer::positionUpdated` → `SoundCore::trackPositionChanged` → `qmlTrackPositionChanged`; QML binds `PlayerPanel.value` to the corresponding SoundCore position property. Decoder data arrival and completion are explicit signals; temporary buffer starvation is not end-of-track. While both tracks are still decoding, mixing waits for data from both to preserve synchronization; a completed shorter track contributes silence while the longer track continues. Test mixer and playback-state behavior without requiring a physical audio device. Re-check decoder/stream ownership, track switching, stop, errors, teardown, seek during decoding, and long-file buffering.
 
 ## Previous static-audit areas
 These are areas to re-check, not confirmed defects in current HEAD:
@@ -99,3 +99,6 @@ Media path resolution also refuses a path if any existing component below the wo
 - If multi-file rollback cannot fully restore the previous playlist, the temporary backup is retained instead of being deleted, and its filesystem path is included in the error shown to the user for possible manual recovery.
 
 
+
+
+QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.

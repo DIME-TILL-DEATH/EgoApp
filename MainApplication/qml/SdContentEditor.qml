@@ -191,7 +191,7 @@ Item{
             duration: SoundCore.sdTrackDuration
 
             onPlayPause: {
-                SoundCore.playContent(_itemSelectionModel.currentIndex);
+                SoundCore.PlayPause(SoundPlayer.PlaySd, _itemSelectionModel.currentIndex);
             }
 
             onStop: {
@@ -208,7 +208,7 @@ Item{
                 sequence: "space"
 
                 onActivated: {
-                    SoundCore.playContent(_itemSelectionModel.currentIndex);
+                    SoundCore.PlayPause(SoundPlayer.PlaySd, _itemSelectionModel.currentIndex);
                 }
 
                 Component.onCompleted: {
