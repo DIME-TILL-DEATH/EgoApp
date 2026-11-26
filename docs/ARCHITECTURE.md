@@ -34,7 +34,7 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 
 ## Responsibility areas
 - QML: presentation and lightweight coordination.
-- UiCore: QML-facing application facade; owns UI state and translates application results into Qt signals. It does not own playlist discovery or directory lifecycle logic.
+- UiCore: QML-facing application facade; owns UI state and translates application results into Qt signals. It does not retain workspace-directory state: the workspace path is passed to SdContentModel and PlaylistService, while PlaylistService is the authoritative source for the active workspace path. UiCore does not own playlist discovery or directory lifecycle logic.
 - PlaylistService: coordinates playlist discovery, creation/removal, model construction, and model lifetimes for the active workspace. It also validates an individual playlist by its stable relative path, loading song records through PlaylistRepository/PlaylistStorage and resolving media paths against its workspace root; validation does not inspect PlaylistModel roles or indexes. It is independent of QML and exposes the playlist models to UiCore.
 - PlaylistRepository: recursively discovers playlist directories and safely creates/removes slash-separated relative paths under PLAYLIST/. It returns plain PlaylistData records and has no QML or Qt item-model dependency.
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.

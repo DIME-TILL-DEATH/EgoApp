@@ -59,7 +59,6 @@ signals:
 
 private:
     SdContentModel m_sdContentModel{this};
-    QDir m_workspaceDir;
     QSettings m_settings;
     PlaylistService m_playlistService;
 

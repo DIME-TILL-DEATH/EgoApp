@@ -53,14 +53,14 @@ UiCore::UiCore(QObject *parent)
         dir.mkpath(workspacePath);
     }
 
-    m_workspaceDir = QDir(workspacePath);
-    m_sdContentModel.setWorkspace(workspacePath);
+    const QDir workspaceDir(workspacePath);
+    m_sdContentModel.setWorkspace(workspaceDir);
 
     connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
     connect(&m_playlistService, &PlaylistService::errorOccurred,
             this, &UiCore::errorOccured);
 
-    m_playlistService.setWorkspacePath(m_workspaceDir.absolutePath());
+    m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     QString appLanguage = m_settings.value("application_language", "autoselect").toString();
@@ -84,12 +84,12 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
         return;
     }
 
-    m_workspaceDir = QDir(path);
-    m_sdContentModel.setWorkspace(path);
+    const QDir workspaceDir(path);
+    m_sdContentModel.setWorkspace(workspaceDir);
 
     m_settings.setValue("workspace_path", path);
 
-    m_playlistService.setWorkspacePath(m_workspaceDir.absolutePath());
+    m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     emit workspaceChanged();
@@ -130,7 +130,7 @@ void UiCore::deletePlaylist(quint16 index)
 
 QString UiCore::workspacePath() const
 {
-    return m_workspaceDir.absolutePath();
+    return m_playlistService.workspacePath();
 }
 
 QStringList UiCore::avaliablePlaylists() const
