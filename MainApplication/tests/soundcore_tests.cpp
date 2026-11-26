@@ -349,8 +349,6 @@ private slots:
         QVERIFY(errors.isValid());
 
         core.playEgo(playlist.index(0, 0));
-        QCOMPARE(core.egoSongPlaying(), QStringLiteral("invalid.wav"));
-        QVERIFY(core.egoPlaybackActive());
         QTRY_VERIFY_WITH_TIMEOUT(errors.count() == 1, 5000);
 
         QVERIFY(!core.playbackActive());

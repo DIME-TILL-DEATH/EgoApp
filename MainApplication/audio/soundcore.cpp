@@ -86,13 +86,6 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
     emit qmlTrackPositionChanged();
     emit qmlTrackDurationChanged();
 
-    if (!m_soundPlayer.play(SoundPlayer::PlaySd, absolutePath))
-    {
-        stop();
-        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-        return;
-    }
-
     m_wavPlaying = QDir::fromNativeSeparators(
         QDir(model->rootPath()).relativeFilePath(absolutePath));
     if (!m_wavPlaying.startsWith(QLatin1Char('/')))
@@ -106,6 +99,15 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
     m_playingSdModel = const_cast<SdContentModel *>(model);
     m_playingSdFilePath = absolutePath;
     emit playingStringChanged();
+
+    // Publish the selection before starting asynchronous decoding: a decoder
+    // may fail immediately, and its error handler must clear this selection.
+    if (!m_soundPlayer.play(SoundPlayer::PlaySd, absolutePath))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
 }
 
 void SoundCore::playEgo(const QModelIndex &contentIndex)
@@ -176,13 +178,6 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
     emit qmlTrackPositionChanged();
     emit qmlTrackDurationChanged();
 
-    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
-    {
-        stop();
-        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-        return;
-    }
-
     const QString t1Name = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
     const QString t2Name = plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
     m_egoSongPlaying = t1Name.isEmpty() ? t2Name
@@ -196,6 +191,15 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
 
     m_wavPlaying.clear();
     emit playingStringChanged();
+
+    // Publish the selection before starting asynchronous decoding: a decoder
+    // may fail immediately, and its error handler must clear this selection.
+    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
 
 }
 
