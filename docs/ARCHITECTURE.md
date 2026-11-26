@@ -21,7 +21,8 @@ This is a conceptual diagram, not a complete call graph.
 
 ## Source layout
 - `MainApplication/qml/`: QML presentation files compiled into the `EgoApp` module.
-- `MainApplication/`: C++ entry point, bridge objects, models, and audio implementation. C++ remains here temporarily until focused module boundaries are defined.
+- `MainApplication/`: C++ entry point, bridge objects, media model, and audio implementation.
+- `MainApplication/playlists/`: playlist feature module (`PlaylistModel`, `PlaylistRepository`, and `Song`). The files are grouped by feature; QML-facing type names and the `.ego` format are unchanged.
 - `MainApplication/icons/`, `translations/`, and `docs/`: runtime resources; their resource paths remain unchanged.
 
 ## QML module and runtime loading
