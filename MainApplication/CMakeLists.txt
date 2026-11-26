@@ -162,16 +162,34 @@ if(APPLE)
                 "${PROJECT_SOURCE_DIR}/docs"
                 "${RELEASE_APP_PATH}/Contents/Resources/docs")
 
+        # WavConverter is a second executable next to the main one (not a nested
+        # .app), so both share Contents/Frameworks, PlugIns and Resources/qml.
+        set(BUNDLED_CONVERTER "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                # remove the nested wavconverter.app left by older builds
+                COMMAND ${CMAKE_COMMAND} -E rm -rf "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app"
+                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:wavconverter> "${BUNDLED_CONVERTER}"
+                VERBATIM)
+
+        # -executable: macdeployqt also deploys what the converter needs and
+        # points it to the shared Frameworks. The converter's QML (e.g.
+        # Qt.labs.platform) is scanned too, otherwise it is missing at runtime.
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
                                     "-qmldir=${PROJECT_SOURCE_DIR}/"
-                                    "-appstore-compliant")
+                                    "-qmldir=${PROJECT_SOURCE_DIR}/../WavConverterShell/"
+                                    "-executable=${BUNDLED_CONVERTER}"
+                                    "-libpath=$<TARGET_FILE_DIR:converter-lib>"
+                                    "-appstore-compliant"
+                VERBATIM)
 
-        # ditto, no cp to preserve symlinks
-        add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
-            COMMAND ditto #cp "-a"
-            "${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter.app"
-            "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
+        # Drop Qt modules/styles/plugins that macdeployqt copied but the app does
+        # not use (Qt3D, VirtualKeyboard, unused Controls styles, ...).
+        if(EGOGIG_PRUNE_BUNDLE)
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND bash "${MAC_DEPLOY_DIR}/prune_bundle.sh" "${RELEASE_APP_PATH}"
+                VERBATIM)
+        endif()
 
         # Fail early (before signing/packaging) if anything in the bundle needs
         # a newer macOS than EGOGIG_MIN_MACOS (see top-level CMakeLists.txt).
@@ -193,10 +211,24 @@ if(APPLE)
             VERBATIM)
 
         set(APPLE_CERTIFICATE_APP_STORE "Apple Distribution: AMT corporation S.R.L. (4PGXCAZDT5)")
+        # Signing order matters: (1) everything, (2) the helper executable with
+        # sandbox-inheritance entitlements (the Mac App Store requires every
+        # executable to be sandboxed; a child process must inherit the sandbox
+        # of EgoGIG, otherwise it crashes at start), (3) re-seal the app bundle,
+        # because step 2 changed a file inside it.
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
                     "--entitlements" "${MAC_DEPLOY_DIR}/entitlements.xml"
                     "${MAS_APP}"
+            COMMAND codesign "-f" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
+                    "-i" "com.amtelectronics.egogig.wavconverter"
+                    "--entitlements" "${MAC_DEPLOY_DIR}/entitlements_inherit.xml"
+                    "${MAS_APP}/Contents/MacOS/wavconverter"
+            COMMAND codesign "-f" "-s" "${APPLE_CERTIFICATE_APP_STORE}"
+                    "--entitlements" "${MAC_DEPLOY_DIR}/entitlements.xml"
+                    "${MAS_APP}"
+            COMMAND codesign "--verify" "--deep" "--strict" "--verbose=2" "${MAS_APP}"
+            COMMAND bash "${MAC_DEPLOY_DIR}/check_signing.sh" "${MAS_APP}" appstore
             VERBATIM)
 
         set(APPLE_CERTIFICATE_APP_STORE_PKG "3rd Party Mac Developer Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
@@ -218,27 +250,37 @@ if(APPLE)
             VERBATIM)
 
         set(APPLE_CERTIFICATE_STANDALONE "Developer ID Application: AMT corporation S.R.L. (4PGXCAZDT5)")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
-                    "--options=runtime" "--timestamp"
-                    "${STANDALONE_APP}"
-            VERBATIM)
 
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND pkgbuild
-                    "--identifier" "com.amtelectronics.egogig"
-                    "--root" "${STANDALONE_ROOT}/Payload"
-                    "--component-plist" "${MAC_DEPLOY_DIR}/Standalone/pkg.plist"
-                    "--install-location" "/Applications"
-                    "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
-            VERBATIM)
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #     COMMAND codesign "-f" "--deep" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+        #             "--options=runtime" "--timestamp"
+        #             "${STANDALONE_APP}"
+        #     COMMAND codesign "-f" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+        #             "-i" "com.amtelectronics.egogig.wavconverter"
+        #             "--options=runtime" "--timestamp"
+        #             "${STANDALONE_APP}/Contents/MacOS/wavconverter"
+        #     COMMAND codesign "-f" "-s" "${APPLE_CERTIFICATE_STANDALONE}"
+        #             "--options=runtime" "--timestamp"
+        #             "${STANDALONE_APP}"
+        #     COMMAND codesign "--verify" "--deep" "--strict" "--verbose=2" "${STANDALONE_APP}"
+        #     COMMAND bash "${MAC_DEPLOY_DIR}/check_signing.sh" "${STANDALONE_APP}" standalone
+        #     VERBATIM)
 
-        set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND productbuild "--sign" "${APPLE_CERTIFICATE_STANDALONE_PKG}"
-                    "--package" "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
-                    "${MAC_DEPLOY_DIR}/Standalone/EgoGig.pkg"
-            VERBATIM)
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #     COMMAND pkgbuild
+        #             "--identifier" "com.amtelectronics.egogig"
+        #             "--root" "${STANDALONE_ROOT}/Payload"
+        #             "--component-plist" "${MAC_DEPLOY_DIR}/Standalone/pkg.plist"
+        #             "--install-location" "/Applications"
+        #             "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
+        #     VERBATIM)
+
+        # set(APPLE_CERTIFICATE_STANDALONE_PKG "Developer ID Installer: AMT corporation S.R.L. (4PGXCAZDT5)")
+        # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        #     COMMAND productbuild "--sign" "${APPLE_CERTIFICATE_STANDALONE_PKG}"
+        #             "--package" "${STANDALONE_ROOT}/EgoGig-unsigned.pkg"
+        #             "${MAC_DEPLOY_DIR}/Standalone/EgoGig.pkg"
+        #     VERBATIM)
 
     endif()
 endif()

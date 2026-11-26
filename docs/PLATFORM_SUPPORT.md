@@ -19,6 +19,15 @@ Where the minimum OS is defined (keep these in sync):
 - `MainApplication/MacOS/Info.plist`: `LSMinimumSystemVersion` (Finder/LaunchServices refuse to open the app below it). The nested converter's `WavConverterShell/MacOS/Info.plist` is currently unused but kept consistent.
 - `deploy_mac/verify_min_macos.sh`: runs after `macdeployqt` in Release builds and fails the build if the `.app`, a nested app, or any bundled Qt framework/plugin/dylib requires a newer macOS. Disable with `-DEGOGIG_VERIFY_MIN_MACOS=OFF`.
 
+Bundle size: `deploy_mac/prune_bundle.sh` runs after `macdeployqt`, removes Qt modules/styles/plugins the apps do not use and fails if a remaining binary still links a removed framework. Disable with `-DEGOGIG_PRUNE_BUNDLE=OFF`. After changing it, always smoke-test the packaged app (main window, file dialogs, playback, converter launch).
+
+WavConverter on macOS is a second executable, `EgoGIG.app/Contents/MacOS/wavconverter`, not a nested `.app`:
+- `WavConverterShell` builds a plain executable; `MainApplication` copies it into the bundle and runs `macdeployqt -executable=...` with both QML directories, so the converter uses the single shared `Contents/Frameworks`, `PlugIns`, `Resources/qml`. `UiCore::runWavConvertor()` starts it with `QProcess`.
+- Consequence: the converter has no `.app` identity of its own (Dock icon/name of EgoGIG, no `EgoGig-Converter.icns`; `WavConverterShell/MacOS/Info.plist` is unused).
+- Signing (`MainApplication/CMakeLists.txt`): `codesign --deep` for everything, then the helper separately, then the app again to re-seal. App Store: helper gets `deploy_mac/entitlements_inherit.xml` (`app-sandbox` + `inherit`, nothing else is allowed with `inherit`). Standalone: hardened runtime + timestamp on the helper too. `deploy_mac/check_signing.sh` verifies this after signing.
+- App Store caveat: a child with `inherit` runs in the parent's sandbox and does not get access to files the user picks in its OWN open/save panels (Apple DTS: inheritance is meant for helper tools without UI). Test the sandboxed build: open files and choose the output folder in the converter. If that fails, the converter must become part of the EgoGIG process (or a separate sandboxed `.app` started through Launch Services).
+- `deploy_mac/Standalone/pkg.plist` only lists the top-level `EgoGIG.app` (it used to list ~130 bundles that no longer exist after pruning/de-duplication).
+
 Qt 6.7 supports macOS 11-14; Qt 6.8+ supports macOS 12+ only, so macOS 11 builds must use Qt 6.7.x (configure fails otherwise).
 
 ## Windows

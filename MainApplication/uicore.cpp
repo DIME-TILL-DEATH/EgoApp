@@ -445,8 +445,16 @@ void UiCore::runWavConvertor()
 #endif
 
 #ifdef Q_OS_MACOS
+    // Second executable inside EgoGIG.app/Contents/MacOS (shares the app's Qt).
+    const QString converterPath = QCoreApplication::applicationDirPath() + "/wavconverter";
+    if(!QFile::exists(converterPath))
+    {
+        qWarning() << "WavConverter executable not found:" << converterPath;
+        return;
+    }
+
     QProcess wavConvertorProcess;
-    wavConvertorProcess.setProgram(QCoreApplication::applicationDirPath() + "/wavconverter.app");
+    wavConvertorProcess.setProgram(converterPath);
     wavConvertorProcess.startDetached();
 #endif
 

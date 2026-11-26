@@ -16,13 +16,10 @@ if(WIN32)
     )
 
 elseif(APPLE)
+    # On macOS the converter is NOT a separate .app: it is a plain executable
+    # that MainApplication copies into EgoGIG.app/Contents/MacOS and that shares
+    # the main app's Frameworks/PlugIns/qml (one copy of Qt instead of two).
     project(wavconverter VERSION 1.0.0 LANGUAGES CXX)
-
-    set(PLATFORM_SPECIFIC_SOURCES
-       "${PROJECT_SOURCE_DIR}/icons/EgoGig-Converter.icns")
-
-    set_source_files_properties(${PLATFORM_SPECIFIC_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-
 
 endif()
 
@@ -30,7 +27,7 @@ qt6_add_resources(RCC_FILES
     "qml.qrc"
 )
 
-qt_add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE
+qt_add_executable(${PROJECT_NAME} WIN32
     core.cpp core.h
     main.cpp
 
@@ -74,22 +71,10 @@ if(WIN32)
 endif()
 
 if(APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        MACOSX_BUNDLE_GUI_IDENTIFIER com.amtelectronics.wavconverter
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-        MACOSX_BUNDLE TRUE)
-        # MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist")
-
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-        set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.app)
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${MACDEPLOYQT_EXECUTABLE} "${RELEASE_APP_PATH}"
-                    "-qmldir=${PROJECT_SOURCE_DIR}/"
-                    "-libpath=${CMAKE_BINARY_DIR}/../WavConverterLib/"
-                    "-appstore-compliant")
-    endif()
+    # Plain (non-bundle) executable: build output is
+    #   ${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter
+    # Deployment (macdeployqt -executable=..., signing) is done by MainApplication.
+    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE FALSE)
 endif()
 
 if(LINUX)
