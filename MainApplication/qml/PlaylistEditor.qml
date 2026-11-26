@@ -11,6 +11,19 @@ Rectangle {
 
     property bool currentPlaylistCorrupted: UiCore.currentPlaylist !== null
                                            && UiCore.currentPlaylist.corrupted
+    property bool hasSelectedSong: UiCore.currentPlaylist !== null
+                                   && _listView.currentIndex >= 0
+                                   && _listView.currentIndex < UiCore.currentPlaylist.rowCount()
+
+    function updatePlayNext(state) {
+        var playlist = UiCore.currentPlaylist;
+        if (playlist === null || !hasSelectedSong)
+            return;
+
+        var songIndex = playlist.index(_listView.currentIndex, 0);
+        if (!playlist.setPlayNext(songIndex, state))
+            _cbPlayNext.checked = playlist.data(songIndex, PlaylistModel.PlayNextRole);
+    }
 
     ColumnLayout{
         anchors.fill: parent
@@ -222,8 +235,8 @@ Rectangle {
                                     verticalAlignment: Text.AlignVCenter
 
                                     text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
-                                           + ": " + t1Name
-                                           + (t2Name !== "" ? " | " + t2Name : "")
+                                           + ": " + (t1Name !== "" ? t1Name : t2Name)
+                                           + (t1Name !== "" && t2Name !== "" ? " | " + t2Name : "")
                                 }
 
                                 Image{
@@ -325,7 +338,7 @@ Rectangle {
 
                 text: qsTr("DELETE SONG")
 
-                enabled: !_root.currentPlaylistCorrupted && _listView.currentIndex !== -1
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
 
                 onClicked: {
                     _removeSongConfirmationDialog.open()
@@ -364,18 +377,17 @@ Rectangle {
             id: _cbPlayNext
 
             text: qsTr("Play next")
-            enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+            enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
             opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
-            onClicked:{
-                var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
-            }
+            onClicked: _root.updatePlayNext(_cbPlayNext.checked)
 
             Binding{
                 target: _cbPlayNext
                 property: "checked"
-                value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+                value: _root.hasSelectedSong
+                       ? UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+                       : false
                 restoreMode: Binding.RestoreBinding
             }
 
@@ -385,11 +397,11 @@ Rectangle {
                 sequence: "Ctrl+N"
 
                 onActivated: {
-                    if (!_cbPlayNext.enabled)
+                    if (!_cbPlayNext.enabled || !_root.hasSelectedSong)
                         return;
-                    _cbPlayNext.checked = !_cbPlayNext.checked
-                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+                    var playlist = UiCore.currentPlaylist;
+                    var songIndex = playlist.index(_listView.currentIndex, 0);
+                    _root.updatePlayNext(!playlist.data(songIndex, PlaylistModel.PlayNextRole))
                 }
 
                 Component.onCompleted: {
@@ -422,10 +434,13 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: !_root.currentPlaylistCorrupted && UiCore.sdContentModel.canSetTrack
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+                         && UiCore.sdContentModel.canSetTrack
                 opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked:{
+                    if (!_root.hasSelectedSong)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 0, UiCore.sdContentModel.selectedPath);
                 }
@@ -468,9 +483,11 @@ Rectangle {
 
             Button{
                 text: qsTr("Clear")
-                enabled: !_root.currentPlaylistCorrupted
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
                 opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
                 onClicked: {
+                    if (!_root.hasSelectedSong)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, "");
                 }
@@ -481,9 +498,12 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: !_root.currentPlaylistCorrupted && UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+                         && UiCore.sdContentModel.canSetTrack
                 opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
                 onClicked:{
+                    if (!_root.hasSelectedSong)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, UiCore.sdContentModel.selectedPath);
                 }
@@ -506,7 +526,7 @@ Rectangle {
         }
 
         PlayerPanel{
-            enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+            enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
             opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
             label: qsTr("EGO player") + ((SoundCore.egoSongPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.egoSongPlaying : "")

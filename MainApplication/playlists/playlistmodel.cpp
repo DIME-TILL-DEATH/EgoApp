@@ -67,7 +67,8 @@ bool PlaylistModel::isTrackMissing(const QString &path) const
 
 QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= rowCount(QModelIndex()))
+    if (!index.isValid() || index.model() != this || index.column() != 0
+        || index.row() < 0 || index.row() >= rowCount(QModelIndex()))
         return {};
 
     switch (role)
@@ -128,7 +129,7 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 
     default:
         qWarning() << __FUNCTION__ << "no role";
-        return true;
+        return {};
     }
 }
 
@@ -309,6 +310,8 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
         return false;
 
     const int currentRowCount = m_songList.size();
+    // Playlist editing supports moving one song at a time; grouped moves are
+    // deliberately not part of the public model contract.
     if (count != 1 || sourceRow < 0 || sourceRow >= currentRowCount
         || destinationChild < 0 || destinationChild > currentRowCount)
         return false;

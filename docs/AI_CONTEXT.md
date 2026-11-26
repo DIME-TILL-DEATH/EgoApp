@@ -53,7 +53,7 @@ These are areas to re-check, not confirmed defects in current HEAD:
 - Import queue terminal state after errors.
 - Player/decoder lifetime and memory growth.
 - Remaining UiCore/SdContentModel responsibility split (workspace policy, validation, localization, media import).
-- Automated tests for playlist persistence and Qt Model/View contracts are deferred until playlist architecture work is complete.
+- Automated playlist tests for storage, repository, service, and Qt Model/View behavior are implemented with Qt Test in `MainApplication/tests/playlist_tests.cpp`; see the test instructions below.
 
 
 **Media paths stored in .ego (critical path invariant):**
@@ -86,7 +86,7 @@ These are areas to re-check, not confirmed defects in current HEAD:
 
 Media path resolution also refuses a path if any existing component below the workspace is a symbolic link. Such paths are treated as unavailable; the application does not follow or otherwise process media symlinks on the target device.
 
-**Playlist playback path contract:** SoundCore validates the supplied PlaylistModel/index, rejects structurally corrupted playlists, and resolves both stored track paths through the model's workspace-rooted MediaPath resolver. Track 1 must resolve to an existing regular file; track 2 is optional when its stored path is empty, otherwise it must also resolve to an existing regular file. Playback never derives the workspace root from the playlist directory depth.
+**Playlist playback path contract:** SoundCore validates the supplied PlaylistModel/index, rejects structurally corrupted playlists, and resolves every non-empty stored track path through the model's workspace-rooted MediaPath resolver. A song may contain only track 1, only track 2, or both; at least one linked track is required. Each linked track must resolve to an existing regular file. SoundPlayer reports both synchronous stream-open failures and asynchronous decoder errors. Playback duration is the longer decoded track duration, and the shorter or absent stream contributes silence after it ends. Playback never derives the workspace root from the playlist directory depth.
 
 **Playlist root availability:** a missing PLAYLIST/ directory is treated as a valid empty workspace. An unavailable/unreadable workspace or an existing PLAYLIST/ path that is not a supported readable directory is reported through playlist load diagnostics. If the root becomes unavailable during tree loading, the partial snapshot is discarded. Platform-specific diagnosis of partial directory enumeration remains out of scope.
 
@@ -97,3 +97,5 @@ Media path resolution also refuses a path if any existing component below the wo
 - `insertRows()` persists from the insertion row through the affected suffix; `moveRows()` persists only the interval between source and destination. The storage API receives this row interval and does not rewrite records outside it.
 - Multi-file save backups are kept in the host's temporary directory, outside PLAYLIST, so an interrupted operation cannot leave a temporary backup directory that playlist discovery mistakes for a user playlist.
 - If multi-file rollback cannot fully restore the previous playlist, the temporary backup is retained instead of being deleted, and its filesystem path is included in the error shown to the user for possible manual recovery.
+
+

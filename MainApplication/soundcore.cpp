@@ -30,7 +30,8 @@ SoundCore::SoundCore(QObject *parent)
 
     m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
 
-    connect(&m_soundPlayer, &SoundPlayer::track1DurationChanged, this, &SoundCore::trackDurationChanged);
+    connect(&m_soundPlayer, &SoundPlayer::playbackDurationChanged, this, &SoundCore::trackDurationChanged);
+    connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this, &SoundCore::errorOccured);
     connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
     connect(&m_soundPlayer, &SoundPlayer::playingFinished, this, &SoundCore::playingFinished);
 }
@@ -51,7 +52,12 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
         {
             if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0)
             {
-                m_soundPlayer.play(SoundPlayer::PlaySd, sdModel->rootPath() + sdModel->selectedPath());
+                if (!m_soundPlayer.play(SoundPlayer::PlaySd,
+                                        sdModel->rootPath() + sdModel->selectedPath()))
+                {
+                    emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+                    return;
+                }
 
                 m_wavPlaying = sdModel->selectedPath();
                 m_egoSongPlaying = "";
@@ -82,46 +88,60 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
     const QString t2StoredPath =
         plsModel->data(contentIndex, PlaylistModel::T2PathRole).toString();
 
-    QString t1Path;
-    if (!plsModel->resolveMediaPath(t1StoredPath, &t1Path))
+    const bool hasTrack1 = !t1StoredPath.isEmpty();
+    const bool hasTrack2 = !t2StoredPath.isEmpty();
+    if (!hasTrack1 && !hasTrack2)
     {
-        emit errorOccured(QObject::tr("Track 1 has an invalid workspace path."));
+        emit errorOccured(QObject::tr("The selected song has no linked audio tracks."));
         return;
     }
 
-    const QFileInfo t1Info(t1Path);
-    if (!t1Info.exists() || !t1Info.isFile())
+    QString t1Path;
+    if (hasTrack1)
     {
-        emit errorOccured(QObject::tr("Track1 not found!"));
-        return;
+        if (!plsModel->resolveMediaPath(t1StoredPath, &t1Path))
+        {
+            emit errorOccured(QObject::tr("Track 1 has an invalid workspace path."));
+            return;
+        }
+        const QFileInfo t1Info(t1Path);
+        if (!t1Info.exists() || !t1Info.isFile())
+        {
+            emit errorOccured(QObject::tr("Track 1 not found."));
+            return;
+        }
     }
 
     QString t2Path;
-    if (!t2StoredPath.isEmpty())
+    if (hasTrack2)
     {
         if (!plsModel->resolveMediaPath(t2StoredPath, &t2Path))
         {
             emit errorOccured(QObject::tr("Track 2 has an invalid workspace path."));
             return;
         }
-
         const QFileInfo t2Info(t2Path);
         if (!t2Info.exists() || !t2Info.isFile())
         {
-            emit errorOccured(QObject::tr("Track2 not found!"));
+            emit errorOccured(QObject::tr("Track 2 not found."));
             return;
         }
     }
 
-    m_egoSongPlaying = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
+    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
+    {
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
+
+    const QString t1Name = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
     const QString t2Name = plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
-    if (!t2Name.isEmpty())
-        m_egoSongPlaying += "|" + t2Name;
+    m_egoSongPlaying = t1Name.isEmpty() ? t2Name
+                                        : (t2Name.isEmpty() ? t1Name : t1Name + "|" + t2Name);
 
     m_wavPlaying.clear();
     emit playingStringChanged();
 
-    m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path);
 }
 
 void SoundCore::stop()

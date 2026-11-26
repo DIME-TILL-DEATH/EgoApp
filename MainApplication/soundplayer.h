@@ -28,7 +28,7 @@ public:
     explicit SoundPlayer(QObject *parent = nullptr);
     ~SoundPlayer();
 
-    void play(State mode, const QString& track1Path, const QString& track2Path = "");
+    bool play(State mode, const QString& track1Path, const QString& track2Path = "");
     void pauseResume();
     void stop();
 
@@ -47,6 +47,8 @@ public:
 signals:
     void track1DurationChanged(qint64 duration);
     void track2DurationChanged(qint64 duration);
+    void playbackDurationChanged(qint64 duration);
+    void errorOccurred(QString errorString);
 
     void positionUpdated(qint64 newTimePosition);
 
@@ -81,6 +83,9 @@ private:
     bool sdRightEnabled{true};
 
     qint64 samplePos{0};
+    qint64 m_track1Duration{0};
+    qint64 m_track2Duration{0};
+    bool m_stopping{false};
 
     inline qint16 combineSamples(qint32 samp1, qint32 samp2)
     {

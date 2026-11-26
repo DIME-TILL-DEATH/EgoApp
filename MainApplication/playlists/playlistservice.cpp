@@ -134,82 +134,57 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         // Report the actual numbered .ego record, not its current display row.
         const QString songNumber = QString::number(song.fileNum);
 
-        if (song.t1Path.isEmpty())
+        if (song.t1Path.isEmpty() && song.t2Path.isEmpty())
         {
             errors.append(QStringLiteral("\t")
                           + QCoreApplication::translate("UiCore", "Song ")
                           + songNumber
-                          + QCoreApplication::translate("UiCore", " track 1 not settled"));
+                          + QCoreApplication::translate("UiCore", " has no linked tracks"));
         }
-        else
-        {
-            QString track1Path;
-            if (!MediaPath::resolveWorkspacePath(m_workspacePath, song.t1Path, &track1Path))
+
+        const auto validateTrack = [&](const QString &storedPath, const QString &trackLabel) {
+            if (storedPath.isEmpty())
+                return;
+
+            QString resolvedPath;
+            if (!MediaPath::resolveWorkspacePath(m_workspacePath, storedPath, &resolvedPath))
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
                               + songNumber
-                              + QCoreApplication::translate("UiCore", " track 1 has an invalid workspace path: ")
-                              + song.t1Path);
+                              + QCoreApplication::translate("UiCore", " ")
+                              + trackLabel
+                              + QCoreApplication::translate("UiCore", " has an invalid workspace path: ")
+                              + storedPath);
             }
             else
             {
-                const QFileInfo track1Info(track1Path);
-                if (!track1Info.exists() || !track1Info.isFile())
+                const QFileInfo trackInfo(resolvedPath);
+                if (!trackInfo.exists() || !trackInfo.isFile())
                 {
                     errors.append(QStringLiteral("\t")
                                   + QCoreApplication::translate("UiCore", "Song ")
                                   + songNumber
-                                  + QCoreApplication::translate("UiCore", " track 1 not found: ")
-                                  + song.t1Path);
+                                  + QCoreApplication::translate("UiCore", " ")
+                                  + trackLabel
+                                  + QCoreApplication::translate("UiCore", " not found: ")
+                                  + storedPath);
                 }
             }
 
-            // Device filename restrictions apply to the stored SD-card path,
-            // not to the host-specific workspace mount path.
-            if (!englishRegex.match(song.t1Path).hasMatch())
+            if (!englishRegex.match(storedPath).hasMatch())
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
                               + songNumber
-                              + QCoreApplication::translate(
-                                  "UiCore", " track1 contains non latin symbols."));
+                              + QCoreApplication::translate("UiCore", " ")
+                              + trackLabel
+                              + QCoreApplication::translate("UiCore", " contains non latin symbols."));
             }
-        }
+        };
 
-        if (!song.t2Path.isEmpty())
-        {
-            QString track2Path;
-            if (!MediaPath::resolveWorkspacePath(m_workspacePath, song.t2Path, &track2Path))
-            {
-                errors.append(QStringLiteral("\t")
-                              + QCoreApplication::translate("UiCore", "Song ")
-                              + songNumber
-                              + QCoreApplication::translate("UiCore", " track 2 has an invalid workspace path: ")
-                              + song.t2Path);
-            }
-            else
-            {
-                const QFileInfo track2Info(track2Path);
-                if (!track2Info.exists() || !track2Info.isFile())
-                {
-                    errors.append(QStringLiteral("\t")
-                                  + QCoreApplication::translate("UiCore", "Song ")
-                                  + songNumber
-                                  + QCoreApplication::translate("UiCore", " track 2 not found: ")
-                                  + song.t2Path);
-                }
-            }
-
-            if (!englishRegex.match(song.t2Path).hasMatch())
-            {
-                errors.append(QStringLiteral("\t")
-                              + QCoreApplication::translate("UiCore", "Song ")
-                              + songNumber
-                              + QCoreApplication::translate(
-                                  "UiCore", " track2 contains non latin symbols."));
-            }
-        }
+        validateTrack(song.t1Path, QCoreApplication::translate("UiCore", "track 1"));
+        validateTrack(song.t2Path, QCoreApplication::translate("UiCore", "track 2"));
     }
 
     if (errors.isEmpty())

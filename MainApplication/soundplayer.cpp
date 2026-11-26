@@ -22,8 +22,27 @@ SoundPlayer::SoundPlayer(QObject *parent)
     m_streamTrack1->setFormat(m_format);
     m_streamTrack2->setFormat(m_format);
 
-    connect(m_streamTrack1, &DecodeStream::durationChanged, this, &SoundPlayer::track1DurationChanged);
-    connect(m_streamTrack2, &DecodeStream::durationChanged, this, &SoundPlayer::track2DurationChanged);
+    connect(m_streamTrack1, &DecodeStream::durationChanged, this, [this](qint64 duration) {
+        m_track1Duration = duration;
+        emit track1DurationChanged(duration);
+        emit playbackDurationChanged(qMax(m_track1Duration, m_track2Duration));
+    });
+    connect(m_streamTrack2, &DecodeStream::durationChanged, this, [this](qint64 duration) {
+        m_track2Duration = duration;
+        emit track2DurationChanged(duration);
+        emit playbackDurationChanged(qMax(m_track1Duration, m_track2Duration));
+    });
+
+    const auto handleDecodeError = [this](const QString &error) {
+        if (m_stopping || m_state == State::Idle)
+            return;
+
+        const QString message = QObject::tr("Audio decoding failed: %1").arg(error);
+        stop();
+        emit errorOccurred(message);
+    };
+    connect(m_streamTrack1, &DecodeStream::errorOccurred, this, handleDecodeError);
+    connect(m_streamTrack2, &DecodeStream::errorOccurred, this, handleDecodeError);
 
     QAudioDevice device = QMediaDevices::defaultAudioOutput();
     m_audioSink = new QAudioSink(device, m_format, this);
@@ -35,17 +54,33 @@ SoundPlayer::~SoundPlayer()
     if(m_audioSink) delete(m_audioSink);
 }
 
-void SoundPlayer::play(State mode, const QString& track1Path, const QString& track2Path)
+bool SoundPlayer::play(State mode, const QString& track1Path, const QString& track2Path)
 {
     stop();
 
+    const bool hasTrack1 = !track1Path.isEmpty();
+    const bool hasTrack2 = !track2Path.isEmpty();
+    if (!hasTrack1 && !hasTrack2)
+        return false;
+
+    m_track1Duration = 0;
+    m_track2Duration = 0;
+
+    if (hasTrack1 && !m_streamTrack1->open(track1Path, QIODevice::ReadOnly))
+    {
+        stop();
+        return false;
+    }
+    if (hasTrack2 && !m_streamTrack2->open(track2Path, QIODevice::ReadOnly))
+    {
+        stop();
+        return false;
+    }
+
     m_state = mode;
-
-    m_streamTrack1->open(track1Path, QIODevice::ReadOnly);
-    m_streamTrack2->open(track2Path, QIODevice::ReadOnly);
-
     samplePos = 0;
     m_audioSink->start(this);
+    return true;
 }
 
 void SoundPlayer::pauseResume()
@@ -55,15 +90,23 @@ void SoundPlayer::pauseResume()
 
 void SoundPlayer::stop()
 {
+    m_stopping = true;
     m_audioSink->reset();
 
     m_streamTrack1->close();
     m_streamTrack2->close();
 
+    m_track1Duration = 0;
+    m_track2Duration = 0;
+    emit track1DurationChanged(0);
+    emit track2DurationChanged(0);
+    emit playbackDurationChanged(0);
+
     samplePos = 0;
     emit positionUpdated(samplePos * 1000/44100);
 
     m_state = State::Idle;
+    m_stopping = false;
 }
 
 void SoundPlayer::setPlayPosition(qint64 msPosition)
@@ -152,6 +195,10 @@ qint64 SoundPlayer::readData(char *data, qint64 maxSize)
 
     for (int i = 0; i < numSamples; ++i, ++cursor)
     {
+        // Either stream may be absent or may finish before the other. Start
+        // each sample at silence so an exhausted stream cannot repeat stale data.
+        sample1 = 0;
+        sample2 = 0;
         m_streamTrack1->read(reinterpret_cast<char *>(&sample1), bitDepth);
         m_streamTrack2->read(reinterpret_cast<char *>(&sample2), bitDepth);
 
@@ -191,7 +238,8 @@ qint64 SoundPlayer::writeData([[maybe_unused]]const char *data,
 
 qint64 SoundPlayer::bytesAvailable() const
 {
-    return m_streamTrack1->bytesAvailable();
+    return qMax(m_streamTrack1->bytesAvailable(), m_streamTrack2->bytesAvailable())
+           + QIODevice::bytesAvailable();
 }
 
 void SoundPlayer::setTracksVolume(State mode, float track1Volume, float track2Volume)

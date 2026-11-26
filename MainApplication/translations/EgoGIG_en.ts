@@ -398,6 +398,11 @@
         <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
         <translation>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</translation>
     </message>
+    <message><source>The selected song has no linked audio tracks.</source><translation>The selected song has no linked audio tracks.</translation></message>
+    <message><source>Track 1 not found.</source><translation>Track 1 not found.</translation></message>
+    <message><source>Track 2 not found.</source><translation>Track 2 not found.</translation></message>
+    <message><source>Unable to open the selected audio track.</source><translation>Unable to open the selected audio track.</translation></message>
+    <message><source>Audio decoding failed: %1</source><translation>Audio decoding failed: %1</translation></message>
 </context>
 <context>
     <name>SdContentEditor</name>
@@ -494,5 +499,24 @@
         <source>The PLAYLIST directory became unavailable while loading.</source>
         <translation>The PLAYLIST directory became unavailable while loading.</translation>
     </message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> has no linked tracks</translation></message>
+    <message><source> </source><translation> </translation></message>
+    <message><source> has an invalid workspace path: </source><translation> has an invalid workspace path: </translation></message>
+    <message><source> not found: </source><translation> not found: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> contains non latin symbols.</translation></message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> has no linked tracks</translation></message>
+    <message><source> has an invalid workspace path: </source><translation> has an invalid workspace path: </translation></message>
+    <message><source> not found: </source><translation> not found: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> contains non latin symbols.</translation></message>
+    <message><source>track 1</source><translation>track 1</translation></message>
+    <message><source>track 2</source><translation>track 2</translation></message>
 </context>
 </TS>

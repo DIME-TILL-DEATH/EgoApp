@@ -398,6 +398,11 @@
         <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
         <translation>Не удалось переместить песню: модель отклонила перемещение, а восстановить предыдущее состояние плейлиста не удалось: %1. Проверьте SD-карту.</translation>
     </message>
+    <message><source>The selected song has no linked audio tracks.</source><translation>У выбранной песни не назначены аудиодорожки.</translation></message>
+    <message><source>Track 1 not found.</source><translation>Трек 1 не найден.</translation></message>
+    <message><source>Track 2 not found.</source><translation>Трек 2 не найден.</translation></message>
+    <message><source>Unable to open the selected audio track.</source><translation>Не удалось открыть выбранную аудиодорожку.</translation></message>
+    <message><source>Audio decoding failed: %1</source><translation>Не удалось декодировать аудио: %1</translation></message>
 </context>
 <context>
     <name>SdContentEditor</name>
@@ -494,5 +499,24 @@
         <source>The PLAYLIST directory became unavailable while loading.</source>
         <translation>Папка PLAYLIST стала недоступна во время загрузки.</translation>
     </message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> не назначена ни одна дорожка</translation></message>
+    <message><source> </source><translation> </translation></message>
+    <message><source> has an invalid workspace path: </source><translation> содержит некорректный путь в рабочей папке: </translation></message>
+    <message><source> not found: </source><translation> не найден: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> содержит символы не из латиницы.</translation></message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> не содержит назначенных дорожек</translation></message>
+    <message><source> has an invalid workspace path: </source><translation> содержит некорректный путь в рабочей папке: </translation></message>
+    <message><source> not found: </source><translation> не найден: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> содержит символы не из латиницы.</translation></message>
+    <message><source>track 1</source><translation>трек 1</translation></message>
+    <message><source>track 2</source><translation>трек 2</translation></message>
 </context>
 </TS>

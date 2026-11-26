@@ -31,6 +31,7 @@ public:
 
 signals:
     void durationChanged(qint64 duration);
+    void errorOccurred(QString errorString);
 
 private:
     QFile m_sourceFile;

@@ -11,6 +11,13 @@ DecodeStream::DecodeStream()
     m_outputBuf.open(QIODevice::ReadOnly);
     m_inputBuf.open(QIODevice::WriteOnly);
 
+    connect(&m_decoder, &QAudioDecoder::durationChanged,
+            this, &DecodeStream::durationChanged);
+    connect(&m_decoder, qOverload<QAudioDecoder::Error>(&QAudioDecoder::error),
+            this, [this](QAudioDecoder::Error error) {
+                if (error != QAudioDecoder::NoError)
+                    emit errorOccurred(m_decoder.errorString());
+            });
     connect(&m_decoder, &QAudioDecoder::bufferReady, this, [this]() {
         const QAudioBuffer buffer = m_decoder.read();
         m_inputBuf.write(buffer.data<char>(), buffer.byteCount());
@@ -41,7 +48,6 @@ bool DecodeStream::open(OpenMode mode)
     {
         m_decoder.setSourceDevice(&m_sourceFile);
         m_decoder.start();
-        emit durationChanged(m_decoder.duration());
         return true;
     }
     else
