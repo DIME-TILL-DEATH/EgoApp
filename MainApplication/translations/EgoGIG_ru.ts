@@ -306,6 +306,26 @@
         <source>Playlist is OK</source>
         <translation>Ошибок не найдено</translation>
     </message>
+    <message>
+        <source>Can't play the selected playlist track.</source>
+        <translation>Не удалось воспроизвести выбранную дорожку плейлиста.</translation>
+    </message>
+    <message>
+        <source>Playback is disabled because the playlist contains invalid or unreadable .ego files.</source>
+        <translation>Воспроизведение отключено: плейлист содержит некорректные или нечитаемые файлы .ego.</translation>
+    </message>
+    <message>
+        <source>Track 1 has an invalid workspace path.</source>
+        <translation>Некорректный путь к треку 1 в рабочей папке.</translation>
+    </message>
+    <message>
+        <source>Track 2 has an invalid workspace path.</source>
+        <translation>Некорректный путь к треку 2 в рабочей папке.</translation>
+    </message>
+    <message>
+        <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
+        <translation>Редактирование плейлиста отключено: не удалось загрузить один или несколько файлов .ego. Исправьте указанные файлы, чтобы избежать потери данных.</translation>
+    </message>
 </context>
 <context>
     <name>SdContentEditor</name>

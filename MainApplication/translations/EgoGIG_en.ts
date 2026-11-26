@@ -306,6 +306,26 @@
         <source>Playlist is OK</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Can't play the selected playlist track.</source>
+        <translation>Can't play the selected playlist track.</translation>
+    </message>
+    <message>
+        <source>Playback is disabled because the playlist contains invalid or unreadable .ego files.</source>
+        <translation>Playback is disabled because the playlist contains invalid or unreadable .ego files.</translation>
+    </message>
+    <message>
+        <source>Track 1 has an invalid workspace path.</source>
+        <translation>Track 1 has an invalid workspace path.</translation>
+    </message>
+    <message>
+        <source>Track 2 has an invalid workspace path.</source>
+        <translation>Track 2 has an invalid workspace path.</translation>
+    </message>
+    <message>
+        <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
+        <translation>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</translation>
+    </message>
 </context>
 <context>
     <name>SdContentEditor</name>
