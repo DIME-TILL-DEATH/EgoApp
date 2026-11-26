@@ -106,12 +106,12 @@ QML registration note: classes marked with `QML_ELEMENT` and registered as creat
 ## Automated playlist and audio tests (Qt Test)
 The `playlist_tests` target covers playlist storage, repository, service, and Qt Model/View behavior. The `audio_tests` target covers AudioMixer behavior with in-memory QBuffer streams and DecodeStream lifecycle using generated PCM WAV fixtures: decoder starvation, Track 2-only playback, shorter-stream draining, channel/volume/mute routing, seeking, consumed position, the one-hour PCM spool limit, missing-source handling, stop/restart session isolation, and decoder-error completion semantics. DecodeStream tests use Qt's decoder backend but do not require a physical audio output device. QAudioSink hardware integration and QML automation remain manual integration checks.
 
-Build and run both suites:
+Build and run all three suites:
 
 ```sh
 cmake -S . -B build-tests -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH="/path/to/Qt/6.7.x/macos"
-cmake --build build-tests --target playlist_tests audio_tests
+cmake --build build-tests --target playlist_tests audio_tests soundcore_tests
 ctest --test-dir build-tests --output-on-failure
 ```
 
-Mixer tests use QBuffer fixtures; decoder lifecycle tests use generated PCM WAV files and do not construct QAudioSink. Physical output-device integration and QML automation require a separate platform integration setup.
+Mixer tests use QBuffer fixtures; decoder lifecycle tests use generated PCM WAV files and do not construct QAudioSink. The `soundcore_tests` target exercises SoundCore integration with PlaylistModel and SdContentModel proxy indexes, source switching, PlayPause model identity, SD selection-path synchronization, and QML-facing playback-state properties through a fake output. Physical output-device integration and full QML automation still require a separate platform integration setup.

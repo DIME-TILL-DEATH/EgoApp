@@ -5,10 +5,16 @@
 #include <QQmlEngine>
 
 #include <QModelIndex>
+#include <QPointer>
+#include <QPersistentModelIndex>
+#include <memory>
 
 #include <QSettings>
 
 #include <soundplayer.h>
+
+class PlaylistModel;
+class SdContentModel;
 
 class SoundCore : public QObject
 {
@@ -43,6 +49,7 @@ class SoundCore : public QObject
     Q_PROPERTY(bool sdTrackREnabled READ sdTrackREnabled WRITE setSdTrackREnabled NOTIFY tracksEnabledChanged FINAL)
 public:
     explicit SoundCore(QObject *parent = nullptr);
+    explicit SoundCore(std::unique_ptr<AudioOutput> audioOutput, QObject *parent = nullptr);
 
     Q_INVOKABLE void playContent(const QModelIndex &contentIndex);
     Q_INVOKABLE void playEgo(const QModelIndex &contentIndex);
@@ -148,6 +155,12 @@ private:
     QString m_wavPlaying;
     QString m_playingEgoTrack1Path;
     QString m_playingEgoTrack2Path;
+    QPointer<PlaylistModel> m_playingEgoModel;
+    QPersistentModelIndex m_playingEgoIndex;
+    QPointer<SdContentModel> m_playingSdModel;
+    QString m_playingSdFilePath;
+
+    void clearPlaybackSelection();
 };
 
 #endif // SOUNDCORE_H
