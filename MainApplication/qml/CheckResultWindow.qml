@@ -34,7 +34,9 @@ Window{
                 }
 
                 delegate: Label{
+                    width: _listResults.width - 20
                     text: modelData
+                    wrapMode: Text.WordWrap
                 }
             }
 

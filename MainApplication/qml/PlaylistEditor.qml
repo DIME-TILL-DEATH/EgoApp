@@ -212,7 +212,14 @@ Rectangle {
                                 Label{
                                     id: _text
 
+                                    width: parent.width
+                                           - (_midiImage.visible ? _midiImage.width : 0)
+                                           - (_nextImage.visible ? _nextImage.width : 0)
                                     color: fileMissing ? "red" : palette.text
+                                    elide: Text.ElideMiddle
+                                    wrapMode: Text.NoWrap
+                                    clip: true
+                                    verticalAlignment: Text.AlignVCenter
 
                                     text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
                                            + ": " + t1Name
@@ -455,6 +462,16 @@ Rectangle {
             }
 
             Button{
+                text: qsTr("Clear")
+                enabled: !_root.currentPlaylistCorrupted
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+                onClicked: {
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 1, "");
+                }
+            }
+
+            Button{
                 id: _btnSetLinkT2
 
                 text: qsTr("Set link")
@@ -480,17 +497,7 @@ Rectangle {
                         AppGlobals.setLink2Shortcut = _shortcutSetLink2.nativeText
                     }
                 }
-            }
-
-            Button{
-                text: qsTr("Clear")
-                enabled: !_root.currentPlaylistCorrupted
-                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
-                onClicked: {
-                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    UiCore.currentPlaylist.setLink(indx, 1, "");
-                }
-            }
+            }   
         }
 
         PlayerPanel{
