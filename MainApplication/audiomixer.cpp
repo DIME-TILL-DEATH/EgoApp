@@ -83,7 +83,9 @@ qint64 AudioMixer::readData(char *data,qint64 maxSize)
         const bool e1=!m_track1Settings.muted&&(left?m_track1Settings.leftEnabled:m_track1Settings.rightEnabled);
         const bool e2=!m_track2Settings.muted&&(left?m_track2Settings.leftEnabled:m_track2Settings.rightEnabled);
         const qint32 sum=(e1?qint32(s1*m_track1Settings.volume):0)+(e2?qint32(s2*m_track2Settings.volume):0);
-        const qint16 out=static_cast<qint16>(qBound<qint32>(std::numeric_limits<qint16>::min(),sum,std::numeric_limits<qint16>::max()));
+        const qint16 out=static_cast<qint16>(qBound<qint32>(static_cast<qint32>(std::numeric_limits<qint16>::min()),
+                                                   sum,
+                                                   static_cast<qint32>(std::numeric_limits<qint16>::max())));
         std::memcpy(data+off,&out,sizeof(out));
     }
     m_positionFrames+=count/BytesPerFrame;
