@@ -1,22 +1,11 @@
 #include "playlistservice.h"
+#include "mediapath.h"
 
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QtAlgorithms>
-
-namespace
-{
-QString workspaceFilePath(const QString &workspacePath, const QString &relativePath)
-{
-    QString path = relativePath;
-    while (path.startsWith('/') || path.startsWith('\\'))
-        path.remove(0, 1);
-
-    return QDir(workspacePath).absoluteFilePath(path);
-}
-}
 
 
 PlaylistService::PlaylistService(QObject *parent)
@@ -154,7 +143,7 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         }
         else
         {
-            const QString track1Path = workspaceFilePath(m_workspacePath, song.t1Path);
+            const QString track1Path = MediaPath::workspaceFilePath(m_workspacePath, song.t1Path);
             const QFileInfo track1Info(track1Path);
             if (!track1Info.exists() || !track1Info.isFile())
             {
@@ -177,7 +166,7 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
 
         if (!song.t2Path.isEmpty())
         {
-            const QString track2Path = workspaceFilePath(m_workspacePath, song.t2Path);
+            const QString track2Path = MediaPath::workspaceFilePath(m_workspacePath, song.t2Path);
             const QFileInfo track2Info(track2Path);
             if (!track2Info.exists() || !track2Info.isFile())
             {

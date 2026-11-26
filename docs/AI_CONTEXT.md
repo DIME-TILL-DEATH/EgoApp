@@ -34,7 +34,7 @@ Verify paths against the current tree.
 - Existing top-level playlists remain valid without migration. Their identifiers remain their directory names.
 - Absolute paths, empty path components, dot/dot-dot components, hidden components, drive-qualified paths, backslashes, control characters, and symbolic-link traversal are rejected.
 - PlaylistModel receives the workspace path explicitly; it must not infer it by walking upward from its playlist directory because playlists may be nested.
-- The playlist creation dialog accepts slash-separated relative paths. Removing a directory removes its entire nested subtree.
+- The playlist UI is planned as a folder tree: users select a folder, expand it to inspect nested playlists, and create a child playlist by entering only its name. Do not require users to type a slash-separated path in the creation dialog. Removing a directory removes its entire nested subtree.
 
 **Qt Model/View contract:**
 - PlaylistModel is a flat list and returns zero rows for a valid parent index.
@@ -54,3 +54,22 @@ These are areas to re-check, not confirmed defects in current HEAD:
 - Player/decoder lifetime and memory growth.
 - Remaining UiCore/SdContentModel responsibility split (workspace policy, validation, localization, media import).
 - Automated tests for playlist persistence and Qt Model/View contracts are deferred until playlist architecture work is complete.
+
+
+**Media paths stored in .ego (critical path invariant):**
+- The workspace is the root of the target SD-card content. Media paths in .ego records are rooted at this workspace, not at the playlist directory and not at the host operating system's filesystem root.
+- The existing UI writes paths such as `/SONGS/Artist/Track.wav`. The leading slash is a workspace-root marker: resolve it as `<workspace>/SONGS/Artist/Track.wav`.
+- Never change this behavior by passing the stored leading-slash path directly to host filesystem absolute-path resolution, resolving it relative to the playlist directory, or anchoring it to the application/current working directory.
+- Validate path components before joining to the workspace. Reject traversal components (`.`, `..`), malformed/empty components, drive-qualified paths, control characters, and unsupported separators rather than silently cleaning them into a different path. Do not reject the leading slash solely because it is present.
+- For backward compatibility, a path without the leading slash may be interpreted from the workspace root too; it must never be interpreted from the playlist directory.
+- The app currently generates forward-slash paths. Symbolic links on the target device are not a supported media-path scenario; do not add a dedicated symlink feature without an explicit requirement.
+- Keep this distinct from playlist identifiers: playlist identifiers are relative to `PLAYLIST/`; media paths are rooted at the workspace.
+
+
+**Shared media path resolution:** PlaylistService and PlaylistModel use the common `MediaPath::workspaceFilePath()` helper so both layers interpret stored media paths consistently. Validation policy is kept separate from path resolution.
+
+
+**Workspace-root marker implementation:** the shared resolver removes exactly one leading forward slash from an .ego media path and joins the remainder to the workspace directory. It does not pass the stored leading-slash path to host absolute-path resolution. Paths without the marker are also interpreted from the workspace root for compatibility.
+
+
+**Media path component validation:** the common resolver rejects empty paths, repeated/trailing separators, backslashes, drive/colon syntax, control characters, and `.`/`..` components before joining to the workspace. It deliberately accepts one leading slash as the workspace-root marker. This is lexical validation; symbolic links on the target device are not a supported scenario and are not given a separate resolution policy.

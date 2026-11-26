@@ -1,4 +1,5 @@
 #include "playlistmodel.h"
+#include "mediapath.h"
 
 #include <QFileInfo>
 #include <QDebug>
@@ -37,11 +38,7 @@ int PlaylistModel::rowCount(const QModelIndex &parent) const
 
 QString PlaylistModel::workspaceFilePath(const QString &relativePath) const
 {
-    QString path = relativePath;
-    while (path.startsWith('/') || path.startsWith('\\'))
-        path.remove(0, 1);
-
-    return QDir(m_workspacePath).absoluteFilePath(path);
+    return MediaPath::workspaceFilePath(m_workspacePath, relativePath);
 }
 
 void PlaylistModel::setWorkspacePath(const QString &workspacePath)

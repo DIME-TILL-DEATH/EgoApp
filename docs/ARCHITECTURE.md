@@ -73,3 +73,19 @@ Test file-open/read/write/commit failures, malformed and duplicate .ego filename
 
 ## Open questions
 Further UiCore extractions: workspace policy/settings, playlist validation, localization, and external application launching.
+
+
+## Media path semantics in .ego
+The workspace is the root of the target SD-card content. A media path stored in an .ego record is rooted at that workspace, not at the playlist directory and not at the host OS filesystem root. The current UI generates values such as `/SONGS/Artist/Track.wav`; the leading slash marks the workspace root and resolves to `<workspace>/SONGS/Artist/Track.wav`. Never pass this stored value directly to host absolute-path resolution, resolve it relative to the playlist directory, or anchor it to the application directory/current working directory. Validate path components before joining to the workspace and reject traversal such as `.` and `..` rather than silently cleaning it. A missing leading slash may be accepted for backward compatibility but still means workspace-rooted. The current media-path convention uses forward slashes. Symbolic links on the target device are not a supported scenario and do not require a separate symlink-resolution feature. This media-path contract is distinct from playlist identifiers, which are relative to `PLAYLIST/`.
+
+The nested-playlist UI is planned as a folder tree. Users select/expand a folder and create a child playlist by entering only its name; the creation dialog should not ask users to type a slash-separated path.
+
+
+## Shared media path resolution
+PlaylistService validation and PlaylistModel media roles use the same `MediaPath::workspaceFilePath()` helper. Keep resolution behavior centralized; do not reintroduce independent path-joining implementations in either layer.
+
+
+The shared media resolver treats exactly one leading forward slash as an .ego workspace-root marker, removes that marker, and joins the remaining path to the selected workspace. It never interprets the marker as the host filesystem root. Legacy paths without the marker are also resolved from the workspace root.
+
+
+The common media resolver validates the stored path before joining it to the workspace: it rejects empty components, repeated or trailing separators, backslashes, colon/drive syntax, control characters, and dot/dot-dot traversal components. A single leading slash remains valid as the workspace-root marker. This is lexical containment, not a symlink-resolution feature; symbolic links on the target device are outside the supported scenario.

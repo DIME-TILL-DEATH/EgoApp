@@ -52,3 +52,12 @@ Trace data flow before editing; keep changes local; add tests; test Debug/Releas
 - [ ] Object ownership/lifetimes are sound.
 - [ ] Minimum OS/Qt compatibility is preserved.
 - [ ] Tests added or omission explained.
+
+
+## Workspace-rooted media paths in .ego (critical)
+- A media path stored in an .ego record is rooted at the selected workspace, which represents the SD-card root. A leading slash is a workspace-root marker, not the host operating system's filesystem root: `/SONGS/Artist/Track.wav` resolves to `<workspace>/SONGS/Artist/Track.wav`.
+- Never "fix" this contract by resolving a leading slash against the host filesystem root, the application directory, the playlist directory, or the process working directory.
+- Preserve the existing .ego serialization format. Do not remove the leading slash from stored values merely to make them look like ordinary relative paths.
+- When validating media paths, validate components and reject traversal (especially `.` and `..`) before joining them to the workspace. Do not silently normalize malformed paths into accepted ones.
+- The application currently creates media paths with forward slashes. Do not introduce host-root or drive-root semantics for .ego media paths. Symbolic links on the target device are not a supported scenario; do not add a separate symlink-resolution feature unless explicitly requested.
+- Keep playlist-directory identifiers separate from media paths: playlist identifiers are slash-separated paths relative to `PLAYLIST/`, while media paths are rooted at the workspace.
