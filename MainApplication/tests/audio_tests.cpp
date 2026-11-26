@@ -6,6 +6,7 @@
 #include <QtTest>
 #include <cstring>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include "audiooutput.h"
 #include "audiomixer.h"

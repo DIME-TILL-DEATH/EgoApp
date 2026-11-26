@@ -377,11 +377,12 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
         QTRY_VERIFY_WITH_TIMEOUT(core.egoTrackDuration() > 0, 5000);
         qint64 consumed = 0;
-        QTRY_VERIFY_WITH_TIMEOUT(
-            (consumed += fake->consume(17640 - consumed)) == 17640, 5000);
-        fake->simulateState(QtAudio::IdleState);
-
-        QTRY_VERIFY_WITH_TIMEOUT(!core.playbackActive(), 5000);
+        QTRY_VERIFY_WITH_TIMEOUT([&]() {
+            consumed += fake->consume(17640 - consumed);
+            fake->simulateState(QtAudio::IdleState);
+            return !core.playbackActive();
+        }(), 5000);
+        QCOMPARE(consumed, qint64(17640));
         QVERIFY(!core.egoPlaybackActive());
         QVERIFY(!core.sdPlaybackActive());
         QVERIFY(core.egoSongPlaying().isEmpty());
@@ -389,6 +390,41 @@ private slots:
         QCOMPARE(core.egoTrackDuration(), qint64(0));
         QCOMPARE(core.egoTrackPosition(), qint64(0));
         QCOMPARE(errors.count(), 0);
+    }
+
+    void invalidPlaylistRequestDoesNotInterruptCurrentPlayback()
+    {
+        QTemporaryDir workspace;
+        QVERIFY(workspace.isValid());
+        QVERIFY(QDir(workspace.path()).mkdir("SONGS"));
+        QVERIFY(writeWave(workspace.filePath("SONGS/good.wav")));
+
+        PlaylistModel playlist({makeSong("/SONGS/good.wav"), makeSong("/../outside.wav")});
+        playlist.setWorkspacePath(workspace.path());
+        auto output = std::make_unique<FakeAudioOutput>();
+        auto *fake = output.get();
+        SoundCore core(std::move(output));
+        QSignalSpy errors(&core, &SoundCore::errorOccured);
+        QVERIFY(errors.isValid());
+
+        core.playEgo(playlist.index(0, 0));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QCOMPARE(core.egoSongPlaying(), QStringLiteral("good.wav"));
+        const int startCount = fake->startCount();
+
+        core.playEgo(playlist.index(1, 0));
+        QCOMPARE(errors.count(), 1);
+        QVERIFY(core.playbackActive());
+        QVERIFY(core.egoPlaybackActive());
+        QCOMPARE(core.egoSongPlaying(), QStringLiteral("good.wav"));
+        QCOMPARE(fake->startCount(), startCount);
+
+        core.stop();
+        QVERIFY(!core.playbackActive());
+        QVERIFY(core.egoSongPlaying().isEmpty());
+        QVERIFY(core.wavPlaying().isEmpty());
+        QCOMPARE(core.egoTrackDuration(), qint64(0));
+        QCOMPARE(core.egoTrackPosition(), qint64(0));
     }
 
     void switchingFromSdToPlaylistClearsThePreviousSourceMetadata()
