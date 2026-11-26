@@ -9,6 +9,9 @@ Rectangle {
 
     color: "transparent"
 
+    property bool currentPlaylistCorrupted: UiCore.currentPlaylist !== null
+                                           && UiCore.currentPlaylist.corrupted
+
     ColumnLayout{
         anchors.fill: parent
 
@@ -28,6 +31,19 @@ Rectangle {
 
                 model: UiCore.avaliablePlaylists
                 currentIndex: UiCore.currentPlaylistIndex
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+
+                delegate: ItemDelegate {
+                    required property int index
+                    required property string modelData
+
+                    width: _plsCombo.width
+                    text: modelData
+                    highlighted: _plsCombo.highlightedIndex === index
+                    opacity: UiCore.currentPlaylistIndex === index
+                             && UiCore.currentPlaylist !== null
+                             && UiCore.currentPlaylist.corrupted ? 0.45 : 1
+                }
 
                 onActivated:{
                     UiCore.currentPlaylistIndex = _plsCombo.currentIndex
@@ -66,6 +82,8 @@ Rectangle {
 
                 anchors.fill: parent
                 anchors.margins: 5
+                enabled: !_root.currentPlaylistCorrupted
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 boundsBehavior: Flickable.StopAtBounds
 
@@ -264,6 +282,8 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("ADD SONG")
+                enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked: {
                     UiCore.currentPlaylist.insertRows(_listView.currentIndex + 1, 1);
@@ -293,7 +313,7 @@ Rectangle {
 
                 text: qsTr("DELETE SONG")
 
-                enabled: _listView.currentIndex !== -1
+                enabled: !_root.currentPlaylistCorrupted && _listView.currentIndex !== -1
 
                 onClicked: {
                     _removeSongConfirmationDialog.open()
@@ -332,6 +352,8 @@ Rectangle {
             id: _cbPlayNext
 
             text: qsTr("Play next")
+            enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+            opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
             onClicked:{
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
@@ -351,6 +373,8 @@ Rectangle {
                 sequence: "Ctrl+N"
 
                 onActivated: {
+                    if (!_cbPlayNext.enabled)
+                        return;
                     _cbPlayNext.checked = !_cbPlayNext.checked
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
@@ -386,7 +410,8 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: UiCore.sdContentModel.canSetTrack
+                enabled: !_root.currentPlaylistCorrupted && UiCore.sdContentModel.canSetTrack
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked:{
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
@@ -434,7 +459,8 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
+                enabled: !_root.currentPlaylistCorrupted && UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
                 onClicked:{
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, UiCore.sdContentModel.selectedPath);
@@ -458,6 +484,8 @@ Rectangle {
 
             Button{
                 text: qsTr("Clear")
+                enabled: !_root.currentPlaylistCorrupted
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
                 onClicked: {
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, "");
@@ -466,6 +494,9 @@ Rectangle {
         }
 
         PlayerPanel{
+            enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+            opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+
             label: qsTr("EGO player") + ((SoundCore.egoSongPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.egoSongPlaying : "")
 
             Layout.preferredWidth: parent.width
@@ -475,6 +506,8 @@ Rectangle {
             duration: SoundCore.egoTrackDuration
 
             onPlayPause: {
+                if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
+                    return;
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                 SoundCore.playEgo(indx);
             }
@@ -493,6 +526,8 @@ Rectangle {
                 sequence: "Ctrl+space"
 
                 onActivated: {
+                    if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     SoundCore.playEgo(indx);
                 }
@@ -529,6 +564,23 @@ Rectangle {
 
         onAccepted: {
            UiCore.addPlaylist(_folderTextField.text);
+        }
+    }
+
+    QmlDialogs.MessageDialog{
+        id: _brokenPlaylistDialog
+
+        title: qsTr("Damaged playlist")
+        text: qsTr("This playlist contains invalid or unreadable .ego files or incorrect .ego numbering. Editing and playback are disabled until the playlist files are fixed.")
+        buttons: QmlDialogs.MessageDialog.Ok
+    }
+
+    Connections {
+        target: UiCore
+
+        function onCurrentPlaylistChanged() {
+            if (UiCore.currentPlaylist !== null && UiCore.currentPlaylist.corrupted)
+                _brokenPlaylistDialog.open()
         }
     }
 

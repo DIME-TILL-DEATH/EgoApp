@@ -242,7 +242,9 @@ void PlaylistService::reload()
         model->setPlaylistName(playlist.name);
         model->setPlaylistPath(playlist.relativePath);
         model->setWorkspacePath(m_workspacePath);
-        model->setPersistenceEnabled(playlist.loadErrors.isEmpty());
+        // Structural .ego errors corrupt the playlist. Missing media files are
+        // checked separately and do not disable editing.
+        model->setCorrupted(!playlist.loadErrors.isEmpty());
         model->setDir(QDir(playlist.directoryPath));
 
         connect(model, &PlaylistModel::errorOccured,

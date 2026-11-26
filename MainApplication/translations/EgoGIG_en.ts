@@ -237,6 +237,14 @@
         <source>Do you really want to delete song?</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Damaged playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This playlist contains invalid or unreadable .ego files or incorrect .ego numbering. Editing and playback are disabled until the playlist files are fixed.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>

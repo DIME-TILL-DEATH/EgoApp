@@ -41,9 +41,10 @@ void PlaylistModel::setWorkspacePath(const QString &workspacePath)
     m_workspacePath = QDir(workspacePath).absolutePath();
 }
 
-void PlaylistModel::setPersistenceEnabled(bool enabled)
+void PlaylistModel::setCorrupted(bool corrupted)
 {
-    m_persistenceEnabled = enabled;
+    m_corrupted = corrupted;
+    m_persistenceEnabled = !corrupted;
 }
 
 bool PlaylistModel::isTrackMissing(const QString &path) const
@@ -264,6 +265,12 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
 
 bool PlaylistModel::moveSong(int fromPosition, int toPosition)
 {
+    if (!m_persistenceEnabled)
+    {
+        emit errorOccured(QObject::tr("Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss."));
+        return false;
+    }
+
     const int currentRowCount = m_songList.size();
     if (fromPosition < 0 || fromPosition >= currentRowCount
         || toPosition < 0 || toPosition >= currentRowCount)

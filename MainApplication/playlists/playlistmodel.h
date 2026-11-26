@@ -13,6 +13,7 @@ class PlaylistModel : public QAbstractListModel
 {
     Q_OBJECT
     QML_ELEMENT
+    Q_PROPERTY(bool corrupted READ isCorrupted CONSTANT)
 
 public:
     enum ListRoles {
@@ -45,7 +46,8 @@ public:
     void setPlaylistPath(const QString &newPath) { m_playlistPath = newPath; }
 
     void setWorkspacePath(const QString &workspacePath);
-    void setPersistenceEnabled(bool enabled);
+    void setCorrupted(bool corrupted);
+    bool isCorrupted() const { return m_corrupted; }
 
     Q_INVOKABLE bool insertRows(int position, int count,
                                 const QModelIndex &parent = QModelIndex()) override;
@@ -70,6 +72,7 @@ private:
     QDir m_dir;
     PlaylistStorage m_storage;
     bool m_persistenceEnabled{true};
+    bool m_corrupted{false};
 
     bool isTrackMissing(const QString &path) const;
     bool persistSongList(const QList<Song> &songList);
