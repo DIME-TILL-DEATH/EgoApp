@@ -15,6 +15,7 @@ Verify paths against the current tree.
 | Area | Files |
 |---|---|
 | PlaylistModel | `MainApplication/playlistmodel.cpp/.h` |
+| Playlist persistence | `MainApplication/playlistrepository.cpp/.h` |
 | SdContentModel | `MainApplication/sdcontentmodel.cpp/.h` |
 | UiCore | `MainApplication/uicore.cpp/.h` |
 | Player | `MainApplication/soundplayer.cpp/.h` |
@@ -37,5 +38,5 @@ These are areas to re-check, not confirmed defects in current HEAD:
 - Preserving previous destination on failed import.
 - Import queue terminal state after errors.
 - Player/decoder lifetime and memory growth.
-- UiCore/SdContentModel responsibility split.
+- Remaining UiCore/SdContentModel responsibility split (workspace policy, validation, localization, media import).
 - Tests and CI on minimum OS versions.

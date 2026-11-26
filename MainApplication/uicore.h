@@ -6,6 +6,7 @@
 
 #include "sdcontentmodel.h"
 #include "playlistmodel.h"
+#include "playlistrepository.h"
 
 class UiCore : public QObject
 {
@@ -60,6 +61,7 @@ private:
     SdContentModel m_sdContentModel{this};
     QDir m_workspaceDir;
     QSettings m_settings;
+    PlaylistRepository m_playlistRepository;
 
     QTranslator m_translator;
     QMap<QString, QString> pathFromCode

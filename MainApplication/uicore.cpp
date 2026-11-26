@@ -95,17 +95,20 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
 void UiCore::addPlaylist(QString plsName)
 {
-    QFileInfo dirInfo(m_workspaceDir.absolutePath() + "/PLAYLIST/" + plsName);
-    if(dirInfo.exists())
+    if (!m_playlistRepository.create(m_workspaceDir.absolutePath(), plsName))
     {
-        emit errorOccured(QObject::tr("Playlist already exist"));
+        const QString targetPath = m_workspaceDir.absoluteFilePath(QStringLiteral("PLAYLIST/") + plsName);
+
+        if (QFileInfo::exists(targetPath))
+            emit errorOccured(QObject::tr("Playlist already exist"));
+        else
+            emit errorOccured(QObject::tr("Can't create playlist"));
         return;
     }
 
-    m_workspaceDir.mkpath("PLAYLIST/" + plsName);
     readPlaylistFolder();
 
-    for(int i=0; i < m_avaliablePlaylists.size(); i++)
+    for (int i = 0; i < m_avaliablePlaylists.size(); ++i)
     {
         if(m_avaliablePlaylists.at(i)->playlistName() == plsName)
         {
@@ -117,22 +120,15 @@ void UiCore::addPlaylist(QString plsName)
 
 void UiCore::deletePlaylist(quint16 index)
 {
-    if(index >= m_avaliablePlaylists.size()) return;
+    if (index >= m_avaliablePlaylists.size())
+        return;
 
     const QString name = m_avaliablePlaylists.at(index)->playlistName();
-    if(name.isEmpty() || name.startsWith('.') || name.contains('/') || name.contains('\\')) return;
-
-    // Удаляем только <workspace>/PLAYLIST/<name> и только если он реально внутри PLAYLIST.
-    const QString plsRoot = QFileInfo(m_workspaceDir.absolutePath() + "/PLAYLIST").canonicalFilePath();
-    const QString target = QFileInfo(plsRoot + "/" + name).canonicalFilePath();
-    if(plsRoot.isEmpty() || target.isEmpty() || !target.startsWith(plsRoot + "/"))
+    if (!m_playlistRepository.remove(m_workspaceDir.absolutePath(), name))
     {
         emit errorOccured(QObject::tr("Refusing to delete a folder outside of PLAYLIST"));
         return;
     }
-
-    if(!QDir(target).removeRecursively())
-        emit errorOccured(QObject::tr("Can't delete: ") + target);
 
     readPlaylistFolder();
     emit workspaceChanged();
@@ -168,66 +164,16 @@ void UiCore::readPlaylistFolder()
     m_avaliablePlaylists.clear();
     m_currentPlaylist = nullptr;
 
-    QDir roorPlstDir = m_workspaceDir;
-    if(roorPlstDir.cd("PLAYLIST"))
+    const QList<PlaylistData> playlists =
+        m_playlistRepository.load(m_workspaceDir.absolutePath());
+
+    for (const PlaylistData &playlist : playlists)
     {
-        QStringList allDirs = roorPlstDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-
-        foreach(QString plsDirName, allDirs)
-        {
-            QDir plsDir(roorPlstDir.absolutePath() + "/" + plsDirName);
-
-            QStringList filters;
-            filters.append("*.ego");
-            QStringList egoFiles = plsDir.entryList(filters, QDir::Files, QDir::Name);
-            QCollator collator;
-            collator.setNumericMode(true);
-            std::sort(egoFiles.begin(), egoFiles.end(), collator);
-
-            QList<Song> songList;
-            if(!egoFiles.isEmpty())
-            {
-                foreach (QString egoFilePath, egoFiles)
-                {
-                    Song song;
-
-                    QFile file(plsDir.absoluteFilePath(egoFilePath));
-                    if(file.open(QIODevice::ReadOnly))
-                    {
-                        QByteArray track1Line = file.readLine();
-                        if(track1Line.size() != 0)
-                        {
-                            if(track1Line.front() == '>')
-                            {
-                                song.playNext = true;
-                                track1Line = track1Line.removeFirst();
-                            }
-                            song.t1Path = track1Line;
-                            song.t1Path.remove("\n");
-                        }
-                        song.t2Path = file.readLine();
-                        song.t2Path.remove("\n");
-                    }
-
-                    QFileInfo fileInfo(file);
-                    QString fileName = fileInfo.fileName();
-                    fileName.remove(".ego");
-                    song.fileNum = fileName.toInt();
-
-                    songList.append(song);
-                }
-
-            }
-            PlaylistModel* playListModel = new PlaylistModel(songList, this);
-            playListModel->setPlaylistName(plsDirName);
-            connect(playListModel, &PlaylistModel::errorOccured, this, &UiCore::errorOccured);
-
-            QDir playlistDir(roorPlstDir);
-            playlistDir.cd(plsDirName);
-
-            playListModel->setDir(playlistDir);
-            m_avaliablePlaylists.append(playListModel);
-        }
+        PlaylistModel *model = new PlaylistModel(playlist.songs, this);
+        model->setPlaylistName(playlist.name);
+        model->setDir(QDir(playlist.directoryPath));
+        connect(model, &PlaylistModel::errorOccured, this, &UiCore::errorOccured);
+        m_avaliablePlaylists.append(model);
     }
 }
 

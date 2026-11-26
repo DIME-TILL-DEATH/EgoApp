@@ -38,6 +38,7 @@ qt6_add_resources(RCC_FILES icons.qrc translations.qrc)
 qt_add_qml_module(${PROJECT_NAME} URI EgoApp VERSION 1.0
  QML_FILES ${QML_FILES}
  SOURCES decodestream.h decodestream.cpp playlistmodel.h playlistmodel.cpp
+ playlistrepository.h playlistrepository.cpp
  sdcontentmodel.h sdcontentmodel.cpp song.h song.cpp soundcore.h soundcore.cpp
  soundplayer.h soundplayer.cpp uicore.h uicore.cpp ${RCC_FILES})
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick QuickControls2 LinguistTools Svg Multimedia)

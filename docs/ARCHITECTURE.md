@@ -29,7 +29,8 @@ CMake registers QML sources from `MainApplication/qml/` and assigns each source 
 
 ## Responsibility areas
 - QML: presentation and lightweight coordination.
-- UiCore: QML/C++ bridge; should not absorb all business logic.
+- UiCore: QML-facing application facade; owns UI state and translates application results into Qt signals.
+- PlaylistRepository: playlist directory discovery, `.ego` file parsing, playlist directory creation and safe deletion. It returns plain `PlaylistData` records and does not depend on QML or Qt item models.
 - PlaylistModel: playlist state and Qt Model/View contracts.
 - SdContentModel: selected media/folder contents.
 - SoundPlayer/DecodeStream: playback, decoding, and resource ownership.
@@ -51,4 +52,5 @@ Prefer a temporary file in the destination directory, validate it, then safely r
 Define running/success/failure/cancelled states, partial-success behavior, cleanup, model updates, and actionable diagnostics. Test filesystem failures, index boundaries, repeated playback, and cancellation.
 
 ## Open questions
-UiCore/model responsibility boundaries; synchronous versus asynchronous operations; stable `.ego` serialization contract; existing test and CI coverage.
+Further UiCore extractions: workspace policy/settings, playlist validation, localization, and external application launching.
+Synchronous versus asynchronous operations; stable `.ego` serialization contract; existing test and CI coverage.
