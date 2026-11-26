@@ -18,8 +18,7 @@ Verify paths against the current tree.
 | Playlist feature | MainApplication/playlists/playlistservice.cpp/.h, playlistmodel.cpp/.h, playlistrepository.cpp/.h, playliststorage.cpp/.h, song.cpp/.h |
 | SdContentModel | MainApplication/sdcontentmodel.cpp/.h |
 | UiCore | MainApplication/uicore.cpp/.h |
-| Player | MainApplication/soundplayer.cpp/.h |
-| Decoder | MainApplication/decodestream.cpp/.h |
+| Audio subsystem | MainApplication/audio/soundcore.cpp/.h, soundplayer.cpp/.h, decodestream.cpp/.h, audiomixer.cpp/.h |
 | QML UI | MainApplication/qml/*.qml, compiled as the EgoApp module |
 | Entry point | MainApplication/main.cpp |
 | Legacy resampler | WavConverterLib/resampler.cpp/.h |

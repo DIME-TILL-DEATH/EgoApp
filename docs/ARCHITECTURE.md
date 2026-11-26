@@ -5,6 +5,7 @@
 ```mermaid
 flowchart TD
  QML[QML UI in MainApplication/qml] --> CORE[UiCore]
+ QML --> SOUNDCORE[SoundCore]
  CORE --> SERVICE[PlaylistService]
  CORE --> SD[SdContentModel]
  SERVICE --> PL[PlaylistModel]
@@ -15,8 +16,7 @@ flowchart TD
  SD --> FS
  CORE --> IMP[Qt audio import / conversion]
  IMP --> FS
- QML --> CORE
- CORE --> PLAYER[SoundPlayer]
+ SOUNDCORE --> PLAYER[SoundPlayer]
  PLAYER --> DEC1[DecodeStream: Track 1]
  PLAYER --> DEC2[DecodeStream: Track 2]
  DEC1 --> MIX[AudioMixer]
@@ -29,12 +29,13 @@ This is a conceptual diagram, not a complete call graph.
 
 ## Source layout
 - MainApplication/qml/: QML presentation files compiled into the EgoApp module.
-- MainApplication/: C++ entry point, bridge objects, media model, and audio implementation.
+- MainApplication/: C++ entry point, application bridge objects, and media model.
+- MainApplication/audio/: audio playback module (SoundCore, SoundPlayer, DecodeStream, and AudioMixer).
 - MainApplication/playlists/: playlist feature module (PlaylistService, PlaylistModel, PlaylistRepository, PlaylistStorage, and Song). QML-facing type names and the .ego file format remain unchanged.
 - MainApplication/icons/, translations/, and docs/: runtime resources; their resource paths remain unchanged.
 
 ## QML module and runtime loading
-CMake registers QML sources from MainApplication/qml/ and assigns each source its basename through QT_RESOURCE_ALIAS. This preserves public QML type names and the AppGlobals singleton. The MainApplication/playlists/ directory is also added to the application target's private include paths because Qt's generated QML type-registration source includes registered C++ headers by basename. Runtime loading remains QQmlApplicationEngine::loadFromModule("EgoApp", "Main"); the application does not load QML from a source-tree filesystem path.
+CMake registers QML sources from MainApplication/qml/ and assigns each source its basename through QT_RESOURCE_ALIAS. This preserves public QML type names and the AppGlobals singleton. The MainApplication/playlists/ and MainApplication/audio/ directories are added to the application target's private include paths because Qt's generated QML type-registration source includes registered C++ headers by basename. Runtime loading remains QQmlApplicationEngine::loadFromModule("EgoApp", "Main"); the application does not load QML from a source-tree filesystem path.
 
 ## Responsibility areas
 - QML: presentation and lightweight coordination.
@@ -44,6 +45,7 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.
 - PlaylistModel: one playlist’s song state and Qt Model/View contracts. It delegates persistence to PlaylistStorage and does not implement file-format parsing or filesystem discovery. It receives the workspace root explicitly so media links resolve correctly regardless of playlist nesting depth. It also exposes a structural `corrupted` state derived only from `.ego` load, filename, and numbering errors; missing WAV/media files do not set this state. Corrupted playlists are read-only at every model mutation entry point and cannot be played; QML warns on selection and visually dims the selector entry and editor controls.
 - SdContentModel: selected media/folder contents.
+- Audio module (MainApplication/audio/): SoundCore is the QML-facing playback facade; it validates playlist and SD-content playback requests, resolves media paths, persists playback settings, and exposes playback state. It depends on playlist/SD models only at the application integration boundary. SoundPlayer owns playback lifecycle, the QAudioSink, two DecodeStream instances, and AudioMixer; DecodeStream decodes one source and spools PCM to a temporary file; AudioMixer mixes PCM independently of the physical output device.
 - SoundCore: validates playlist playback requests and resolves stored media paths through the PlaylistModel's workspace-rooted resolver; it rejects corrupted playlists and missing/non-file tracks and exposes playback state to QML. SoundPlayer: coordinates decoder streams, the audio mixer, and QAudioSink state transitions. DecodeStream: decodes one source file, owns its source and temporary PCM spool, and reports data arrival, completion, duration, and errors. Its spool access is mutex-protected because decoder writes and audio-output reads may occur on different threads. AudioMixer: reads and mixes PCM from zero, one, or two streams, applies channel/volume/mute settings, and reports the consumed playback position; it has no audio-device dependency.
 - Qt audio conversion: primary audio-preparation path.
 - SoX: isolated legacy component, not the primary audio path; do not modify third-party internals.
