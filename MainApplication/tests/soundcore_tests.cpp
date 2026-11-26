@@ -27,6 +27,7 @@ public:
     void resume() override { setState(QtAudio::ActiveState); }
     int startCount() const { return m_startCount; }
     qint64 consume(qint64 bytes) { return m_source ? m_source->read(bytes).size() : 0; }
+    void simulateState(QtAudio::State state) { setState(state); }
 private:
     void setState(QtAudio::State state) { m_state = state; if (m_handler) m_handler(state); }
     StateChangedHandler m_handler;
