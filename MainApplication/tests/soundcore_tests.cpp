@@ -376,7 +376,9 @@ private slots:
         core.playEgo(playlist.index(0, 0));
         QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
         QTRY_VERIFY_WITH_TIMEOUT(core.egoTrackDuration() > 0, 5000);
-        QTRY_VERIFY_WITH_TIMEOUT(fake->consume(17640) == 17640, 5000);
+        qint64 consumed = 0;
+        QTRY_VERIFY_WITH_TIMEOUT(
+            (consumed += fake->consume(17640 - consumed)) == 17640, 5000);
         fake->simulateState(QtAudio::IdleState);
 
         QTRY_VERIFY_WITH_TIMEOUT(!core.playbackActive(), 5000);

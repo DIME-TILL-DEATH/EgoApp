@@ -104,7 +104,7 @@ QML registration note: classes marked with `QML_ELEMENT` and registered as creat
 
 
 ## Automated playlist and audio tests (Qt Test)
-The `playlist_tests` target covers playlist storage, repository, service, and Qt Model/View behavior. The `audio_tests` target covers AudioMixer behavior with in-memory QBuffer streams and DecodeStream lifecycle using generated PCM WAV fixtures: decoder starvation, Track 2-only playback, shorter-stream draining, channel/volume/mute routing, seeking, consumed position, the one-hour PCM spool limit, missing-source handling, stop/restart session isolation, and decoder-error completion semantics. DecodeStream tests use Qt's decoder backend but do not require a physical audio output device. QAudioSink hardware integration and QML automation remain manual integration checks.
+The `playlist_tests` target covers playlist storage, repository, service, and Qt Model/View behavior. The `audio_tests` target covers AudioMixer behavior with in-memory QBuffer streams and DecodeStream lifecycle using generated PCM WAV fixtures: decoder starvation, Track 2-only playback, shorter-stream draining, channel/volume/mute routing, signed-16-bit clipping, frame-aligned reads, seeking, consumed position, the one-hour PCM spool limit, missing-source handling, stop/restart session isolation, invalid playback-mode rejection, output/decode errors, and decoder-error completion semantics. DecodeStream tests use Qt's decoder backend but do not require a physical audio output device. QAudioSink hardware integration and QML automation remain manual integration checks.
 
 Build and run all three suites:
 

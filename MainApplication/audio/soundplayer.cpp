@@ -75,6 +75,9 @@ SoundPlayer::~SoundPlayer()
 
 bool SoundPlayer::play(State mode, const QString &track1Path, const QString &track2Path)
 {
+    if (mode != PlaySd && mode != PlayEgo)
+        return false;
+
     stop();
 
     m_hasTrack1 = !track1Path.isEmpty();
