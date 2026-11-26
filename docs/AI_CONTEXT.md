@@ -41,7 +41,7 @@ Verify paths against the current tree.
 - moveSong() uses final row indexes; its implementation translates them to Qt moveRows() destination-child insertion positions. Moving to the end is supported.
 - dataChanged() notifications specify the roles affected by each song update.
 - insertRows() accepts only positions from zero through rowCount() inclusive and rejects counts that would overflow the model's int row range; removeRows() validates count against the remaining rows without adding position and count.
-- moveSong() reports success. PlaylistEditor.qml restores the DelegateModel visual ordering when the source-model move fails, and only adjusts the selected row after a successful removal.
+- moveSong() reports success. PlaylistEditor.qml restores the DelegateModel visual ordering when the source-model move fails, and adjusts the selected row only after successful insertion/removal.
 
 **Audio import:** Qt is the primary conversion path. On failure, source data and previous destination assignment must remain available.
 **Playback:** check decoder/stream ownership, track switching, stop, errors, teardown, and buffering of long files.

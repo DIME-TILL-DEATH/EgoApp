@@ -293,8 +293,13 @@ Rectangle {
                 opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked: {
-                    UiCore.currentPlaylist.insertRows(_listView.currentIndex + 1, 1);
-                    _listView.currentIndex = _listView.currentIndex + 1
+                    var playlist = UiCore.currentPlaylist;
+                    if (playlist === null)
+                        return;
+
+                    var insertPosition = Math.max(0, _listView.currentIndex + 1);
+                    if (playlist.insertRows(insertPosition, 1))
+                        _listView.currentIndex = insertPosition;
                 }
 
                 Shortcut{
