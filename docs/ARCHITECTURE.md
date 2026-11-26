@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TD
- QML[QML UI] --> CORE[UiCore]
+ QML[QML UI in MainApplication/qml] --> CORE[UiCore]
  CORE --> PL[PlaylistModel]
  CORE --> SD[SdContentModel]
  PL --> FS[Filesystem / .ego]
@@ -18,6 +18,14 @@ flowchart TD
 ```
 
 This is a conceptual diagram, not a complete call graph.
+
+## Source layout
+- `MainApplication/qml/`: QML presentation files compiled into the `EgoApp` module.
+- `MainApplication/`: C++ entry point, bridge objects, models, and audio implementation. C++ remains here temporarily until focused module boundaries are defined.
+- `MainApplication/icons/`, `translations/`, and `docs/`: runtime resources; their resource paths remain unchanged.
+
+## QML module and runtime loading
+CMake registers QML sources from `MainApplication/qml/` and assigns each source its basename through `QT_RESOURCE_ALIAS`. This preserves public QML type names and the `AppGlobals` singleton. Runtime loading remains `QQmlApplicationEngine::loadFromModule("EgoApp", "Main")`; the application does not load QML from a source-tree filesystem path.
 
 ## Responsibility areas
 - QML: presentation and lightweight coordination.

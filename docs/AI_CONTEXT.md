@@ -6,7 +6,7 @@ EgoApp is AMT's desktop application for AMT EgoGig4 users. It manages playlists 
 - User-data preservation is critical.
 - macOS: Qt 6.7, minimum macOS 11.
 - Windows: Qt 6.11/6.12, minimum Windows 10 1809.
-- Linux: Qt 6.11/6.12; mininmum Ubuntu 22.04.
+- Linux: Qt 6.11/6.12; minimum Ubuntu 22.04.
 - Primary audio conversion uses Qt.
 - SoX converter is legacy; do not modify third-party SoX library internals.
 
@@ -20,16 +20,14 @@ Verify paths against the current tree.
 | Player | `MainApplication/soundplayer.cpp/.h` |
 | Decoder | `MainApplication/decodestream.cpp/.h` |
 | Song | `MainApplication/song.cpp` |
-| QML editor | `MainApplication/PlaylistEditor.qml` |
+| QML UI | `MainApplication/qml/*.qml`, compiled as the `EgoApp` module |
 | Entry point | `MainApplication/main.cpp` |
 | Legacy resampler | `WavConverterLib/resampler.cpp/.h` |
 | Legacy shell | `WavConverterShell/CMakeLists.txt` |
 
 ## Data paths
 **Playlists:** trace QML → UiCore → PlaylistModel → serialization/write; check indexes, signals, reorder, and save errors.
-
 **Audio import:** Qt is the primary conversion path. On failure, source data and previous destination assignment must remain available.
-
 **Playback:** check decoder/stream ownership, track switching, stop, errors, teardown, and buffering of long files.
 
 ## Previous static-audit areas

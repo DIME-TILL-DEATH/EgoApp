@@ -8,7 +8,6 @@ Before working, read `docs/AI_CONTEXT.md`. For architecture work, read `docs/ARC
 3. Compatibility with older target OS and Qt versions.
 4. Maintainability.
 5. Performance and usability.
-
 Never trade data integrity for convenience or speed.
 
 ## Platform constraints
@@ -36,6 +35,12 @@ Follow `QAbstractItemModel` contracts, matching `begin...`/`end...` calls, valid
 
 ## Lifetimes and audio
 Use RAII and explicit ownership. Async operations need success/failure/cancelled states and cleanup on every path. Check decoder/player lifetimes, repeated playback, track changes, and buffer growth. Avoid loading large files wholly into memory when streaming is practical.
+
+## Source layout
+- Keep QML presentation files in `MainApplication/qml/`, separate from C++.
+- Preserve QML file basenames through `QT_RESOURCE_ALIAS` and register `AppGlobals.qml` as a singleton.
+- Load with `QQmlApplicationEngine::loadFromModule("EgoApp", "Main")`; never switch to source-relative runtime loading.
+- Keep C++ files in their current location until focused module boundaries are defined.
 
 ## Workflow
 Trace data flow before editing; keep changes local; add tests; test Debug/Release for resource-lifetime changes; update docs. Report changes, checks, and limitations.
