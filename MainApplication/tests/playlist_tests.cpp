@@ -138,7 +138,7 @@ private slots:
 
         QVERIFY(model.insertRows(1, 1));
         QCOMPARE(QFileInfo(firstFile).lastModified(), untouchedPrefixTime);
-        QCOMPARE(model.rowCount(), 4);
+        QCOMPARE(model.rowCount(QModelIndex()), 4);
         QCOMPARE(model.data(model.index(0, 0), PlaylistModel::FileNumRole).toUInt(), 0u);
         QCOMPARE(model.data(model.index(1, 0), PlaylistModel::FileNumRole).toUInt(), 1u);
         QCOMPARE(model.data(model.index(2, 0), PlaylistModel::FileNumRole).toUInt(), 2u);
@@ -147,8 +147,8 @@ private slots:
 
         QVERIFY(model.removeRows(1, 1));
         QCOMPARE(QFileInfo(firstFile).lastModified(), untouchedPrefixTime);
-        QCOMPARE(model.rowCount(), 3);
-        for (int row = 0; row < model.rowCount(); ++row)
+        QCOMPARE(model.rowCount(QModelIndex()), 3);
+        for (int row = 0; row < model.rowCount(QModelIndex()); ++row)
             QCOMPARE(model.data(model.index(row, 0), PlaylistModel::FileNumRole).toUInt(),
                      static_cast<uint>(row));
         QVERIFY(!QFileInfo::exists(QDir(m_playlistDirectory).filePath("3.ego")));
@@ -173,7 +173,7 @@ private slots:
         QCOMPARE(QFileInfo(QDir(m_playlistDirectory).filePath("2.ego")).lastModified(),
                  untouchedLastTime);
 
-        QCOMPARE(model.rowCount(), 3);
+        QCOMPARE(model.rowCount(QModelIndex()), 3);
         QCOMPARE(model.data(model.index(0, 0), PlaylistModel::FileNumRole).toUInt(), 0u);
         QCOMPARE(model.data(model.index(1, 0), PlaylistModel::FileNumRole).toUInt(), 1u);
         QCOMPARE(model.data(model.index(2, 0), PlaylistModel::FileNumRole).toUInt(), 2u);
@@ -197,7 +197,7 @@ private slots:
         QVERIFY(!model.removeRows(1, 1));
         QVERIFY(!model.removeRows(0, 2));
         QVERIFY(!model.removeRows(0, 1, model.index(0, 0)));
-        QCOMPARE(model.rowCount(), 1);
+        QCOMPARE(model.rowCount(QModelIndex()), 1);
     }
 
     void modelMoveSongMovesOneRowAndPreservesNumbering()
@@ -222,7 +222,7 @@ private slots:
         QVERIFY(model.moveSong(2, 2));
         QVERIFY(!model.moveSong(-1, 0));
         QVERIFY(!model.moveSong(0, 4));
-        for (int row = 0; row < model.rowCount(); ++row)
+        for (int row = 0; row < model.rowCount(QModelIndex()); ++row)
             QCOMPARE(model.data(model.index(row, 0), PlaylistModel::FileNumRole).toUInt(),
                      static_cast<uint>(row));
     }
@@ -393,7 +393,7 @@ private slots:
         QVERIFY(model);
         QVERIFY(model->isCorrupted());
         QVERIFY(!model->insertRows(0, 1));
-        QCOMPARE(model->rowCount(), 0);
+        QCOMPARE(model->rowCount(QModelIndex()), 0);
     }
 };
 
