@@ -89,3 +89,6 @@ The shared media resolver treats exactly one leading forward slash as an .ego wo
 
 
 The common media resolver validates the stored path before joining it to the workspace: it rejects empty components, repeated or trailing separators, backslashes, colon/drive syntax, control characters, and dot/dot-dot traversal components. A single leading slash remains valid as the workspace-root marker. This is lexical containment, not a symlink-resolution feature; symbolic links on the target device are outside the supported scenario.
+
+
+PlaylistStorage reads each small .ego record into one byte buffer, checks `QFile::error()` immediately, and only then parses its existing two-line representation. This prevents an I/O failure during an early `readLine()` from being misreported as an empty or incomplete record. An absent/empty second line remains valid; trailing third-line data remains invalid.

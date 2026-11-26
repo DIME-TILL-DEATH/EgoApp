@@ -73,3 +73,6 @@ These are areas to re-check, not confirmed defects in current HEAD:
 
 
 **Media path component validation:** the common resolver rejects empty paths, repeated/trailing separators, backslashes, drive/colon syntax, control characters, and `.`/`..` components before joining to the workspace. It deliberately accepts one leading slash as the workspace-root marker. This is lexical validation; symbolic links on the target device are not a supported scenario and are not given a separate resolution policy.
+
+
+**.ego read strategy:** each numbered record is read in one `QFile::readAll()` operation. The I/O error is checked immediately before classifying empty/incomplete content or decoding UTF-8. The byte buffer is then parsed using the existing two-line format; an absent/empty second line remains valid and extra data after the second line remains an error.

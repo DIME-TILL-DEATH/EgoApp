@@ -106,17 +106,43 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
             continue;
         }
 
-        const QByteArray firstLine = file.readLine();
-        if (firstLine.isEmpty())
+        const QByteArray contents = file.readAll();
+        if (file.error() != QFile::NoError)
         {
-            result.errors.append(egoFile.name + QObject::tr(": empty or unreadable file"));
+            result.errors.append(egoFile.name + QObject::tr(": read error: ") + file.errorString());
             continue;
         }
 
-        if (!firstLine.endsWith('\n'))
+        if (contents.isEmpty())
+        {
+            result.errors.append(egoFile.name + QObject::tr(": empty file"));
+            continue;
+        }
+
+        const qsizetype firstLineEnd = contents.indexOf('\\n');
+        if (firstLineEnd < 0)
         {
             result.errors.append(egoFile.name + QObject::tr(": incomplete first line (missing newline)"));
             continue;
+        }
+
+        QByteArray firstLine = contents.left(firstLineEnd + 1);
+        const QByteArray remaining = contents.mid(firstLineEnd + 1);
+
+        QByteArray secondLine;
+        bool hasTrailingData = false;
+        if (!remaining.isEmpty())
+        {
+            const qsizetype secondLineEnd = remaining.indexOf('\\n');
+            if (secondLineEnd < 0)
+            {
+                secondLine = remaining;
+            }
+            else
+            {
+                secondLine = remaining.left(secondLineEnd + 1);
+                hasTrailingData = secondLineEnd + 1 < remaining.size();
+            }
         }
 
         QByteArray track1Bytes = firstLine;
@@ -134,22 +160,15 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
             continue;
         }
 
-        const QByteArray secondLine = file.readLine();
         if (!secondLine.isEmpty() && !decodeLine(secondLine, &song.t2Path))
         {
             result.errors.append(egoFile.name + QObject::tr(": invalid UTF-8 in second line"));
             continue;
         }
 
-        if (!file.readAll().isEmpty())
+        if (hasTrailingData)
         {
             result.errors.append(egoFile.name + QObject::tr(": unexpected data after second line"));
-            continue;
-        }
-
-        if (file.error() != QFile::NoError)
-        {
-            result.errors.append(egoFile.name + QObject::tr(": read error: ") + file.errorString());
             continue;
         }
 
