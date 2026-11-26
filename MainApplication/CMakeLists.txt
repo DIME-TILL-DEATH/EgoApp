@@ -37,9 +37,11 @@ set_source_files_properties("${QML_DIR}/AppGlobals.qml" PROPERTIES QT_QML_SINGLE
 qt6_add_resources(RCC_FILES icons.qrc translations.qrc)
 qt_add_qml_module(${PROJECT_NAME} URI EgoApp VERSION 1.0
  QML_FILES ${QML_FILES}
- SOURCES decodestream.h decodestream.cpp playlistmodel.h playlistmodel.cpp
- playlistrepository.h playlistrepository.cpp
- sdcontentmodel.h sdcontentmodel.cpp song.h song.cpp soundcore.h soundcore.cpp
+ SOURCES decodestream.h decodestream.cpp
+ playlists/playlistmodel.h playlists/playlistmodel.cpp
+ playlists/playlistrepository.h playlists/playlistrepository.cpp
+ playlists/song.h playlists/song.cpp
+ sdcontentmodel.h sdcontentmodel.cpp soundcore.h soundcore.cpp
  soundplayer.h soundplayer.cpp uicore.h uicore.cpp ${RCC_FILES})
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Gui Quick QuickControls2 LinguistTools Svg Multimedia)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Quick Qt6::Svg Qt6::Qml Qt6::QuickControls2 Qt6::Multimedia)
