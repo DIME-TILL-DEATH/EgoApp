@@ -1,7 +1,7 @@
 #include "soundcore.h"
 
 #include "sdcontentmodel.h"
-#include "playlistmodel.h"
+#include "playlists/playlistmodel.h"
 
 SoundCore::SoundCore(QObject *parent)
     : QObject{parent}

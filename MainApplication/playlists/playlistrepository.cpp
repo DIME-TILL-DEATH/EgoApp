@@ -1,11 +1,9 @@
 #include "playlistrepository.h"
 
-#include <QCollator>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
+#include "playliststorage.h"
 
-#include <algorithm>
+#include <QDir>
+#include <QFileInfo>
 
 bool PlaylistRepository::isValidPlaylistName(const QString &name)
 {
@@ -30,49 +28,12 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath) const
 
     for (const QString &directoryName : directories)
     {
-        QDir playlistDirectory(playlistRoot.absoluteFilePath(directoryName));
-
-        QStringList egoFiles =
-            playlistDirectory.entryList({"*.ego"}, QDir::Files, QDir::Name);
-
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(egoFiles.begin(), egoFiles.end(), collator);
+        const QDir playlistDirectory(playlistRoot.absoluteFilePath(directoryName));
 
         PlaylistData playlist;
         playlist.name = directoryName;
         playlist.directoryPath = playlistDirectory.absolutePath();
-
-        for (const QString &egoFileName : egoFiles)
-        {
-            Song song;
-            QFile file(playlistDirectory.absoluteFilePath(egoFileName));
-
-            if (file.open(QIODevice::ReadOnly))
-            {
-                QByteArray track1Line = file.readLine();
-                if (!track1Line.isEmpty())
-                {
-                    if (track1Line.front() == '>')
-                    {
-                        song.playNext = true;
-                        track1Line.remove(0, 1);
-                    }
-
-                    song.t1Path = track1Line;
-                    song.t1Path.remove('\n');
-                }
-
-                song.t2Path = file.readLine();
-                song.t2Path.remove('\n');
-            }
-
-            QString fileNumber = QFileInfo(file).fileName();
-            fileNumber.remove(".ego");
-            song.fileNum = fileNumber.toInt();
-            playlist.songs.append(song);
-        }
-
+        playlist.songs = PlaylistStorage::loadSongs(playlist.directoryPath);
         result.append(playlist);
     }
 
@@ -87,7 +48,7 @@ bool PlaylistRepository::create(const QString &workspacePath, const QString &nam
     QDir workspace(workspacePath);
     const QString relativePath = QStringLiteral("PLAYLIST/") + name;
 
-    if (QFileInfo(workspace.absoluteFilePath(relativePath)).exists())
+    if (QFileInfo::exists(workspace.absoluteFilePath(relativePath)))
         return false;
 
     return workspace.mkpath(relativePath);
