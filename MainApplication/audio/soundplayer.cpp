@@ -213,15 +213,15 @@ void SoundPlayer::handlePlayerStateChanged(QtAudio::State state)
         break;
 
     case QAudio::StoppedState:
-        if (m_audioSink->error() != QAudio::NoError)
-        {
-            const QString error = m_audioSink->error() == QAudio::OpenError
-                                      ? tr("Unable to open the audio output device.")
-                                      : tr("Audio output failed.");
-            stop();
-            emit errorOccurred(error);
-        }
+    {
+        const QAudio::Error sinkError = m_audioSink->error();
+        const QString error = sinkError == QAudio::OpenError
+                                  ? tr("Unable to open the audio output device.")
+                                  : tr("Audio output failed.");
+        stop();
+        emit errorOccurred(error);
         break;
+    }
 
     case QAudio::IdleState:
         if (allTracksFinishedAndDrained())

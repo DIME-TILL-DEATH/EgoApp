@@ -56,6 +56,7 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
                 if (!m_soundPlayer.play(SoundPlayer::PlaySd,
                                         sdModel->rootPath() + sdModel->selectedPath()))
                 {
+                    stop();
                     emit errorOccured(QObject::tr("Unable to open the selected audio track."));
                     return;
                 }
@@ -140,6 +141,7 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
 
     if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
     {
+        stop();
         emit errorOccured(QObject::tr("Unable to open the selected audio track."));
         return;
     }

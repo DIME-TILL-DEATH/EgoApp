@@ -1,25 +1,36 @@
 #include "decodestream.h"
+
 #include <QAudioBuffer>
 #include <QMutexLocker>
-DecodeStream::DecodeStream(QObject *parent) : QIODevice(parent)
+
+DecodeStream::DecodeStream(QObject *parent)
+    : QIODevice(parent)
 {
-    connect(&m_decoder, &QAudioDecoder::durationChanged, this, &DecodeStream::durationChanged);
-    connect(&m_decoder, &QAudioDecoder::bufferReady, this, &DecodeStream::handleBufferReady);
-    connect(&m_decoder, &QAudioDecoder::finished, this, [this]() {
-        if (m_closing)
-            return;
-        m_decodingFinished = true;
-        emit decodingFinished();
-        emit readyRead();
-    });
-    connect(&m_decoder, qOverload<QAudioDecoder::Error>(&QAudioDecoder::error),
-            this, &DecodeStream::handleDecoderError);
 }
-DecodeStream::~DecodeStream() { close(); }
-void DecodeStream::setFormat(const QAudioFormat &format) { m_format=format; m_decoder.setAudioFormat(m_format); }
-bool DecodeStream::open(const QString &path, OpenMode mode) { close(); m_sourceFile.setFileName(path); return open(mode); }
+
+DecodeStream::~DecodeStream()
+{
+    close();
+}
+
+void DecodeStream::setFormat(const QAudioFormat &format)
+{
+    m_format = format;
+    if (m_decoder)
+        m_decoder->setAudioFormat(m_format);
+}
+
+bool DecodeStream::open(const QString &path, OpenMode mode)
+{
+    close();
+    m_sourcePath = path;
+    return open(mode);
+}
+
 bool DecodeStream::open(OpenMode mode)
 {
+    close();
+
     if (!(mode & QIODevice::ReadOnly) || (mode & QIODevice::WriteOnly))
         return false;
 
@@ -32,104 +43,226 @@ bool DecodeStream::open(OpenMode mode)
             return false;
         }
 
-        if (!m_sourceFile.open(QIODevice::ReadOnly))
+        m_decoder = new QAudioDecoder(this);
+        m_sourceFile = new QFile(m_sourcePath, m_decoder);
+        if (!m_sourceFile->open(QIODevice::ReadOnly))
         {
+            m_decoder->deleteLater();
+            m_decoder = nullptr;
+            m_sourceFile = nullptr;
             m_pcmFile.reset();
             return false;
         }
 
         if (!QIODevice::open(QIODevice::ReadOnly))
         {
-            m_sourceFile.close();
+            m_decoder->deleteLater();
+            m_decoder = nullptr;
+            m_sourceFile = nullptr;
             m_pcmFile.reset();
             return false;
         }
-        m_decodingFinished = false;
-        m_closing = false;
     }
 
-    m_decoder.setSourceDevice(&m_sourceFile);
-    m_decoder.start();
+    m_closing.store(false);
+    m_decodingFinished.store(false);
+    m_decoderFailed.store(false);
+    const quint64 generation = ++m_generation;
+
+    // The decoder and its source device belong to exactly one playback
+    // session. Retiring them together prevents delayed backend work or signals
+    // from an earlier source from touching a later source after a restart.
+    m_decoder->setAudioFormat(m_format);
+
+    connect(m_decoder, &QAudioDecoder::durationChanged, this,
+            [this, generation](qint64 duration) {
+                if (isCurrentSession(generation))
+                    emit durationChanged(duration);
+            });
+    connect(m_decoder, &QAudioDecoder::bufferReady, this,
+            [this, generation]() {
+                handleBufferReady(generation);
+            });
+    connect(m_decoder, &QAudioDecoder::finished, this,
+            [this, generation]() {
+                if (!isCurrentSession(generation) || m_decoderFailed.load())
+                    return;
+
+                m_decodingFinished.store(true);
+                emit decodingFinished();
+                emit readyRead();
+            });
+    connect(m_decoder, qOverload<QAudioDecoder::Error>(&QAudioDecoder::error), this,
+            [this, generation](QAudioDecoder::Error error) {
+                handleDecoderError(generation, error);
+            });
+
+    m_decoder->setSourceDevice(m_sourceFile);
+    m_decoder->start();
     return true;
 }
+
 void DecodeStream::close()
 {
-    if (m_closing) return;
-    m_closing = true;
-    m_decoder.stop();
-    QMutexLocker locker(&m_pcmMutex);
-    m_sourceFile.close();
-    if (m_pcmFile) { m_pcmFile->close(); m_pcmFile.reset(); }
-    m_decodingFinished = true;
-    QIODevice::close();
-    m_closing = false;
+    if (m_closing.exchange(true))
+        return;
+
+    ++m_generation;
+    if (m_decoder)
+    {
+        disconnect(m_decoder, nullptr, this, nullptr);
+        m_decoder->stop();
+        // Keep the source QFile alive as a decoder child until the decoder is
+        // actually destroyed; the backend may still be unwinding its stop.
+        m_decoder->deleteLater();
+        m_decoder = nullptr;
+        m_sourceFile = nullptr;
+    }
+
+    {
+        QMutexLocker locker(&m_pcmMutex);
+        if (m_pcmFile)
+        {
+            m_pcmFile->close();
+            m_pcmFile.reset();
+        }
+        m_decodingFinished.store(true);
+        QIODevice::close();
+    }
+
+    m_closing.store(false);
 }
+
+bool DecodeStream::isCurrentSession(quint64 generation) const
+{
+    return generation == m_generation && !m_closing.load()
+           && !m_decoderFailed.load() && m_decoder;
+}
+
 qint64 DecodeStream::readData(char *data, qint64 maxSize)
 {
     QMutexLocker locker(&m_pcmMutex);
-    if (!m_pcmFile || !m_pcmFile->isOpen() || maxSize<=0) return 0;
-    const qint64 available=qMax<qint64>(0,m_pcmFile->size()-m_pcmFile->pos());
-    return available==0 ? 0 : m_pcmFile->read(data,qMin(maxSize,available));
+    if (!m_pcmFile || !m_pcmFile->isOpen() || maxSize <= 0)
+        return 0;
+
+    const qint64 available = qMax<qint64>(0, m_pcmFile->size() - m_pcmFile->pos());
+    return available == 0 ? 0 : m_pcmFile->read(data, qMin(maxSize, available));
 }
-qint64 DecodeStream::writeData(const char *, qint64) { return -1; }
+
+qint64 DecodeStream::writeData(const char *, qint64)
+{
+    return -1;
+}
+
 qint64 DecodeStream::bytesAvailable() const
 {
     QMutexLocker locker(&m_pcmMutex);
-    if (!m_pcmFile || !m_pcmFile->isOpen()) return 0;
-    return qMax<qint64>(0,m_pcmFile->size()-m_pcmFile->pos());
+    if (!m_pcmFile || !m_pcmFile->isOpen())
+        return 0;
+
+    return qMax<qint64>(0, m_pcmFile->size() - m_pcmFile->pos());
 }
-qint64 DecodeStream::size() const { QMutexLocker locker(&m_pcmMutex); return m_pcmFile && m_pcmFile->isOpen() ? m_pcmFile->size() : 0; }
-qint64 DecodeStream::pos() const { QMutexLocker locker(&m_pcmMutex); return m_pcmFile && m_pcmFile->isOpen() ? m_pcmFile->pos() : 0; }
+
+qint64 DecodeStream::size() const
+{
+    QMutexLocker locker(&m_pcmMutex);
+    return m_pcmFile && m_pcmFile->isOpen() ? m_pcmFile->size() : 0;
+}
+
+qint64 DecodeStream::pos() const
+{
+    QMutexLocker locker(&m_pcmMutex);
+    return m_pcmFile && m_pcmFile->isOpen() ? m_pcmFile->pos() : 0;
+}
+
 bool DecodeStream::seek(qint64 position)
 {
     QMutexLocker locker(&m_pcmMutex);
-    if (!m_pcmFile || !m_pcmFile->isOpen() || position<0 || !m_pcmFile->seek(position)) return false;
+    if (!m_pcmFile || !m_pcmFile->isOpen() || position < 0
+        || !m_pcmFile->seek(position))
+        return false;
+
     return QIODevice::seek(position);
 }
-bool DecodeStream::atEnd() const { return m_decodingFinished && bytesAvailable()==0; }
-bool DecodeStream::isDecodingFinished() const { return m_decodingFinished; }
-void DecodeStream::handleBufferReady()
+
+bool DecodeStream::atEnd() const
 {
-    if (m_closing)
+    return m_decodingFinished.load() && bytesAvailable() == 0;
+}
+
+bool DecodeStream::isDecodingFinished() const
+{
+    return m_decodingFinished.load();
+}
+
+void DecodeStream::handleBufferReady(quint64 generation)
+{
+    if (!isCurrentSession(generation))
         return;
 
-    const QAudioBuffer buffer = m_decoder.read();
-    if (!buffer.isValid() || buffer.byteCount() <= 0)
+    const QAudioBuffer buffer = m_decoder->read();
+    if (!isCurrentSession(generation) || !buffer.isValid() || buffer.byteCount() <= 0)
         return;
 
     QString writeError;
     {
         QMutexLocker locker(&m_pcmMutex);
-        if (m_closing || !m_pcmFile || !m_pcmFile->isOpen())
+        if (!isCurrentSession(generation) || !m_pcmFile || !m_pcmFile->isOpen())
             return;
 
-        const qint64 readPosition = m_pcmFile->pos();
-        if (!m_pcmFile->seek(m_pcmFile->size()))
-            writeError = m_pcmFile->errorString();
+        const qint64 currentSize = m_pcmFile->size();
+        if (buffer.byteCount() > MaxPcmBytes - currentSize)
+        {
+            writeError = tr("Decoded audio exceeds the one-hour per-track limit.");
+        }
         else
         {
-            const qint64 written = m_pcmFile->write(buffer.constData<char>(), buffer.byteCount());
-            const bool flushed = m_pcmFile->flush();
-            writeError = m_pcmFile->errorString();
-            m_pcmFile->seek(readPosition);
-            if (written == buffer.byteCount() && flushed)
-                writeError.clear();
-            else if (writeError.isEmpty())
-                writeError = tr("Unable to store decoded audio data.");
+            const qint64 readPosition = m_pcmFile->pos();
+            if (!m_pcmFile->seek(currentSize))
+                writeError = m_pcmFile->errorString();
+            else
+            {
+                const qint64 written = m_pcmFile->write(
+                    buffer.constData<char>(), buffer.byteCount());
+                const bool flushed = m_pcmFile->flush();
+                writeError = m_pcmFile->errorString();
+                m_pcmFile->seek(readPosition);
+
+                if (written == buffer.byteCount() && flushed)
+                    writeError.clear();
+                else if (writeError.isEmpty())
+                    writeError = tr("Unable to store decoded audio data.");
+            }
         }
     }
 
     if (!writeError.isEmpty())
     {
-        emit errorOccurred(writeError);
+        if (!m_decoderFailed.exchange(true))
+        {
+            m_decodingFinished.store(true);
+            if (m_decoder && generation == m_generation)
+                m_decoder->stop();
+            emit errorOccurred(writeError);
+        }
         return;
     }
+
     emit readyRead();
 }
 
-void DecodeStream::handleDecoderError(QAudioDecoder::Error error)
+void DecodeStream::handleDecoderError(quint64 generation, QAudioDecoder::Error error)
 {
-    if (m_closing || error==QAudioDecoder::NoError) return;
-    m_decodingFinished=true; emit errorOccurred(m_decoder.errorString());
-    emit decodingFinished(); emit readyRead();
+    if (!isCurrentSession(generation) || error == QAudioDecoder::NoError
+        || m_decoderFailed.exchange(true))
+        return;
+
+    m_decodingFinished.store(true);
+    QString message = m_decoder->errorString();
+    if (message.isEmpty())
+        message = tr("Audio decoder failed.");
+
+    // An error is a terminal failure, not a successful decodingFinished event.
+    // The owner handles it by stopping and closing this stream.
+    emit errorOccurred(message);
 }
