@@ -264,6 +264,55 @@ private slots:
         QVERIFY(!decoder.isOpen());
         QVERIFY(decoder.isDecodingFinished());
     }
+    void decodeStreamKeepsSpoolCursorAlignedWithConsumedBytes()
+    {
+        auto wave = makeWaveFile(250);
+        QVERIFY(wave);
+
+        DecodeStream decoder;
+        decoder.setFormat(pcmFormat());
+        QVERIFY(decoder.open(wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(decoder.isDecodingFinished(), 5000);
+
+        const qint64 decodedSize = decoder.size();
+        QVERIFY(decodedSize > 4);
+        QCOMPARE(decoder.bytesAvailable(), decodedSize);
+
+        char frame[4]{};
+        QCOMPARE(decoder.read(frame, sizeof(frame)), qint64(sizeof(frame)));
+        QCOMPARE(decoder.pos(), qint64(sizeof(frame)));
+        QCOMPARE(decoder.bytesAvailable(), decodedSize - sizeof(frame));
+
+        QVERIFY(decoder.seek(0));
+        QCOMPARE(decoder.pos(), qint64(0));
+        QCOMPARE(decoder.bytesAvailable(), decodedSize);
+    }
+
+    void decodeStreamCanSeekAheadOfDecodedData()
+    {
+        auto wave = makeWaveFile(30000);
+        QVERIFY(wave);
+
+        DecodeStream decoder;
+        decoder.setFormat(pcmFormat());
+        QVERIFY(decoder.open(wave->fileName()));
+        QVERIFY(!decoder.isDecodingFinished());
+
+        constexpr qint64 targetByte = 44100LL * 4 * 10;
+        QVERIFY(decoder.seek(targetByte));
+        QCOMPARE(decoder.pos(), targetByte);
+
+        QTRY_VERIFY_WITH_TIMEOUT(decoder.size() >= targetByte + 4, 10000);
+        QCOMPARE(decoder.bytesAvailable(), decoder.size() - targetByte);
+
+        char frame[4]{};
+        QCOMPARE(decoder.read(frame, sizeof(frame)), qint64(sizeof(frame)));
+        QCOMPARE(decoder.pos(), targetByte + sizeof(frame));
+
+        QTRY_VERIFY_WITH_TIMEOUT(decoder.isDecodingFinished(), 10000);
+        QCOMPARE(decoder.bytesAvailable(), decoder.size() - targetByte - sizeof(frame));
+    }
+
     void stopDuringDecodeAndRestartIgnoresOldSession()
     {
         auto longWave = makeWaveFile(30000);
@@ -315,6 +364,28 @@ private slots:
         QVERIFY(!player.play(static_cast<SoundPlayer::State>(99), wave->fileName()));
         QCOMPARE(player.state(), SoundPlayer::Idle);
         QCOMPARE(fake->startCount(), 0);
+    }
+
+    void soundPlayerCanSeekBothTracksBeforeDecoderProducesPcm()
+    {
+        auto track1 = makeWaveFile(30000);
+        auto track2 = makeWaveFile(30000);
+        QVERIFY(track1);
+        QVERIFY(track2);
+
+        auto output = std::make_unique<FakeAudioOutput>();
+        auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy positionSpy(&player, &SoundPlayer::positionUpdated);
+        QVERIFY(positionSpy.isValid());
+
+        QVERIFY(player.play(SoundPlayer::PlayEgo, track1->fileName(), track2->fileName()));
+        player.setPlayPosition(10000);
+
+        QVERIFY(positionSpy.count() > 0);
+        QCOMPARE(positionSpy.last().at(0).toLongLong(), qint64(10000));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 10000);
+        player.stop();
     }
 
     void soundPlayerSupportsTrackTwoWithoutTrackOne()

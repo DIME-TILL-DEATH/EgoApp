@@ -54,7 +54,9 @@ bool DecodeStream::open(OpenMode mode)
             return false;
         }
 
-        if (!QIODevice::open(QIODevice::ReadOnly))
+        // Disable QIODevice prefetching: byte availability and the spool cursor
+        // are shared with the mixer and decoder append path.
+        if (!QIODevice::open(QIODevice::ReadOnly | QIODevice::Unbuffered))
         {
             m_decoder->deleteLater();
             m_decoder = nullptr;
