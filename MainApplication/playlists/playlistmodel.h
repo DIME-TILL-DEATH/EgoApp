@@ -48,6 +48,7 @@ public:
     void setWorkspacePath(const QString &workspacePath);
     void setCorrupted(bool corrupted);
     bool isCorrupted() const { return m_corrupted; }
+    bool resolveMediaPath(const QString &storedPath, QString *resolvedPath) const;
 
     Q_INVOKABLE bool insertRows(int position, int count,
                                 const QModelIndex &parent = QModelIndex()) override;

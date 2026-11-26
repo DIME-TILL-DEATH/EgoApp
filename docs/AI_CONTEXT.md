@@ -85,3 +85,5 @@ These are areas to re-check, not confirmed defects in current HEAD:
 
 
 Media path resolution also refuses a path if any existing component below the workspace is a symbolic link. Such paths are treated as unavailable; the application does not follow or otherwise process media symlinks on the target device.
+
+**Playlist playback path contract:** SoundCore validates the supplied PlaylistModel/index, rejects structurally corrupted playlists, and resolves both stored track paths through the model's workspace-rooted MediaPath resolver. Track 1 must resolve to an existing regular file; track 2 is optional when its stored path is empty, otherwise it must also resolve to an existing regular file. Playback never derives the workspace root from the playlist directory depth.

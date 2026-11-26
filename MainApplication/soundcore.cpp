@@ -3,6 +3,8 @@
 #include "sdcontentmodel.h"
 #include "playlists/playlistmodel.h"
 
+#include <QFileInfo>
+
 SoundCore::SoundCore(QObject *parent)
     : QObject{parent}
 {
@@ -61,28 +63,63 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
 
 void SoundCore::playEgo(const QModelIndex &contentIndex)
 {
-    const PlaylistModel* plsModel = qobject_cast<const PlaylistModel*>(contentIndex.model());
+    const auto *plsModel = qobject_cast<const PlaylistModel *>(contentIndex.model());
+    if (!plsModel || !contentIndex.isValid()
+        || contentIndex.row() < 0 || contentIndex.row() >= plsModel->rowCount(QModelIndex()))
+    {
+        emit errorOccured(QObject::tr("Can't play the selected playlist track."));
+        return;
+    }
 
-    QDir wrkSpaceDir = plsModel->dir();
-    wrkSpaceDir.cd("../..");
-    QString wrkSpacePath = wrkSpaceDir.absolutePath();
+    if (plsModel->isCorrupted())
+    {
+        emit errorOccured(QObject::tr("Playback is disabled because the playlist contains invalid or unreadable .ego files."));
+        return;
+    }
 
-    QString t1Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T1PathRole).toString();
-    QString t2Path = wrkSpacePath + plsModel->data(contentIndex, PlaylistModel::T2PathRole).toString();
+    const QString t1StoredPath =
+        plsModel->data(contentIndex, PlaylistModel::T1PathRole).toString();
+    const QString t2StoredPath =
+        plsModel->data(contentIndex, PlaylistModel::T2PathRole).toString();
+
+    QString t1Path;
+    if (!plsModel->resolveMediaPath(t1StoredPath, &t1Path))
+    {
+        emit errorOccured(QObject::tr("Track 1 has an invalid workspace path."));
+        return;
+    }
+
+    const QFileInfo t1Info(t1Path);
+    if (!t1Info.exists() || !t1Info.isFile())
+    {
+        emit errorOccured(QObject::tr("Track1 not found!"));
+        return;
+    }
+
+    QString t2Path;
+    if (!t2StoredPath.isEmpty())
+    {
+        if (!plsModel->resolveMediaPath(t2StoredPath, &t2Path))
+        {
+            emit errorOccured(QObject::tr("Track 2 has an invalid workspace path."));
+            return;
+        }
+
+        const QFileInfo t2Info(t2Path);
+        if (!t2Info.exists() || !t2Info.isFile())
+        {
+            emit errorOccured(QObject::tr("Track2 not found!"));
+            return;
+        }
+    }
 
     m_egoSongPlaying = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
-    if(!plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString().isEmpty())
-        m_egoSongPlaying += "|" + plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
-    m_wavPlaying = "";
+    const QString t2Name = plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
+    if (!t2Name.isEmpty())
+        m_egoSongPlaying += "|" + t2Name;
+
+    m_wavPlaying.clear();
     emit playingStringChanged();
-
-    QString errorString;
-    QFileInfo t1Info(t1Path);
-    QFileInfo t2Info(t2Path);
-    if(!t1Info.exists()) errorString.append(QObject::tr("Track1 not found!") + "\n");
-    if(!t2Info.exists()) errorString.append(QObject::tr("Track2 not found!"));
-
-    if(!errorString.isEmpty()) emit errorOccured(errorString);
 
     m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path);
 }

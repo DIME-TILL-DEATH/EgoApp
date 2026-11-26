@@ -40,7 +40,7 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.
 - PlaylistModel: one playlist’s song state and Qt Model/View contracts. It delegates persistence to PlaylistStorage and does not implement file-format parsing or filesystem discovery. It receives the workspace root explicitly so media links resolve correctly regardless of playlist nesting depth. It also exposes a structural `corrupted` state derived only from `.ego` load, filename, and numbering errors; missing WAV/media files do not set this state. Corrupted playlists are read-only and cannot be played; QML warns on selection and visually dims the selector entry and editor controls.
 - SdContentModel: selected media/folder contents.
-- SoundPlayer/DecodeStream: playback, decoding, and resource ownership.
+- SoundCore: validates playlist playback requests and resolves stored media paths through the PlaylistModel's workspace-rooted resolver; it rejects corrupted playlists and missing/non-file tracks. SoundPlayer/DecodeStream: playback, decoding, and resource ownership.
 - Qt audio conversion: primary audio-preparation path.
 - SoX: isolated legacy component, not the primary audio path; do not modify third-party internals.
 
@@ -103,3 +103,7 @@ PlaylistStorage excludes symbolic links from the .ego file listing and verifies 
 
 
 Media-path resolution checks each existing component beneath the workspace and rejects symbolic links rather than following them. Symlink-backed media paths are unsupported and are treated as unavailable; no symlink traversal or canonical-target feature is provided.
+
+
+### Playlist playback path resolution
+SoundCore must not infer the workspace root by walking upward from a playlist directory: playlist nesting depth is variable. PlaylistModel provides the shared workspace-rooted media-path resolution used by playlist validation and model roles. Before playback, SoundCore validates the model/index, rejects structurally corrupted playlists, requires track 1 to resolve to an existing regular file, and validates track 2 when it is present. An empty track-2 path is optional and is passed to SoundPlayer as empty; it is not converted into the workspace directory.

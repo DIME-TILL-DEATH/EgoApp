@@ -47,6 +47,11 @@ void PlaylistModel::setCorrupted(bool corrupted)
     m_persistenceEnabled = !corrupted;
 }
 
+bool PlaylistModel::resolveMediaPath(const QString &storedPath, QString *resolvedPath) const
+{
+    return MediaPath::resolveWorkspacePath(m_workspacePath, storedPath, resolvedPath);
+}
+
 bool PlaylistModel::isTrackMissing(const QString &path) const
 {
     if (path.isEmpty())
