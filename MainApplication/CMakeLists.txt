@@ -109,6 +109,8 @@ qt_add_qml_module(${PROJECT_NAME}
         ${QML_FILES}
 
     SOURCES
+        audio/audiooutput.h
+        audio/audiooutput.cpp
         audio/audiomixer.h
         audio/audiomixer.cpp
         audio/decodestream.h
@@ -493,8 +495,10 @@ if(BUILD_TESTING)
 
     add_executable(audio_tests
         tests/audio_tests.cpp
+        audio/audiooutput.cpp
         audio/audiomixer.cpp
         audio/decodestream.cpp
+        audio/soundplayer.cpp
     )
 
     target_include_directories(audio_tests
@@ -505,6 +509,7 @@ if(BUILD_TESTING)
     target_link_libraries(audio_tests
         PRIVATE
             Qt6::Core
+            Qt6::Qml
             Qt6::Multimedia
             Qt6::Test
     )

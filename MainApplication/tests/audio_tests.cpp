@@ -7,8 +7,36 @@
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include "audiooutput.h"
 #include "audiomixer.h"
 #include "decodestream.h"
+#include "soundplayer.h"
+
+#include <utility>
+
+
+class FakeAudioOutput final : public AudioOutput
+{
+public:
+    void setStateChangedHandler(StateChangedHandler handler) override { m_handler = std::move(handler); }
+    QtAudio::State state() const override { return m_state; }
+    QAudio::Error error() const override { return m_error; }
+    void start(QIODevice *source) override { m_source = source; ++m_startCount; setState(QtAudio::ActiveState); }
+    void stop() override { m_source = nullptr; setState(QtAudio::IdleState); }
+    void suspend() override { setState(QtAudio::SuspendedState); }
+    void resume() override { setState(QtAudio::ActiveState); }
+    int startCount() const { return m_startCount; }
+    QByteArray consumeAvailable() { return m_source ? m_source->readAll() : QByteArray{}; }
+    void setError(QAudio::Error error) { m_error = error; }
+    void simulateState(QtAudio::State state) { setState(state); }
+private:
+    void setState(QtAudio::State state) { m_state = state; if (m_handler) m_handler(state); }
+    StateChangedHandler m_handler;
+    QIODevice *m_source{nullptr};
+    QtAudio::State m_state{QtAudio::IdleState};
+    QAudio::Error m_error{QAudio::NoError};
+    int m_startCount{0};
+};
 
 class AudioTests final : public QObject
 {
@@ -236,6 +264,88 @@ private slots:
         QCOMPARE(finishedSpy.count(), 0);
         QVERIFY(decoder.isDecodingFinished());
     }
+    void soundPlayerStartsOutputAfterDecodedDataArrives()
+    {
+        auto wave = makeWaveFile(250); QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy errors(&player, &SoundPlayer::errorOccurred); QVERIFY(errors.isValid());
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        QCOMPARE(player.state(), SoundPlayer::PlaySd);
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QCOMPARE(errors.count(), 0); player.stop();
+    }
+
+    void soundPlayerPauseBeforeDataPreventsOutputStart()
+    {
+        auto wave = makeWaveFile(30000); QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy duration(&player, &SoundPlayer::track1DurationChanged); QVERIFY(duration.isValid());
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        player.pauseResume(); QVERIFY(player.isPaused());
+        QTRY_VERIFY_WITH_TIMEOUT(duration.count() > 0, 5000);
+        QTest::qWait(100); QCOMPARE(fake->startCount(), 0);
+        player.pauseResume(); QVERIFY(!player.isPaused());
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000); player.stop();
+    }
+
+    void soundPlayerPauseAndResumeControlsOutput()
+    {
+        auto wave = makeWaveFile(30000); QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        player.pauseResume(); QVERIFY(player.isPaused());
+        QCOMPARE(fake->state(), QtAudio::SuspendedState);
+        player.pauseResume(); QVERIFY(!player.isPaused());
+        QCOMPARE(fake->state(), QtAudio::ActiveState); player.stop();
+    }
+
+    void soundPlayerCanStopAndRestartWithAnotherSource()
+    {
+        auto first = makeWaveFile(30000); auto second = makeWaveFile(250);
+        QVERIFY(first); QVERIFY(second);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy errors(&player, &SoundPlayer::errorOccurred); QVERIFY(errors.isValid());
+        QVERIFY(player.play(SoundPlayer::PlaySd, first->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        player.stop(); QCOMPARE(player.state(), SoundPlayer::Idle);
+        QVERIFY(player.play(SoundPlayer::PlayEgo, second->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() >= 2, 5000);
+        QCOMPARE(player.state(), SoundPlayer::PlayEgo); QCOMPARE(errors.count(), 0); player.stop();
+    }
+
+    void soundPlayerOutputErrorStopsPlayback()
+    {
+        auto wave = makeWaveFile(30000); QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy errors(&player, &SoundPlayer::errorOccurred); QVERIFY(errors.isValid());
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        fake->setError(QAudio::OpenError); fake->simulateState(QtAudio::StoppedState);
+        QCOMPARE(player.state(), SoundPlayer::Idle); QCOMPARE(errors.count(), 1);
+        QVERIFY(errors.first().first().toString().contains(QStringLiteral("Unable to open the audio output device.")));
+    }
+
+    void soundPlayerFinishesAfterOutputBufferIsDrained()
+    {
+        auto wave = makeWaveFile(100); QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy finished(&player, &SoundPlayer::playingFinished); QVERIFY(finished.isValid());
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QByteArray consumed;
+        QTRY_VERIFY_WITH_TIMEOUT([&]() { consumed += fake->consumeAvailable(); return consumed.size() >= 44100 * 4 / 10; }(), 5000);
+        QTest::qWait(100); fake->simulateState(QtAudio::IdleState);
+        QTRY_COMPARE_WITH_TIMEOUT(player.state(), SoundPlayer::Idle, 5000);
+        QCOMPARE(finished.count(), 1);
+    }
+
 };
 QTEST_GUILESS_MAIN(AudioTests)
 #include "audio_tests.moc"

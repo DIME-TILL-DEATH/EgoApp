@@ -1,13 +1,30 @@
 #include "soundplayer.h"
 
-#include <QMediaDevices>
+#include <utility>
+
+namespace {
+QAudioFormat playbackFormat()
+{
+    QAudioFormat format;
+    format.setSampleRate(44100);
+    format.setChannelCount(2);
+    format.setSampleFormat(QAudioFormat::Int16);
+    return format;
+}
+}
 
 SoundPlayer::SoundPlayer(QObject *parent)
-    : QObject(parent)
+    : SoundPlayer(std::make_unique<QAudioSinkOutput>(playbackFormat()), parent)
 {
-    m_format.setSampleRate(44100);
-    m_format.setChannelCount(2);
-    m_format.setSampleFormat(QAudioFormat::Int16);
+}
+
+SoundPlayer::SoundPlayer(std::unique_ptr<AudioOutput> audioOutput, QObject *parent)
+    : QObject(parent),
+      m_format(playbackFormat()),
+      m_audioOutput(std::move(audioOutput))
+{
+    if (!m_audioOutput)
+        m_audioOutput = std::make_unique<QAudioSinkOutput>(m_format);
 
     m_streamTrack1.setFormat(m_format);
     m_streamTrack2.setFormat(m_format);
@@ -43,11 +60,17 @@ SoundPlayer::SoundPlayer(QObject *parent)
     connect(&m_streamTrack1, &DecodeStream::errorOccurred, this, handleDecodeError);
     connect(&m_streamTrack2, &DecodeStream::errorOccurred, this, handleDecodeError);
 
-    m_audioSink = new QAudioSink(QMediaDevices::defaultAudioOutput(), m_format, this);
+    m_audioOutput->setStateChangedHandler(
+        [this](QtAudio::State state) { handlePlayerStateChanged(state); });
     connect(&m_mixer, &AudioMixer::positionUpdated, this, &SoundPlayer::positionUpdated);
+}
 
-    connect(m_audioSink, &QAudioSink::stateChanged,
-            this, &SoundPlayer::handlePlayerStateChanged);
+SoundPlayer::~SoundPlayer()
+{
+    if (m_audioOutput) {
+        m_audioOutput->setStateChangedHandler({});
+        m_audioOutput->stop();
+    }
 }
 
 bool SoundPlayer::play(State mode, const QString &track1Path, const QString &track2Path)
@@ -87,21 +110,21 @@ bool SoundPlayer::play(State mode, const QString &track1Path, const QString &tra
 
 void SoundPlayer::pauseResume()
 {
-    if (!m_audioSink || m_state == State::Idle)
+    if (!m_audioOutput || m_state == State::Idle)
         return;
 
     m_paused = !m_paused;
     if (m_paused)
     {
-        if (m_audioSink->state() == QAudio::ActiveState)
-            m_audioSink->suspend();
+        if (m_audioOutput->state() == QAudio::ActiveState)
+            m_audioOutput->suspend();
         emit playbackStateChanged();
         return;
     }
 
-    if (m_audioSink->state() == QAudio::SuspendedState)
+    if (m_audioOutput->state() == QAudio::SuspendedState)
     {
-        m_audioSink->resume();
+        m_audioOutput->resume();
         emit playbackStateChanged();
         return;
     }
@@ -123,8 +146,8 @@ void SoundPlayer::stop()
     m_stopping = true;
     m_paused = false;
     m_outputStarted = false;
-    if (m_audioSink)
-        m_audioSink->stop();
+    if (m_audioOutput)
+        m_audioOutput->stop();
 
     m_streamTrack1.close();
     m_streamTrack2.close();
@@ -214,7 +237,7 @@ void SoundPlayer::handlePlayerStateChanged(QtAudio::State state)
 
     case QAudio::StoppedState:
     {
-        const QAudio::Error sinkError = m_audioSink->error();
+        const QAudio::Error sinkError = m_audioOutput->error();
         const QString error = sinkError == QAudio::OpenError
                                   ? tr("Unable to open the audio output device.")
                                   : tr("Audio output failed.");
@@ -249,9 +272,9 @@ void SoundPlayer::handleTrackFinished()
     }
 
     if (!m_outputStarted
-        || (!m_paused && m_audioSink
-            && m_audioSink->state() != QAudio::ActiveState
-            && m_audioSink->state() != QAudio::SuspendedState))
+        || (!m_paused && m_audioOutput
+            && m_audioOutput->state() != QAudio::ActiveState
+            && m_audioOutput->state() != QAudio::SuspendedState))
         finishPlayback();
 }
 
@@ -268,16 +291,16 @@ bool SoundPlayer::allTracksFinishedAndDrained() const
 
 void SoundPlayer::startOutputIfReady()
 {
-    if (m_stopping || m_state == State::Idle || m_paused || !m_audioSink
+    if (m_stopping || m_state == State::Idle || m_paused || !m_audioOutput
         || m_mixer.bytesAvailable() == 0)
         return;
 
-    if (m_audioSink->state() == QAudio::ActiveState
-        || m_audioSink->state() == QAudio::SuspendedState)
+    if (m_audioOutput->state() == QAudio::ActiveState
+        || m_audioOutput->state() == QAudio::SuspendedState)
         return;
 
     m_outputStarted = true;
-    m_audioSink->start(&m_mixer);
+    m_audioOutput->start(&m_mixer);
 }
 
 void SoundPlayer::finishPlayback()
@@ -288,8 +311,8 @@ void SoundPlayer::finishPlayback()
     m_stopping = true;
     m_paused = false;
     m_outputStarted = false;
-    if (m_audioSink)
-        m_audioSink->stop();
+    if (m_audioOutput)
+        m_audioOutput->stop();
 
     emit positionUpdated(0);
     m_track1Duration = 0;

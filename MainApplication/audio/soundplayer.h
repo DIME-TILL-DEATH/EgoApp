@@ -3,7 +3,9 @@
 
 #include <QObject>
 #include <QAudioFormat>
-#include <QAudioSink>
+#include <memory>
+
+#include <audiooutput.h>
 
 #include <audiomixer.h>
 #include <decodestream.h>
@@ -25,7 +27,9 @@ public:
     Q_ENUM(State)
 
     explicit SoundPlayer(QObject *parent = nullptr);
-    ~SoundPlayer() override = default;
+    explicit SoundPlayer(std::unique_ptr<AudioOutput> audioOutput,
+                         QObject *parent = nullptr);
+    ~SoundPlayer() override;
 
     bool play(State mode, const QString &track1Path, const QString &track2Path = {});
     void pauseResume();
@@ -65,7 +69,7 @@ private:
     DecodeStream m_streamTrack2;
     AudioMixer m_mixer;
     QAudioFormat m_format;
-    QAudioSink *m_audioSink{nullptr};
+    std::unique_ptr<AudioOutput> m_audioOutput;
 
     float egoT1Volume{1.0f};
     float egoT2Volume{1.0f};
