@@ -173,6 +173,15 @@ if(APPLE)
             "${CMAKE_BINARY_DIR}/WavConverterShell/wavconverter.app"
             "${RELEASE_APP_PATH}/Contents/MacOS/wavconverter.app")
 
+        # Fail early (before signing/packaging) if anything in the bundle needs
+        # a newer macOS than EGOGIG_MIN_MACOS (see top-level CMakeLists.txt).
+        if(EGOGIG_VERIFY_MIN_MACOS)
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND bash "${MAC_DEPLOY_DIR}/verify_min_macos.sh"
+                        "${RELEASE_APP_PATH}" "${EGOGIG_MIN_MACOS}"
+                VERBATIM)
+        endif()
+
         #################### App store ######################
         set(MAS_DIR ${MAC_STAGING}/appstore)
         set(MAS_APP ${MAS_DIR}/EgoGIG.app)
