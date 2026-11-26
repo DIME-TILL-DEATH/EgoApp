@@ -331,6 +331,30 @@ private slots:
         QVERIFY(errors.first().first().toString().contains(QStringLiteral("Unable to open the audio output device.")));
     }
 
+
+    void soundPlayerDecoderErrorStopsPlayback()
+    {
+        QTemporaryFile invalidSource;
+        QVERIFY(invalidSource.open());
+        QVERIFY(invalidSource.write("not an audio file") > 0);
+        QVERIFY(invalidSource.flush());
+
+        auto output = std::make_unique<FakeAudioOutput>();
+        SoundPlayer player(std::move(output));
+        QSignalSpy errors(&player, &SoundPlayer::errorOccurred);
+        QSignalSpy finished(&player, &SoundPlayer::playingFinished);
+        QVERIFY(errors.isValid());
+        QVERIFY(finished.isValid());
+
+        QVERIFY(player.play(SoundPlayer::PlaySd, invalidSource.fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(errors.count() > 0, 5000);
+        QCOMPARE(player.state(), SoundPlayer::Idle);
+        QCOMPARE(errors.count(), 1);
+        QCOMPARE(finished.count(), 0);
+        QVERIFY(errors.first().first().toString().startsWith(
+            QStringLiteral("Audio decoding failed:")));
+    }
+
     void soundPlayerFinishesAfterOutputBufferIsDrained()
     {
         auto wave = makeWaveFile(100); QVERIFY(wave);

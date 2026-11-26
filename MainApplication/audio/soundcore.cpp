@@ -31,7 +31,15 @@ SoundCore::SoundCore(QObject *parent)
     m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
 
     connect(&m_soundPlayer, &SoundPlayer::playbackDurationChanged, this, &SoundCore::trackDurationChanged);
-    connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this, &SoundCore::errorOccured);
+    connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this,
+            [this](const QString &errorString) {
+        m_egoSongPlaying.clear();
+        m_wavPlaying.clear();
+        m_playingEgoTrack1Path.clear();
+        m_playingEgoTrack2Path.clear();
+        emit playingStringChanged();
+        emit errorOccured(errorString);
+    });
     connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
     connect(&m_soundPlayer, &SoundPlayer::playbackStateChanged, this, &SoundCore::playbackStateChanged);
     connect(&m_soundPlayer, &SoundPlayer::playingFinished, this, &SoundCore::playingFinished);
@@ -273,8 +281,10 @@ void SoundCore::trackPositionChanged(qint64 posisiton)
 
 void SoundCore::playingFinished()
 {
-    m_egoSongPlaying = "";
-    m_wavPlaying = "";
+    m_egoSongPlaying.clear();
+    m_wavPlaying.clear();
+    m_playingEgoTrack1Path.clear();
+    m_playingEgoTrack2Path.clear();
     emit playingStringChanged();
 }
 
