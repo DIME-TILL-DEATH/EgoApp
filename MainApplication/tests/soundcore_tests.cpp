@@ -323,6 +323,72 @@ private slots:
         QVERIFY(positionChanges.count() > 0);
     }
 
+    void decoderErrorClearsSoundCorePlaybackMetadata()
+    {
+        QTemporaryDir workspace;
+        QVERIFY(workspace.isValid());
+        QVERIFY(QDir(workspace.path()).mkdir("SONGS"));
+        const QString invalidPath = workspace.filePath("SONGS/invalid.wav");
+        QFile invalidFile(invalidPath);
+        QVERIFY(invalidFile.open(QIODevice::WriteOnly));
+        QVERIFY(invalidFile.write("not an audio file") > 0);
+        QVERIFY(invalidFile.flush());
+        invalidFile.close();
+
+        PlaylistModel playlist({makeSong("/SONGS/invalid.wav")});
+        playlist.setWorkspacePath(workspace.path());
+        auto output = std::make_unique<FakeAudioOutput>();
+        SoundCore core(std::move(output));
+        QSignalSpy errors(&core, &SoundCore::errorOccured);
+        QVERIFY(errors.isValid());
+
+        core.playEgo(playlist.index(0, 0));
+        QCOMPARE(core.egoSongPlaying(), QStringLiteral("invalid.wav"));
+        QVERIFY(core.egoPlaybackActive());
+        QTRY_VERIFY_WITH_TIMEOUT(errors.count() == 1, 5000);
+
+        QVERIFY(!core.playbackActive());
+        QVERIFY(!core.egoPlaybackActive());
+        QVERIFY(!core.sdPlaybackActive());
+        QVERIFY(core.egoSongPlaying().isEmpty());
+        QVERIFY(core.wavPlaying().isEmpty());
+        QCOMPARE(core.egoTrackDuration(), qint64(0));
+        QCOMPARE(core.sdTrackDuration(), qint64(0));
+        QCOMPARE(core.egoTrackPosition(), qint64(0));
+        QCOMPARE(core.sdTrackPosition(), qint64(0));
+    }
+
+    void naturalCompletionClearsSoundCorePlaybackMetadata()
+    {
+        QTemporaryDir workspace;
+        QVERIFY(workspace.isValid());
+        QVERIFY(QDir(workspace.path()).mkdir("SONGS"));
+        QVERIFY(writeWave(workspace.filePath("SONGS/short.wav"), 100));
+
+        PlaylistModel playlist({makeSong("/SONGS/short.wav")});
+        playlist.setWorkspacePath(workspace.path());
+        auto output = std::make_unique<FakeAudioOutput>();
+        auto *fake = output.get();
+        SoundCore core(std::move(output));
+        QSignalSpy errors(&core, &SoundCore::errorOccured);
+        QVERIFY(errors.isValid());
+
+        core.playEgo(playlist.index(0, 0));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(core.egoTrackDuration() > 0, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(fake->consume(17640) == 17640, 5000);
+        fake->simulateState(QtAudio::IdleState);
+
+        QTRY_VERIFY_WITH_TIMEOUT(!core.playbackActive(), 5000);
+        QVERIFY(!core.egoPlaybackActive());
+        QVERIFY(!core.sdPlaybackActive());
+        QVERIFY(core.egoSongPlaying().isEmpty());
+        QVERIFY(core.wavPlaying().isEmpty());
+        QCOMPARE(core.egoTrackDuration(), qint64(0));
+        QCOMPARE(core.egoTrackPosition(), qint64(0));
+        QCOMPARE(errors.count(), 0);
+    }
+
     void switchingFromSdToPlaylistClearsThePreviousSourceMetadata()
     {
         QTemporaryDir workspace;
