@@ -127,4 +127,8 @@ A playlist song may link track 1 only, track 2 only, or both. At least one track
 All song-editing controls require an active playlist and a valid selected row. The Play next role binding returns an unchecked state when no row is selected, and a failed persistence operation restores the checkbox from the model. The playlist model intentionally supports moving one song per operation; grouped row moves are rejected.
 
 
+## Qt Test coverage
+`playlist_tests` verifies playlist storage, repository, service, and Qt Model/View contracts. `audio_tests` exercises AudioMixer independently of QAudioSink using QBuffer streams. It covers starvation synchronization, Track 2-only input, silence after a completed shorter track, channel/volume/mute processing, seek alignment, and consumed-position signals. Actual codec decoding, audio-device behavior, and QML automation remain integration-test gaps.
+
+
 QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.

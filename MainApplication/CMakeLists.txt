@@ -463,3 +463,49 @@ if(LINUX AND CMAKE_BUILD_TYPE STREQUAL "Release")
             "${DEPLOY_PATH}/debian_deploy/EgoGIG/"
     )
 endif()
+
+
+if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+
+    add_executable(playlist_tests
+        tests/playlist_tests.cpp
+        playlists/playlistmodel.cpp
+        playlists/playlistrepository.cpp
+        playlists/playlistservice.cpp
+        playlists/playliststorage.cpp
+        playlists/song.cpp
+    )
+
+    target_include_directories(playlist_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/playlists
+    )
+
+    target_link_libraries(playlist_tests
+        PRIVATE
+            Qt6::Core
+            Qt6::Qml
+            Qt6::Test
+    )
+
+    add_test(NAME playlist_tests COMMAND playlist_tests)
+
+    add_executable(audio_tests
+        tests/audio_tests.cpp
+        audio/audiomixer.cpp
+    )
+
+    target_include_directories(audio_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/audio
+    )
+
+    target_link_libraries(audio_tests
+        PRIVATE
+            Qt6::Core
+            Qt6::Test
+    )
+
+    add_test(NAME audio_tests COMMAND audio_tests)
+endif()

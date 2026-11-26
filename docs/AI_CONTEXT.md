@@ -100,4 +100,18 @@ Media path resolution also refuses a path if any existing component below the wo
 
 
 
+## Automated playlist and audio tests (Qt Test)
+The `playlist_tests` target covers playlist storage, repository, service, and Qt Model/View behavior. The `audio_tests` target covers the hardware-independent AudioMixer with in-memory QBuffer streams: decoder starvation, Track 2-only playback, draining a completed shorter stream, volume/mute/channel routing, seeking, and consumed playback position. These tests do not require a physical audio device. They do not yet test actual codec decoding, QAudioSink hardware integration, or QML automation.
+
+Build and run both suites:
+
+```sh
+cmake -S . -B build-tests -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH="/path/to/Qt/6.7.x/macos"
+cmake --build build-tests --target playlist_tests audio_tests
+ctest --test-dir build-tests --output-on-failure
+```
+
+Add mixer tests as private slots in `MainApplication/tests/audio_tests.cpp`. Use QBuffer fixtures and avoid constructing QAudioSink or relying on physical audio hardware. Decoder/device integration tests require a separate integration setup.
+
+
 QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.
