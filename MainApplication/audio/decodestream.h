@@ -48,7 +48,8 @@ private:
     void handleBufferReady(quint64 generation);
     void handleDecoderError(quint64 generation, QAudioDecoder::Error error);
 
-    QFile m_sourceFile;
+    QString m_sourcePath;
+    QFile *m_sourceFile{nullptr};
     std::unique_ptr<QTemporaryFile> m_pcmFile;
     QAudioDecoder *m_decoder{nullptr};
     QAudioFormat m_format;
