@@ -33,7 +33,7 @@ Verify paths against the current tree.
 - Every directory below PLAYLIST/ is exposed as a playlist. A directory may itself contain .ego files and child playlist directories.
 - Existing top-level playlists remain valid without migration. Their identifiers remain their directory names.
 - Absolute paths, empty path components, dot/dot-dot components, hidden components, drive-qualified paths, backslashes, control characters, and symbolic-link traversal are rejected.
-- PlaylistModel receives the workspace path explicitly; it must not infer it by walking upward from its playlist directory because playlists may be nested.
+- PlaylistModel receives the workspace path explicitly; it must not infer it by walking upward from its playlist directory because playlists may be nested. Every song mutation entry point rejects corrupted playlists before preparing changes; the persistence layer retains a final guard. `setLink()` and `setPlayNext()` report success, and row indexes must belong to the receiving model.
 - The playlist UI is planned as a folder tree: users select a folder, expand it to inspect nested playlists, and create a child playlist by entering only its name. Do not require users to type a slash-separated path in the creation dialog. Removing a directory removes its entire nested subtree.
 
 **Qt Model/View contract:**

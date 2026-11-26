@@ -148,15 +148,11 @@ QHash<int, QByteArray> PlaylistModel::roleNames() const
     };
 }
 
-void PlaylistModel::refreshModel(const QList<Song> &songList)
-{
-    beginResetModel();
-    m_songList = songList;
-    endResetModel();
-}
-
 bool PlaylistModel::insertRows(int position, int count, const QModelIndex &parent)
 {
+    if (!ensureEditable())
+        return false;
+
     const int currentRowCount = m_songList.size();
     if (parent.isValid() || count <= 0 || position < 0
         || position > currentRowCount
@@ -250,6 +246,9 @@ bool PlaylistModel::insertRows(int position, int count, const QModelIndex &paren
 
 bool PlaylistModel::removeRows(int position, int count, const QModelIndex &parent)
 {
+    if (!ensureEditable())
+        return false;
+
     const int currentRowCount = m_songList.size();
     if (parent.isValid() || count <= 0 || position < 0
         || position >= currentRowCount || count > currentRowCount - position)
@@ -270,11 +269,8 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
 
 bool PlaylistModel::moveSong(int fromPosition, int toPosition)
 {
-    if (!m_persistenceEnabled)
-    {
-        emit errorOccured(QObject::tr("Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss."));
+    if (!ensureEditable())
         return false;
-    }
 
     const int currentRowCount = m_songList.size();
     if (fromPosition < 0 || fromPosition >= currentRowCount
@@ -293,7 +289,7 @@ bool PlaylistModel::moveSong(int fromPosition, int toPosition)
 bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
                              const QModelIndex &destinationParent, int destinationChild)
 {
-    if (sourceParent.isValid() || destinationParent.isValid())
+    if (!ensureEditable() || sourceParent.isValid() || destinationParent.isValid())
         return false;
 
     const int currentRowCount = m_songList.size();
@@ -339,16 +335,19 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
     return true;
 }
 
-void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)
+bool PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= m_songList.size()
-        || trackNum > 1)
-        return;
+    if (!ensureEditable())
+        return false;
+
+    if (!index.isValid() || index.model() != this
+        || index.row() < 0 || index.row() >= m_songList.size() || trackNum > 1)
+        return false;
 
     QList<Song> updatedSongs = m_songList;
     updatedSongs[index.row()].setPath(trackNum, path);
     if (!persistSongList(updatedSongs))
-        return;
+        return false;
 
     m_songList = updatedSongs;
 
@@ -374,20 +373,26 @@ void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString p
     }
 
     emit dataChanged(index, index, changedRoles);
+    return true;
 }
 
-void PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
+bool PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= m_songList.size())
-        return;
+    if (!ensureEditable())
+        return false;
+
+    if (!index.isValid() || index.model() != this
+        || index.row() < 0 || index.row() >= m_songList.size())
+        return false;
 
     QList<Song> updatedSongs = m_songList;
     updatedSongs[index.row()].playNext = state;
     if (!persistSongList(updatedSongs))
-        return;
+        return false;
 
     m_songList = updatedSongs;
     emit dataChanged(index, index, {PlayNextRole});
+    return true;
 }
 
 QDir PlaylistModel::dir() const
@@ -400,13 +405,21 @@ void PlaylistModel::setDir(const QDir &newDir)
     m_dir = newDir;
 }
 
+bool PlaylistModel::ensureEditable()
+{
+    if (m_persistenceEnabled)
+        return true;
+
+    emit errorOccured(QObject::tr("Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss."));
+    return false;
+}
+
 bool PlaylistModel::persistSongList(const QList<Song> &songList)
 {
-    if (!m_persistenceEnabled)
-    {
-        emit errorOccured(QObject::tr("Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss."));
+    // Keep this final guard even though public mutation methods check before
+    // preparing their changes. It protects future call paths as well.
+    if (!ensureEditable())
         return false;
-    }
 
     QString errorString;
     if (!m_storage.saveSongs(m_dir.absolutePath(), songList, &errorString))

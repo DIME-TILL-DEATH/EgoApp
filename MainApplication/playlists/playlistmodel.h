@@ -9,6 +9,8 @@
 #include "playliststorage.h"
 #include "song.h"
 
+class PlaylistService;
+
 class PlaylistModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -37,8 +39,6 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void refreshModel(const QList<Song> &songList);
-
     QString playlistName() const { return m_playlistName; }
     void setPlaylistName(const QString &newName) { m_playlistName = newName; }
 
@@ -46,7 +46,6 @@ public:
     void setPlaylistPath(const QString &newPath) { m_playlistPath = newPath; }
 
     void setWorkspacePath(const QString &workspacePath);
-    void setCorrupted(bool corrupted);
     bool isCorrupted() const { return m_corrupted; }
     bool resolveMediaPath(const QString &storedPath, QString *resolvedPath) const;
 
@@ -56,8 +55,8 @@ public:
                                 const QModelIndex &parent = QModelIndex()) override;
     Q_INVOKABLE bool moveSong(int fromPosition, int toPosition);
 
-    Q_INVOKABLE void setLink(const QModelIndex &index, quint8 trackNum, QString path);
-    Q_INVOKABLE void setPlayNext(const QModelIndex &index, bool state);
+    Q_INVOKABLE bool setLink(const QModelIndex &index, quint8 trackNum, QString path);
+    Q_INVOKABLE bool setPlayNext(const QModelIndex &index, bool state);
 
     QDir dir() const;
     void setDir(const QDir &newDir);
@@ -66,6 +65,11 @@ signals:
     void errorOccured(QString errorString);
 
 private:
+    friend class PlaylistService;
+
+    void setCorrupted(bool corrupted);
+    bool ensureEditable();
+
     QString m_playlistName;
     QString m_playlistPath;
     QString m_workspacePath;
