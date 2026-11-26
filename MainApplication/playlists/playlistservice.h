@@ -26,6 +26,7 @@ public:
 
     bool createPlaylist(const QString &relativePath, QString *errorString = nullptr);
     bool removePlaylist(const QString &relativePath, QString *errorString = nullptr);
+    QStringList checkPlaylist(const QString &relativePath) const;
     void reload();
 
 signals:

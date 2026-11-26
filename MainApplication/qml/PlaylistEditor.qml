@@ -319,8 +319,10 @@ Rectangle {
 
                 text: qsTr("CHECK")
 
+                enabled: UiCore.currentPlaylist !== null
+
                 onClicked: {
-                    UiCore.checkPlaylists()
+                    UiCore.checkPlaylist(_plsCombo.currentText)
                 }
             }
         }

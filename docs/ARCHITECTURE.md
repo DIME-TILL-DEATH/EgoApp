@@ -35,7 +35,7 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 ## Responsibility areas
 - QML: presentation and lightweight coordination.
 - UiCore: QML-facing application facade; owns UI state and translates application results into Qt signals. It does not own playlist discovery or directory lifecycle logic.
-- PlaylistService: coordinates playlist discovery, creation/removal, model construction, and model lifetimes for the active workspace. It is independent of QML and exposes the playlist models to UiCore.
+- PlaylistService: coordinates playlist discovery, creation/removal, model construction, and model lifetimes for the active workspace. It also validates an individual playlist by its stable relative path, loading song records through PlaylistRepository/PlaylistStorage and resolving media paths against its workspace root; validation does not inspect PlaylistModel roles or indexes. It is independent of QML and exposes the playlist models to UiCore.
 - PlaylistRepository: recursively discovers playlist directories and safely creates/removes slash-separated relative paths under PLAYLIST/. It returns plain PlaylistData records and has no QML or Qt item-model dependency.
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.
 - PlaylistModel: one playlist’s song state and Qt Model/View contracts. It delegates persistence to PlaylistStorage and does not implement file-format parsing or filesystem discovery. It receives the workspace root explicitly so media links resolve correctly regardless of playlist nesting depth.
@@ -54,7 +54,7 @@ Repository operations reject traversal and symbolic-link components and verify c
 2. Do not truncate an existing .ego file before its replacement is ready; writes use QSaveFile.
 3. Propagate file errors and do not report stale-file cleanup failure as success.
 4. Keep model data and signals consistent.
-5. Keep complex file operations out of QML.
+5. Keep complex file operations and playlist validation out of QML and Qt item models.
 6. Make async-object and temporary-file lifetimes explicit.
 7. Never change the existing .ego format when implementing playlist features.
 

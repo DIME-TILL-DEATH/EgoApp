@@ -120,6 +120,42 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath) const
     return result;
 }
 
+bool PlaylistRepository::loadPlaylist(const QString &workspacePath,
+                                      const QString &relativePath,
+                                      PlaylistData *playlist) const
+{
+    if (!playlist || !isValidRelativePath(relativePath))
+        return false;
+
+    const QString rootPath = canonicalPlaylistRoot(workspacePath);
+    if (rootPath.isEmpty())
+        return false;
+
+    QString currentPath = rootPath;
+    const QStringList components = relativePath.split('/');
+    for (const QString &component : components)
+    {
+        currentPath = QDir(currentPath).filePath(component);
+        const QFileInfo componentInfo(currentPath);
+        if (componentInfo.isSymLink() || !componentInfo.exists() || !componentInfo.isDir())
+            return false;
+
+        const QString canonicalPath = componentInfo.canonicalFilePath();
+        if (canonicalPath.isEmpty() || !isPathInside(rootPath, canonicalPath))
+            return false;
+
+        currentPath = canonicalPath;
+    }
+
+    PlaylistData loadedPlaylist;
+    loadedPlaylist.name = components.constLast();
+    loadedPlaylist.relativePath = relativePath;
+    loadedPlaylist.directoryPath = currentPath;
+    loadedPlaylist.songs = PlaylistStorage::loadSongs(currentPath);
+    *playlist = loadedPlaylist;
+    return true;
+}
+
 bool PlaylistRepository::create(const QString &workspacePath, const QString &relativePath) const
 {
     if (!isValidRelativePath(relativePath))

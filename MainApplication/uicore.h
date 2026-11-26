@@ -41,7 +41,7 @@ public:
     Q_INVOKABLE void openManualExternally(QString fileName);
     Q_INVOKABLE void runWavConvertor();
 
-    Q_INVOKABLE void checkPlaylists();
+    Q_INVOKABLE void checkPlaylist(const QString &playlistPath);
 
     Q_INVOKABLE void setLanguage(QString languageCode);
     QString appLanguageCode();

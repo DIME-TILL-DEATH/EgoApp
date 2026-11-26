@@ -26,7 +26,7 @@ Verify paths against the current tree.
 | Legacy shell | WavConverterShell/CMakeLists.txt |
 
 ## Data paths
-**Playlists:** QML -> UiCore -> PlaylistService -> PlaylistModel / PlaylistRepository. PlaylistService coordinates playlist lifecycle and model construction. PlaylistRepository recursively discovers playlist directories and safely creates/removes slash-separated paths relative to PLAYLIST/. PlaylistModel owns per-playlist song state and Qt Model/View behavior; PlaylistStorage reads and writes numbered .ego files. Keep Qt Model/View concerns out of storage and repository code, and keep filesystem lifecycle logic out of UiCore.
+**Playlists:** QML -> UiCore -> PlaylistService -> PlaylistModel / PlaylistRepository. PlaylistService coordinates playlist lifecycle and model construction. It validates one playlist by its slash-separated relative path, using song records loaded from PlaylistRepository/PlaylistStorage and the service-owned workspace root; validation must not query PlaylistModel roles or indexes. PlaylistRepository recursively discovers playlist directories and safely creates/removes slash-separated paths relative to PLAYLIST/. PlaylistModel owns per-playlist song state and Qt Model/View behavior; PlaylistStorage reads and writes numbered .ego files. Keep Qt Model/View concerns out of storage and repository code, and keep filesystem lifecycle logic and playlist validation out of UiCore.
 
 **Nested playlist directory rules:**
 - A playlist path is a slash-separated relative path under PLAYLIST/, e.g. Collections/Rock. It is the stable playlist identifier; the final path component is the display name.
