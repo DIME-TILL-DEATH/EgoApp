@@ -136,6 +136,10 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
     QStringList errors;
     result.append(playlist.relativePath + QStringLiteral(":"));
 
+    for (const QString &loadError : playlist.loadErrors)
+        errors.append(QStringLiteral("\t") + QCoreApplication::translate(
+            "UiCore", "Cannot load .ego record: ") + loadError);
+
     for (int i = 0; i < playlist.songs.size(); ++i)
     {
         const Song &song = playlist.songs.at(i);
@@ -151,7 +155,8 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         else
         {
             const QString track1Path = workspaceFilePath(m_workspacePath, song.t1Path);
-            if (!QFileInfo::exists(track1Path))
+            const QFileInfo track1Info(track1Path);
+            if (!track1Info.exists() || !track1Info.isFile())
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
@@ -173,7 +178,8 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         if (!song.t2Path.isEmpty())
         {
             const QString track2Path = workspaceFilePath(m_workspacePath, song.t2Path);
-            if (!QFileInfo::exists(track2Path))
+            const QFileInfo track2Info(track2Path);
+            if (!track2Info.exists() || !track2Info.isFile())
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
@@ -212,13 +218,18 @@ void PlaylistService::reload()
 
     const QList<PlaylistData> playlistData = m_repository.load(m_workspacePath);
     m_playlists.reserve(playlistData.size());
+    QStringList loadIssues;
 
     for (const PlaylistData &playlist : playlistData)
     {
+        for (const QString &loadError : playlist.loadErrors)
+            loadIssues.append(playlist.relativePath + QStringLiteral(": ") + loadError);
+
         auto *model = new PlaylistModel(playlist.songs, this);
         model->setPlaylistName(playlist.name);
         model->setPlaylistPath(playlist.relativePath);
         model->setWorkspacePath(m_workspacePath);
+        model->setPersistenceEnabled(playlist.loadErrors.isEmpty());
         model->setDir(QDir(playlist.directoryPath));
 
         connect(model, &PlaylistModel::errorOccured,
@@ -226,6 +237,9 @@ void PlaylistService::reload()
 
         m_playlists.append(model);
     }
+
+    if (!loadIssues.isEmpty())
+        emit loadIssuesFound(loadIssues);
 }
 
 void PlaylistService::clearModels()

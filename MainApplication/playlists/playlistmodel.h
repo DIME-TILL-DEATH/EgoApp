@@ -45,6 +45,7 @@ public:
     void setPlaylistPath(const QString &newPath) { m_playlistPath = newPath; }
 
     void setWorkspacePath(const QString &workspacePath);
+    void setPersistenceEnabled(bool enabled);
 
     Q_INVOKABLE bool insertRows(int position, int count,
                                 const QModelIndex &parent = QModelIndex()) override;
@@ -68,6 +69,7 @@ private:
     QList<Song> m_songList;
     QDir m_dir;
     PlaylistStorage m_storage;
+    bool m_persistenceEnabled{true};
 
     QString workspaceFilePath(const QString &relativePath) const;
     bool isTrackMissing(const QString &path) const;

@@ -25,6 +25,7 @@ public:
 
     SdContentModel* sdContentModel() {return &m_sdContentModel;};
 
+    Q_INVOKABLE void initialize();
     Q_INVOKABLE void setWorkspace(QUrl workspaceFolderPath);
 
     // Accepts a slash-separated path relative to PLAYLIST, e.g. "Collections/Rock".
@@ -54,6 +55,7 @@ signals:
     void currentPlaylistIndexChanged();
 
     void checkingPlaylistsFinished(QStringList result);
+    void playlistLoadIssuesFound(const QStringList &issues);
 
     void translatorChanged(QString langaugeCode);
 
@@ -61,6 +63,7 @@ private:
     SdContentModel m_sdContentModel{this};
     QSettings m_settings;
     PlaylistService m_playlistService;
+    bool m_initialized{false};
 
     QTranslator m_translator;
     QMap<QString, QString> pathFromCode

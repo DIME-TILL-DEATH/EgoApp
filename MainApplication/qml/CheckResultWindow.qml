@@ -6,7 +6,7 @@ Window{
 
     property alias textResult: _listResults.model
 
-    title: qsTr("Check results")
+    title: qsTr("Playlist check / loading results")
 
     Column{
         anchors.fill: parent
@@ -57,6 +57,12 @@ Window{
         function onCheckingPlaylistsFinished(result)
         {
             _resultWindow.textResult = result
+            _resultWindow.show()
+        }
+
+        function onPlaylistLoadIssuesFound(issues)
+        {
+            _resultWindow.textResult = issues
             _resultWindow.show()
         }
     }

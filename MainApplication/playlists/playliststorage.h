@@ -2,15 +2,22 @@
 #define PLAYLISTSTORAGE_H
 
 #include <QList>
+#include <QStringList>
 #include <QString>
 
 #include "song.h"
 
 // Reads and writes the existing numbered .ego files for one playlist directory.
+struct PlaylistLoadResult
+{
+    QList<Song> songs;
+    QStringList errors;
+};
+
 class PlaylistStorage
 {
 public:
-    static QList<Song> loadSongs(const QString &directoryPath);
+    static PlaylistLoadResult loadSongs(const QString &directoryPath);
     static bool saveSongs(const QString &directoryPath, const QList<Song> &songs,
                           QString *errorString = nullptr);
 };

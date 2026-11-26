@@ -31,6 +31,7 @@ public:
 
 signals:
     void errorOccurred(const QString &errorString);
+    void loadIssuesFound(const QStringList &issues);
 
 private:
     void clearModels();

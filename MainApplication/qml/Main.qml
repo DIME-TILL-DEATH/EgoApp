@@ -18,6 +18,7 @@ ApplicationWindow {
     maximumHeight: 1000
 
     visible: true
+    Component.onCompleted: UiCore.initialize()
     title: "EgoGig" + " v." + Qt.application.version
 
     Settings{
@@ -235,6 +236,8 @@ ApplicationWindow {
     }
 
     CheckResultWindow{
+        id: _checkResultWindow
+
         width: _mainWindow.width * 0.6
         height: _mainWindow.height * 0.5
 

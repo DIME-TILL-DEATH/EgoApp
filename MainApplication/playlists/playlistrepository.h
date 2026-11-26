@@ -3,6 +3,7 @@
 
 #include <QList>
 #include <QString>
+#include <QStringList>
 
 #include "song.h"
 
@@ -12,6 +13,7 @@ struct PlaylistData
     QString relativePath;
     QString directoryPath;
     QList<Song> songs;
+    QStringList loadErrors;
 };
 
 class PlaylistRepository

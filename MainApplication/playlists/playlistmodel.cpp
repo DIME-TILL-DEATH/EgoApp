@@ -49,6 +49,11 @@ void PlaylistModel::setWorkspacePath(const QString &workspacePath)
     m_workspacePath = QDir(workspacePath).absolutePath();
 }
 
+void PlaylistModel::setPersistenceEnabled(bool enabled)
+{
+    m_persistenceEnabled = enabled;
+}
+
 bool PlaylistModel::isTrackMissing(const QString &path) const
 {
     if (path.isEmpty())
@@ -66,24 +71,30 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
     {
     case ListRoles::FileNumRole:
         return m_songList.at(index.row()).fileNum;
+
     case ListRoles::PlayNextRole:
         return m_songList.at(index.row()).playNext;
+
     case ListRoles::T1PathRole:
         return m_songList.at(index.row()).t1Path;
+
     case ListRoles::T2PathRole:
         return m_songList.at(index.row()).t2Path;
+
     case ListRoles::T1NameRole:
     {
         const QString path = m_songList.at(index.row()).t1Path;
         const qsizetype fileNamePos = path.lastIndexOf('/');
         return path.mid(fileNamePos + 1);
     }
+
     case ListRoles::T2NameRole:
     {
         const QString path = m_songList.at(index.row()).t2Path;
         const qsizetype fileNamePos = path.lastIndexOf('/');
         return path.mid(fileNamePos + 1);
     }
+
     case ListRoles::MidiExistRole:
     {
         QString midiPath = workspaceFilePath(m_songList.at(index.row()).t1Path);
@@ -91,13 +102,17 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
         midiPath += "mid";
         return QFileInfo::exists(midiPath);
     }
+
     case ListRoles::FileMissingRole:
         return isTrackMissing(m_songList.at(index.row()).t1Path)
                || isTrackMissing(m_songList.at(index.row()).t2Path);
+
     case ListRoles::T1MissingRole:
         return isTrackMissing(m_songList.at(index.row()).t1Path);
+
     case ListRoles::T2MissingRole:
         return isTrackMissing(m_songList.at(index.row()).t2Path);
+
     default:
         qWarning() << __FUNCTION__ << "no role";
         return true;
@@ -368,6 +383,12 @@ void PlaylistModel::setDir(const QDir &newDir)
 
 bool PlaylistModel::persistSongList(const QList<Song> &songList)
 {
+    if (!m_persistenceEnabled)
+    {
+        emit errorOccured(QObject::tr("Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss."));
+        return false;
+    }
+
     QString errorString;
     if (!m_storage.saveSongs(m_dir.absolutePath(), songList, &errorString))
     {

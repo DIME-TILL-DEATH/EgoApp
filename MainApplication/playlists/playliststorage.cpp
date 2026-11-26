@@ -2,58 +2,163 @@
 
 #include <QObject>
 
-#include <QCollator>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QSet>
+#include <QHash>
+#include <QStringDecoder>
+#include <QRegularExpression>
+#include <limits>
 
 #include <algorithm>
 
-QList<Song> PlaylistStorage::loadSongs(const QString &directoryPath)
+PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
 {
-    QList<Song> songs;
+    PlaylistLoadResult result;
     const QDir directory(directoryPath);
+    const QFileInfo directoryInfo(directoryPath);
 
-    QStringList egoFiles =
-        directory.entryList({"*.ego"}, QDir::Files, QDir::Name);
-
-    QCollator collator;
-    collator.setNumericMode(true);
-    std::sort(egoFiles.begin(), egoFiles.end(), collator);
-
-    for (const QString &egoFileName : egoFiles)
+    if (!directoryInfo.exists() || !directoryInfo.isDir() || !directoryInfo.isReadable())
     {
-        Song song;
-        QFile file(directory.absoluteFilePath(egoFileName));
-
-        if (file.open(QIODevice::ReadOnly))
-        {
-            QByteArray track1Line = file.readLine();
-            if (!track1Line.isEmpty())
-            {
-                if (track1Line.front() == '>')
-                {
-                    song.playNext = true;
-                    track1Line.remove(0, 1);
-                }
-
-                song.t1Path = track1Line;
-                song.t1Path.remove('\n');
-            }
-
-            song.t2Path = file.readLine();
-            song.t2Path.remove('\n');
-        }
-
-        QString fileNumber = QFileInfo(file).fileName();
-        fileNumber.remove(".ego");
-        song.fileNum = fileNumber.toInt();
-        songs.append(song);
+        result.errors.append(QObject::tr("Can't read playlist directory: ") + directoryPath);
+        return result;
     }
 
-    return songs;
+    struct EgoFile
+    {
+        QString name;
+        quint16 number;
+    };
+
+    QList<EgoFile> validFiles;
+    QHash<quint16, int> numberOccurrences;
+
+    const QStringList egoFiles =
+        directory.entryList({"*.ego"}, QDir::Files, QDir::Name);
+
+    for (const QString &fileName : egoFiles)
+    {
+        QString numberText = fileName;
+        numberText.chop(4); // ".ego"
+
+        static const QRegularExpression numericName(QStringLiteral("^[0-9]+$"));
+        if (!numericName.match(numberText).hasMatch())
+        {
+            result.errors.append(fileName + QObject::tr(": invalid .ego filename (expected a number from 0 to 65535)"));
+            continue;
+        }
+
+        bool numberOk = false;
+        const qulonglong parsedNumber = numberText.toULongLong(&numberOk, 10);
+        if (!numberOk || parsedNumber > std::numeric_limits<quint16>::max())
+        {
+            result.errors.append(fileName + QObject::tr(": invalid .ego filename (expected a number from 0 to 65535)"));
+            continue;
+        }
+
+        const quint16 number = static_cast<quint16>(parsedNumber);
+        ++numberOccurrences[number];
+        validFiles.append({fileName, number});
+    }
+
+    for (auto it = numberOccurrences.cbegin(); it != numberOccurrences.cend(); ++it)
+    {
+        if (it.value() > 1)
+        {
+            for (const EgoFile &egoFile : validFiles)
+            {
+                if (egoFile.number == it.key())
+                    result.errors.append(egoFile.name + QObject::tr(": duplicate .ego file number"));
+            }
+        }
+    }
+
+    std::sort(validFiles.begin(), validFiles.end(),
+              [](const EgoFile &left, const EgoFile &right) {
+                  if (left.number != right.number)
+                      return left.number < right.number;
+                  return left.name < right.name;
+              });
+
+    const auto decodeLine = [](QByteArray line, QString *decoded) {
+        if (line.endsWith('\n'))
+            line.chop(1);
+        if (line.endsWith('\r'))
+            line.chop(1);
+
+        QStringDecoder decoder(QStringDecoder::Utf8);
+        *decoded = decoder.decode(line);
+        return !decoder.hasError();
+    };
+
+    for (const EgoFile &egoFile : validFiles)
+    {
+        if (numberOccurrences.value(egoFile.number) > 1)
+            continue;
+
+        const QString filePath = directory.absoluteFilePath(egoFile.name);
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly))
+        {
+            result.errors.append(egoFile.name + QObject::tr(": can't open file: ") + file.errorString());
+            continue;
+        }
+
+        const QByteArray firstLine = file.readLine();
+        if (firstLine.isEmpty())
+        {
+            result.errors.append(egoFile.name + QObject::tr(": empty or unreadable file"));
+            continue;
+        }
+
+        if (!firstLine.endsWith('\n'))
+        {
+            result.errors.append(egoFile.name + QObject::tr(": incomplete first line (missing newline)"));
+            continue;
+        }
+
+        QByteArray track1Bytes = firstLine;
+        bool playNext = false;
+        if (track1Bytes.startsWith('>'))
+        {
+            playNext = true;
+            track1Bytes.remove(0, 1);
+        }
+
+        Song song;
+        if (!decodeLine(track1Bytes, &song.t1Path))
+        {
+            result.errors.append(egoFile.name + QObject::tr(": invalid UTF-8 in first line"));
+            continue;
+        }
+
+        const QByteArray secondLine = file.readLine();
+        if (!secondLine.isEmpty() && !decodeLine(secondLine, &song.t2Path))
+        {
+            result.errors.append(egoFile.name + QObject::tr(": invalid UTF-8 in second line"));
+            continue;
+        }
+
+        if (!file.readAll().isEmpty())
+        {
+            result.errors.append(egoFile.name + QObject::tr(": unexpected data after second line"));
+            continue;
+        }
+
+        if (file.error() != QFile::NoError)
+        {
+            result.errors.append(egoFile.name + QObject::tr(": read error: ") + file.errorString());
+            continue;
+        }
+
+        song.playNext = playNext;
+        song.fileNum = egoFile.number;
+        result.songs.append(song);
+    }
+
+    return result;
 }
 
 bool PlaylistStorage::saveSongs(const QString &directoryPath, const QList<Song> &songs,

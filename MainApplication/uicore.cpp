@@ -35,12 +35,24 @@ static bool isSafeWorkspace(const QString &path)
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
+    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
+    connect(&m_playlistService, &PlaylistService::errorOccurred, this, &UiCore::errorOccured);
+    connect(&m_playlistService, &PlaylistService::loadIssuesFound, this, &UiCore::playlistLoadIssuesFound);
+}
+
+void UiCore::initialize()
+{
+    if (m_initialized)
+        return;
+
+    m_initialized = true;
+
     QString workspacePath = m_settings.value("workspace_path").toString();
 
-    if(!workspacePath.isEmpty() && !isSafeWorkspace(workspacePath))
-        workspacePath.clear();   // небезопасный путь из старых настроек -> папка по умолчанию
+    if (!workspacePath.isEmpty() && !isSafeWorkspace(workspacePath))
+        workspacePath.clear(); // Unsafe path from old settings -> default workspace.
 
-    if(workspacePath.isEmpty())
+    if (workspacePath.isEmpty())
     {
 #ifdef Q_OS_MACOS
         workspacePath = QDir::homePath() + "/Documents";
@@ -55,21 +67,16 @@ UiCore::UiCore(QObject *parent)
 
     const QDir workspaceDir(workspacePath);
     m_sdContentModel.setWorkspace(workspaceDir);
-
-    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
-    connect(&m_playlistService, &PlaylistService::errorOccurred,
-            this, &UiCore::errorOccured);
-
     m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     QString appLanguage = m_settings.value("application_language", "autoselect").toString();
-
-    if(appLanguage=="autoselect")
-    {
+    if (appLanguage == "autoselect")
         appLanguage = QLocale().name().left(2);
-    }
+
     setLanguage(appLanguage);
+
+    emit workspaceChanged();
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
@@ -86,10 +93,9 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
     const QDir workspaceDir(path);
     m_sdContentModel.setWorkspace(workspaceDir);
-
     m_settings.setValue("workspace_path", path);
-
     m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
+
     setCurrentPlaylistIndex(0);
 
     emit workspaceChanged();
@@ -105,6 +111,7 @@ void UiCore::addPlaylist(QString playlistPath)
     }
 
     emit workspaceChanged();
+
     const int playlistIndex = m_playlistService.indexOfPath(playlistPath);
     if (playlistIndex >= 0)
         setCurrentPlaylistIndex(playlistIndex);
@@ -125,6 +132,7 @@ void UiCore::deletePlaylist(quint16 index)
     }
 
     emit workspaceChanged();
+
     setCurrentPlaylistIndex(0);
 }
 

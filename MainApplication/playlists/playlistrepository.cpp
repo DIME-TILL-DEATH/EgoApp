@@ -71,7 +71,9 @@ void loadDirectories(const QString &rootPath,
         playlist.name = child.fileName();
         playlist.relativePath = relativePath;
         playlist.directoryPath = canonicalPath;
-        playlist.songs = PlaylistStorage::loadSongs(canonicalPath);
+        const PlaylistLoadResult loadResult = PlaylistStorage::loadSongs(canonicalPath);
+        playlist.songs = loadResult.songs;
+        playlist.loadErrors = loadResult.errors;
         result.append(playlist);
 
         loadDirectories(rootPath, canonicalPath, relativePath, result);
@@ -151,7 +153,9 @@ bool PlaylistRepository::loadPlaylist(const QString &workspacePath,
     loadedPlaylist.name = components.constLast();
     loadedPlaylist.relativePath = relativePath;
     loadedPlaylist.directoryPath = currentPath;
-    loadedPlaylist.songs = PlaylistStorage::loadSongs(currentPath);
+    const PlaylistLoadResult loadResult = PlaylistStorage::loadSongs(currentPath);
+    loadedPlaylist.songs = loadResult.songs;
+    loadedPlaylist.loadErrors = loadResult.errors;
     *playlist = loadedPlaylist;
     return true;
 }
