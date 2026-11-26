@@ -16,6 +16,8 @@ Rectangle {
     property alias duration: _slider.to
     property alias value: _slider.value
     property alias position: _slider.position
+    property bool playbackActive: SoundCore.playbackActive
+    property bool playbackPaused: SoundCore.playbackPaused
 
     // property alias timeLabel: _timeLabel.text
 
@@ -51,7 +53,9 @@ Rectangle {
                 Layout.preferredHeight: parent.height * 0.7
                 Layout.preferredWidth: height
 
-                icon.source: "qrc:/icons/play.svg"
+                icon.source: _root.playbackActive && !_root.playbackPaused
+                              ? "qrc:/icons/pause.svg"
+                              : "qrc:/icons/play.svg"
 
                 onClicked: _root.playPause()
             }
