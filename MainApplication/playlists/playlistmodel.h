@@ -80,7 +80,7 @@ private:
     bool m_corrupted{false};
 
     bool isTrackMissing(const QString &path) const;
-    bool persistSongList(const QList<Song> &songList);
+    bool persistSongRange(const QList<Song> &songList, int firstIndex, int lastIndex);
 
     bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
                   const QModelIndex &destinationParent, int destinationChild) override;

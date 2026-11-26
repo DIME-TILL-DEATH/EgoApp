@@ -326,6 +326,78 @@
         <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
         <translation>Редактирование плейлиста отключено: не удалось загрузить один или несколько файлов .ego. Исправьте указанные файлы, чтобы избежать потери данных.</translation>
     </message>
+    <message>
+        <source>Invalid playlist persistence range.</source>
+        <translation>Некорректный диапазон сохранения плейлиста.</translation>
+    </message>
+    <message>
+        <source>Can't create playlist backup. Check the SD card and its available space.</source>
+        <translation>Не удалось создать резервную копию плейлиста. Проверьте SD-карту и наличие свободного места.</translation>
+    </message>
+    <message>
+        <source>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</source>
+        <translation>Не удалось создать резервную копию файла плейлиста %1. Файлы плейлиста не изменялись. Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't open playlist file for writing: %1 (%2)</source>
+        <translation>Не удалось открыть файл плейлиста для записи: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't write playlist file: %1 (%2)</source>
+        <translation>Не удалось записать файл плейлиста: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't finalize playlist file: %1 (%2)</source>
+        <translation>Не удалось завершить запись файла плейлиста: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't remove obsolete playlist file: %1</source>
+        <translation>Не удалось удалить устаревший файл плейлиста: %1</translation>
+    </message>
+    <message>
+        <source>%1: can't read backup</source>
+        <translation>%1: не удалось прочитать резервную копию</translation>
+    </message>
+    <message>
+        <source>%1: can't open for restoration</source>
+        <translation>%1: не удалось открыть файл для восстановления</translation>
+    </message>
+    <message>
+        <source>%1: restoration failed</source>
+        <translation>%1: восстановление не удалось</translation>
+    </message>
+    <message>
+        <source>%1: can't remove newly created file</source>
+        <translation>%1: не удалось удалить созданный файл</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</source>
+        <translation>Не удалось обновить плейлист: %1. Предыдущее состояние плейлиста восстановлено. Проверьте SD-карту, её подключение и наличие свободного места.</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous state could not be fully restored: %2. Stop editing and check the SD card and its connection.</source>
+        <translation>Не удалось обновить плейлист: %1. Не удалось полностью восстановить предыдущее состояние: %2. Резервные копии сохранены здесь: %3. Прекратите редактирование и проверьте SD-карту и её подключение.</translation>
+    </message>
+    <message>
+        <source>Can't save playlist file: %1 (%2). Check the SD card.</source>
+        <translation>Не удалось сохранить файл плейлиста: %1 (%2). Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't remove playlist file: %1. Check the SD card.</source>
+        <translation>Не удалось удалить файл плейлиста: %1. Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't remove song: playlist numbering limit reached</source>
+        <translation>Не удалось удалить песню: достигнут предел нумерации плейлиста.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move. The previous playlist state was restored.</source>
+        <translation>Не удалось переместить песню: модель отклонила перемещение. Предыдущее состояние плейлиста восстановлено.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
+        <translation>Не удалось переместить песню: модель отклонила перемещение, а восстановить предыдущее состояние плейлиста не удалось: %1. Проверьте SD-карту.</translation>
+    </message>
 </context>
 <context>
     <name>SdContentEditor</name>

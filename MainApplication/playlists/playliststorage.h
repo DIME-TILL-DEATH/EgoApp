@@ -18,8 +18,11 @@ class PlaylistStorage
 {
 public:
     static PlaylistLoadResult loadSongs(const QString &directoryPath);
-    static bool saveSongs(const QString &directoryPath, const QList<Song> &songs,
-                          QString *errorString = nullptr);
+    static bool saveChanges(const QString &directoryPath,
+                            const QList<Song> &oldSongs,
+                            const QList<Song> &newSongs,
+                            int firstIndex, int lastIndex,
+                            QString *errorString = nullptr);
 };
 
 #endif // PLAYLISTSTORAGE_H

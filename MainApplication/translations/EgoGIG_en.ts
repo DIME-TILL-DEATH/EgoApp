@@ -326,6 +326,78 @@
         <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
         <translation>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</translation>
     </message>
+    <message>
+        <source>Invalid playlist persistence range.</source>
+        <translation>Invalid playlist persistence range.</translation>
+    </message>
+    <message>
+        <source>Can't create playlist backup. Check the SD card and its available space.</source>
+        <translation>Can't create playlist backup. Check the SD card and its available space.</translation>
+    </message>
+    <message>
+        <source>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</source>
+        <translation>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't open playlist file for writing: %1 (%2)</source>
+        <translation>Can't open playlist file for writing: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't write playlist file: %1 (%2)</source>
+        <translation>Can't write playlist file: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't finalize playlist file: %1 (%2)</source>
+        <translation>Can't finalize playlist file: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't remove obsolete playlist file: %1</source>
+        <translation>Can't remove obsolete playlist file: %1</translation>
+    </message>
+    <message>
+        <source>%1: can't read backup</source>
+        <translation>%1: can't read backup</translation>
+    </message>
+    <message>
+        <source>%1: can't open for restoration</source>
+        <translation>%1: can't open for restoration</translation>
+    </message>
+    <message>
+        <source>%1: restoration failed</source>
+        <translation>%1: restoration failed</translation>
+    </message>
+    <message>
+        <source>%1: can't remove newly created file</source>
+        <translation>%1: can't remove newly created file</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</source>
+        <translation>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous state could not be fully restored: %2. Backup files were kept at: %3. Stop editing and check the SD card and its connection.</source>
+        <translation>Playlist update failed: %1. The previous state could not be fully restored: %2. Stop editing and check the SD card and its connection.</translation>
+    </message>
+    <message>
+        <source>Can't save playlist file: %1 (%2). Check the SD card.</source>
+        <translation>Can't save playlist file: %1 (%2). Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't remove playlist file: %1. Check the SD card.</source>
+        <translation>Can't remove playlist file: %1. Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't remove song: playlist numbering limit reached</source>
+        <translation>Can't remove song: playlist numbering limit reached</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move. The previous playlist state was restored.</source>
+        <translation>Can't move song: the model rejected the move. The previous playlist state was restored.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
+        <translation>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</translation>
+    </message>
 </context>
 <context>
     <name>SdContentEditor</name>

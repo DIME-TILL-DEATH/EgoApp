@@ -235,7 +235,7 @@ bool PlaylistModel::insertRows(int position, int count, const QModelIndex &paren
         updatedSongs.insert(currentPosition, newSong);
     }
 
-    if (!persistSongList(updatedSongs))
+    if (!persistSongRange(updatedSongs, insertPosition, updatedSongs.size() - 1))
         return false;
 
     beginInsertRows(parent, insertPosition, insertPosition + count - 1);
@@ -258,7 +258,23 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
     for (int i = 0; i < count; ++i)
         updatedSongs.removeAt(position);
 
-    if (!persistSongList(updatedSongs))
+    // Keep the remaining file numbers contiguous after deletion. Only the
+    // suffix beginning at the first removed row can need new .ego numbers.
+    quint32 nextFileNum = position > 0
+                              ? static_cast<quint32>(updatedSongs.at(position - 1).fileNum) + 1
+                              : 0;
+    for (int i = position; i < updatedSongs.size(); ++i)
+    {
+        if (nextFileNum > std::numeric_limits<quint16>::max())
+        {
+            emit errorOccured(QObject::tr("Can't remove song: playlist numbering limit reached"));
+            return false;
+        }
+        updatedSongs[i].fileNum = static_cast<quint16>(nextFileNum++);
+    }
+
+    if (!persistSongRange(updatedSongs, position,
+                          qMax(m_songList.size(), updatedSongs.size()) - 1))
         return false;
 
     beginRemoveRows(parent, position, position + count - 1);
@@ -317,7 +333,7 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
         updatedSongs[i].fileNum = numberingScheme.at(i);
 
     // Persist first so a storage failure cannot leave the in-memory model changed.
-    if (!persistSongList(updatedSongs))
+    if (!persistSongRange(updatedSongs, qMin(sourceRow, targetRow), qMax(sourceRow, targetRow)))
         return false;
 
     if (!beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1,
@@ -325,8 +341,18 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
     {
         // The prevalidated flat-list move should be accepted by Qt. Restore the
         // previous persisted state if Qt rejects the notification unexpectedly.
-        persistSongList(m_songList);
-        emit errorOccured(QObject::tr("Can't move song: the model rejected the move"));
+        QString rollbackError;
+        if (!m_storage.saveChanges(m_dir.absolutePath(), updatedSongs, m_songList,
+                                   qMin(sourceRow, targetRow), qMax(sourceRow, targetRow),
+                                   &rollbackError))
+        {
+            emit errorOccured(QObject::tr("Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.")
+                                  .arg(rollbackError));
+        }
+        else
+        {
+            emit errorOccured(QObject::tr("Can't move song: the model rejected the move. The previous playlist state was restored."));
+        }
         return false;
     }
 
@@ -346,7 +372,7 @@ bool PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString p
 
     QList<Song> updatedSongs = m_songList;
     updatedSongs[index.row()].setPath(trackNum, path);
-    if (!persistSongList(updatedSongs))
+    if (!persistSongRange(updatedSongs, index.row(), index.row()))
         return false;
 
     m_songList = updatedSongs;
@@ -387,7 +413,7 @@ bool PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
 
     QList<Song> updatedSongs = m_songList;
     updatedSongs[index.row()].playNext = state;
-    if (!persistSongList(updatedSongs))
+    if (!persistSongRange(updatedSongs, index.row(), index.row()))
         return false;
 
     m_songList = updatedSongs;
@@ -414,7 +440,7 @@ bool PlaylistModel::ensureEditable()
     return false;
 }
 
-bool PlaylistModel::persistSongList(const QList<Song> &songList)
+bool PlaylistModel::persistSongRange(const QList<Song> &songList, int firstIndex, int lastIndex)
 {
     // Keep this final guard even though public mutation methods check before
     // preparing their changes. It protects future call paths as well.
@@ -422,7 +448,8 @@ bool PlaylistModel::persistSongList(const QList<Song> &songList)
         return false;
 
     QString errorString;
-    if (!m_storage.saveSongs(m_dir.absolutePath(), songList, &errorString))
+    if (!m_storage.saveChanges(m_dir.absolutePath(), m_songList, songList,
+                               firstIndex, lastIndex, &errorString))
     {
         emit errorOccured(errorString);
         return false;
