@@ -4,9 +4,17 @@
 #include "playlists/playlistmodel.h"
 
 #include <QFileInfo>
+#include <QDir>
+#include <utility>
 
 SoundCore::SoundCore(QObject *parent)
-    : QObject{parent}
+    : SoundCore(std::unique_ptr<AudioOutput>{}, parent)
+{
+}
+
+SoundCore::SoundCore(std::unique_ptr<AudioOutput> audioOutput, QObject *parent)
+    : QObject{parent},
+      m_soundPlayer(std::move(audioOutput))
 {
     m_track1Volume = m_settings.value("track1Volume", 1.0).toFloat();
     m_track2Volume = m_settings.value("track2Volume", 1.0).toFloat();
@@ -31,36 +39,46 @@ SoundCore::SoundCore(QObject *parent)
     m_soundPlayer.setMuted(m_track1Muted, m_track2Muted, m_sdTrackMuted);
 
     connect(&m_soundPlayer, &SoundPlayer::playbackDurationChanged, this, &SoundCore::trackDurationChanged);
-    connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this, &SoundCore::errorOccured);
+    connect(&m_soundPlayer, &SoundPlayer::errorOccurred, this,
+            [this](const QString &errorString) {
+        clearPlaybackSelection();
+        emit errorOccured(errorString);
+    });
     connect(&m_soundPlayer, &SoundPlayer::positionUpdated, this, &SoundCore::trackPositionChanged);
     connect(&m_soundPlayer, &SoundPlayer::playbackStateChanged, this, &SoundCore::playbackStateChanged);
     connect(&m_soundPlayer, &SoundPlayer::playingFinished, this, &SoundCore::playingFinished);
 }
 
 void SoundCore::playContent(const QModelIndex &contentIndex)
-{    
-    const SdProxyModel* sdProxyModel = qobject_cast<const SdProxyModel*>(contentIndex.model());
-    if(sdProxyModel)
+{
+    const auto *proxy = qobject_cast<const SdProxyModel *>(contentIndex.model());
+    if (!proxy || !contentIndex.isValid())
     {
-        const SdContentModel* sdModel = qobject_cast<const SdContentModel*>(sdProxyModel->sourceModel());
+        emit errorOccured(QObject::tr("Can't play the selected audio track."));
+        return;
+    }
 
-        QModelIndex realIndex = sdProxyModel->mapToSource(contentIndex);
-        QString filePath =  sdModel->filePath(realIndex);
+    const auto *model = qobject_cast<const SdContentModel *>(proxy->sourceModel());
+    if (!model)
+    {
+        emit errorOccured(QObject::tr("Can't play the selected audio track."));
+        return;
+    }
 
-        QFileInfo fileInfo(filePath);
+    const QModelIndex sourceIndex = proxy->mapToSource(contentIndex);
+    if (!sourceIndex.isValid())
+    {
+        emit errorOccured(QObject::tr("Can't play the selected audio track."));
+        return;
+    }
 
-        if(fileInfo.isFile())
-        {
-            if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0)
-            {
-                if (!m_soundPlayer.play(SoundPlayer::PlaySd,
-                                        sdModel->rootPath() + sdModel->selectedPath()))
-                {
-                    stop();
-                    emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-                    return;
-                }
+    const QString filePath = model->filePath(sourceIndex);
+    const QFileInfo fileInfo(filePath);
+    if (!fileInfo.isFile()
+        || fileInfo.suffix().compare(QStringLiteral("wav"), Qt::CaseInsensitive) != 0)
+        return;
 
+    const QString absolutePath = fileInfo.absoluteFilePath();
     m_egoTrackPosition = 0;
     m_sdTrackPosition = 0;
     m_egoTrackDuration = 0;
@@ -68,13 +86,27 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
     emit qmlTrackPositionChanged();
     emit qmlTrackDurationChanged();
 
-                m_wavPlaying = sdModel->selectedPath();
-                m_egoSongPlaying = "";
-                m_playingEgoTrack1Path.clear();
-                m_playingEgoTrack2Path.clear();
-                emit playingStringChanged();
-            }
-        }
+    m_wavPlaying = QDir::fromNativeSeparators(
+        QDir(model->rootPath()).relativeFilePath(absolutePath));
+    if (!m_wavPlaying.startsWith(QLatin1Char('/')))
+        m_wavPlaying.prepend(QLatin1Char('/'));
+
+    m_egoSongPlaying.clear();
+    m_playingEgoTrack1Path.clear();
+    m_playingEgoTrack2Path.clear();
+    m_playingEgoModel.clear();
+    m_playingEgoIndex = QPersistentModelIndex{};
+    m_playingSdModel = const_cast<SdContentModel *>(model);
+    m_playingSdFilePath = absolutePath;
+    emit playingStringChanged();
+
+    // Publish the selection before starting asynchronous decoding: a decoder
+    // may fail immediately, and its error handler must clear this selection.
+    if (!m_soundPlayer.play(SoundPlayer::PlaySd, absolutePath))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
     }
 }
 
@@ -139,13 +171,6 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
         }
     }
 
-    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
-    {
-        stop();
-        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-        return;
-    }
-
     m_egoTrackPosition = 0;
     m_sdTrackPosition = 0;
     m_egoTrackDuration = 0;
@@ -159,9 +184,22 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
                                         : (t2Name.isEmpty() ? t1Name : t1Name + "|" + t2Name);
     m_playingEgoTrack1Path = t1StoredPath;
     m_playingEgoTrack2Path = t2StoredPath;
+    m_playingEgoModel = const_cast<PlaylistModel *>(plsModel);
+    m_playingEgoIndex = QPersistentModelIndex(contentIndex);
+    m_playingSdModel.clear();
+    m_playingSdFilePath.clear();
 
     m_wavPlaying.clear();
     emit playingStringChanged();
+
+    // Publish the selection before starting asynchronous decoding: a decoder
+    // may fail immediately, and its error handler must clear this selection.
+    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
 
 }
 
@@ -171,13 +209,21 @@ void SoundCore::PlayPause(SoundPlayer::State mode, const QModelIndex &contentInd
     {
         const auto *model = qobject_cast<const PlaylistModel *>(contentIndex.model());
         if (!model || !contentIndex.isValid())
+        {
+            playEgo(contentIndex);
             return;
+        }
 
         const QString track1 = model->data(contentIndex, PlaylistModel::T1PathRole).toString();
         const QString track2 = model->data(contentIndex, PlaylistModel::T2PathRole).toString();
-        if (m_soundPlayer.state() == mode
+        const bool sameSelection =
+            m_soundPlayer.state() == mode
+            && m_playingEgoModel == model
+            && m_playingEgoIndex == QPersistentModelIndex(contentIndex)
             && m_playingEgoTrack1Path == track1
-            && m_playingEgoTrack2Path == track2)
+            && m_playingEgoTrack2Path == track2;
+
+        if (sameSelection)
             m_soundPlayer.pauseResume();
         else
             playEgo(contentIndex);
@@ -188,14 +234,37 @@ void SoundCore::PlayPause(SoundPlayer::State mode, const QModelIndex &contentInd
     {
         const auto *proxy = qobject_cast<const SdProxyModel *>(contentIndex.model());
         if (!proxy || !contentIndex.isValid())
+        {
+            playContent(contentIndex);
             return;
+        }
 
         const auto *model = qobject_cast<const SdContentModel *>(proxy->sourceModel());
         if (!model)
+        {
+            playContent(contentIndex);
+            return;
+        }
+
+        const QModelIndex sourceIndex = proxy->mapToSource(contentIndex);
+        if (!sourceIndex.isValid())
+        {
+            playContent(contentIndex);
+            return;
+        }
+
+        const QFileInfo fileInfo(model->filePath(sourceIndex));
+        if (!fileInfo.isFile()
+            || fileInfo.suffix().compare(QStringLiteral("wav"), Qt::CaseInsensitive) != 0)
             return;
 
-        const QString requestedPath = model->selectedPath();
-        if (m_soundPlayer.state() == mode && m_wavPlaying == requestedPath)
+        const QString requestedPath = fileInfo.absoluteFilePath();
+        const bool sameSelection =
+            m_soundPlayer.state() == mode
+            && m_playingSdModel == model
+            && m_playingSdFilePath == requestedPath;
+
+        if (sameSelection)
             m_soundPlayer.pauseResume();
         else
             playContent(contentIndex);
@@ -204,12 +273,7 @@ void SoundCore::PlayPause(SoundPlayer::State mode, const QModelIndex &contentInd
 
 void SoundCore::stop()
 {
-    m_egoSongPlaying = "";
-    m_wavPlaying = "";
-    m_playingEgoTrack1Path.clear();
-    m_playingEgoTrack2Path.clear();
-    emit playingStringChanged();
-
+    clearPlaybackSelection();
     m_soundPlayer.stop();
 }
 
@@ -273,8 +337,19 @@ void SoundCore::trackPositionChanged(qint64 posisiton)
 
 void SoundCore::playingFinished()
 {
-    m_egoSongPlaying = "";
-    m_wavPlaying = "";
+    clearPlaybackSelection();
+}
+
+void SoundCore::clearPlaybackSelection()
+{
+    m_egoSongPlaying.clear();
+    m_wavPlaying.clear();
+    m_playingEgoTrack1Path.clear();
+    m_playingEgoTrack2Path.clear();
+    m_playingEgoModel.clear();
+    m_playingEgoIndex = QPersistentModelIndex{};
+    m_playingSdModel.clear();
+    m_playingSdFilePath.clear();
     emit playingStringChanged();
 }
 
@@ -287,6 +362,16 @@ bool SoundCore::playbackActive() const
 bool SoundCore::playbackPaused() const
 {
     return m_soundPlayer.isPaused();
+}
+
+bool SoundCore::egoPlaybackActive() const
+{
+    return m_soundPlayer.state() == SoundPlayer::PlayEgo;
+}
+
+bool SoundCore::sdPlaybackActive() const
+{
+    return m_soundPlayer.state() == SoundPlayer::PlaySd;
 }
 
 float SoundCore::track1Volume() const

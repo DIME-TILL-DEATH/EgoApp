@@ -5,10 +5,16 @@
 #include <QQmlEngine>
 
 #include <QModelIndex>
+#include <QPointer>
+#include <QPersistentModelIndex>
+#include <memory>
 
 #include <QSettings>
 
 #include <soundplayer.h>
+
+class PlaylistModel;
+class SdContentModel;
 
 class SoundCore : public QObject
 {
@@ -26,6 +32,8 @@ class SoundCore : public QObject
     Q_PROPERTY(qint64 sdTrackPosition READ sdTrackPosition NOTIFY qmlTrackPositionChanged FINAL)
     Q_PROPERTY(bool playbackActive READ playbackActive NOTIFY playbackStateChanged FINAL)
     Q_PROPERTY(bool playbackPaused READ playbackPaused NOTIFY playbackStateChanged FINAL)
+    Q_PROPERTY(bool egoPlaybackActive READ egoPlaybackActive NOTIFY playbackStateChanged FINAL)
+    Q_PROPERTY(bool sdPlaybackActive READ sdPlaybackActive NOTIFY playbackStateChanged FINAL)
 
     Q_PROPERTY(float track1Volume READ track1Volume WRITE setTrack1Volume NOTIFY track1VolumeChanged FINAL)
     Q_PROPERTY(float track2Volume READ track2Volume WRITE setTrack2Volume NOTIFY track2VolumeChanged FINAL)
@@ -43,6 +51,7 @@ class SoundCore : public QObject
     Q_PROPERTY(bool sdTrackREnabled READ sdTrackREnabled WRITE setSdTrackREnabled NOTIFY tracksEnabledChanged FINAL)
 public:
     explicit SoundCore(QObject *parent = nullptr);
+    explicit SoundCore(std::unique_ptr<AudioOutput> audioOutput, QObject *parent = nullptr);
 
     Q_INVOKABLE void playContent(const QModelIndex &contentIndex);
     Q_INVOKABLE void playEgo(const QModelIndex &contentIndex);
@@ -86,6 +95,8 @@ public:
     qint64 sdTrackPosition() const;
     bool playbackActive() const;
     bool playbackPaused() const;
+    bool egoPlaybackActive() const;
+    bool sdPlaybackActive() const;
 
     bool track1LMuted() const;
     void setTrack1LMuted(bool newTrack1Muted);
@@ -148,6 +159,12 @@ private:
     QString m_wavPlaying;
     QString m_playingEgoTrack1Path;
     QString m_playingEgoTrack2Path;
+    QPointer<PlaylistModel> m_playingEgoModel;
+    QPersistentModelIndex m_playingEgoIndex;
+    QPointer<SdContentModel> m_playingSdModel;
+    QString m_playingSdFilePath;
+
+    void clearPlaybackSelection();
 };
 
 #endif // SOUNDCORE_H

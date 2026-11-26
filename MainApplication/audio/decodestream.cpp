@@ -54,7 +54,9 @@ bool DecodeStream::open(OpenMode mode)
             return false;
         }
 
-        if (!QIODevice::open(QIODevice::ReadOnly))
+        // Disable QIODevice prefetching: byte availability and the spool cursor
+        // are shared with the mixer and decoder append path.
+        if (!QIODevice::open(QIODevice::ReadOnly | QIODevice::Unbuffered))
         {
             m_decoder->deleteLater();
             m_decoder = nullptr;
@@ -65,6 +67,7 @@ bool DecodeStream::open(OpenMode mode)
     }
 
     m_closing.store(false);
+    m_reportedDuration = 0;
     m_decodingFinished.store(false);
     m_decoderFailed.store(false);
     const quint64 generation = ++m_generation;
@@ -77,7 +80,7 @@ bool DecodeStream::open(OpenMode mode)
     connect(m_decoder, &QAudioDecoder::durationChanged, this,
             [this, generation](qint64 duration) {
                 if (isCurrentSession(generation))
-                    emit durationChanged(duration);
+                    reportDuration(duration);
             });
     connect(m_decoder, &QAudioDecoder::bufferReady, this,
             [this, generation]() {
@@ -131,6 +134,12 @@ void DecodeStream::close()
     }
 
     m_closing.store(false);
+}
+
+bool DecodeStream::canAppendPcmBytes(qint64 currentSize, qint64 appendSize)
+{
+    return currentSize >= 0 && currentSize <= MaxPcmBytes
+           && appendSize >= 0 && appendSize <= MaxPcmBytes - currentSize;
 }
 
 bool DecodeStream::isCurrentSession(quint64 generation) const
@@ -211,7 +220,7 @@ void DecodeStream::handleBufferReady(quint64 generation)
             return;
 
         const qint64 currentSize = m_pcmFile->size();
-        if (buffer.byteCount() > MaxPcmBytes - currentSize)
+        if (!canAppendPcmBytes(currentSize, buffer.byteCount()))
         {
             writeError = tr("Decoded audio exceeds the one-hour per-track limit.");
         }
@@ -226,12 +235,14 @@ void DecodeStream::handleBufferReady(quint64 generation)
                     buffer.constData<char>(), buffer.byteCount());
                 const bool flushed = m_pcmFile->flush();
                 writeError = m_pcmFile->errorString();
-                m_pcmFile->seek(readPosition);
+                const bool restored = m_pcmFile->seek(readPosition);
 
-                if (written == buffer.byteCount() && flushed)
+                if (written == buffer.byteCount() && flushed && restored)
                     writeError.clear();
                 else if (writeError.isEmpty())
-                    writeError = tr("Unable to store decoded audio data.");
+                    writeError = restored
+                                     ? tr("Unable to store decoded audio data.")
+                                     : tr("Unable to restore the decoded audio read position.");
             }
         }
     }
@@ -248,7 +259,31 @@ void DecodeStream::handleBufferReady(quint64 generation)
         return;
     }
 
+    const qint64 bytesPerFrame = m_format.bytesPerFrame();
+    const int sampleRate = m_format.sampleRate();
+    if (bytesPerFrame > 0 && sampleRate > 0)
+    {
+        qint64 decodedBytes = 0;
+        {
+            QMutexLocker locker(&m_pcmMutex);
+            if (m_pcmFile && m_pcmFile->isOpen())
+                decodedBytes = m_pcmFile->size();
+        }
+
+        const qint64 decodedFrames = decodedBytes / bytesPerFrame;
+        reportDuration(decodedFrames * 1000 / sampleRate);
+    }
+
     emit readyRead();
+}
+
+void DecodeStream::reportDuration(qint64 duration)
+{
+    if (duration <= m_reportedDuration)
+        return;
+
+    m_reportedDuration = duration;
+    emit durationChanged(duration);
 }
 
 void DecodeStream::handleDecoderError(quint64 generation, QAudioDecoder::Error error)

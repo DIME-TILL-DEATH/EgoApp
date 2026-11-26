@@ -109,6 +109,8 @@ qt_add_qml_module(${PROJECT_NAME}
         ${QML_FILES}
 
     SOURCES
+        audio/audiooutput.h
+        audio/audiooutput.cpp
         audio/audiomixer.h
         audio/audiomixer.cpp
         audio/decodestream.h
@@ -466,7 +468,7 @@ endif()
 
 
 if(BUILD_TESTING)
-    find_package(Qt6 REQUIRED COMPONENTS Test)
+    find_package(Qt6 REQUIRED COMPONENTS Test Widgets)
 
     add_executable(playlist_tests
         tests/playlist_tests.cpp
@@ -493,8 +495,10 @@ if(BUILD_TESTING)
 
     add_executable(audio_tests
         tests/audio_tests.cpp
+        audio/audiooutput.cpp
         audio/audiomixer.cpp
         audio/decodestream.cpp
+        audio/soundplayer.cpp
     )
 
     target_include_directories(audio_tests
@@ -505,9 +509,43 @@ if(BUILD_TESTING)
     target_link_libraries(audio_tests
         PRIVATE
             Qt6::Core
+            Qt6::Qml
             Qt6::Multimedia
             Qt6::Test
     )
 
     add_test(NAME audio_tests COMMAND audio_tests)
+
+    add_executable(soundcore_tests
+        tests/soundcore_tests.cpp
+        audio/audiooutput.cpp
+        audio/audiomixer.cpp
+        audio/decodestream.cpp
+        audio/soundplayer.cpp
+        audio/soundcore.cpp
+        sdcontentmodel.cpp
+        playlists/playlistmodel.cpp
+        playlists/playliststorage.cpp
+        playlists/song.cpp
+    )
+
+    target_include_directories(soundcore_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/audio
+            ${CMAKE_CURRENT_SOURCE_DIR}/playlists
+    )
+
+    target_link_libraries(soundcore_tests
+        PRIVATE
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Widgets
+            Qt6::Qml
+            Qt6::Multimedia
+            Qt6::Test
+    )
+
+    add_test(NAME soundcore_tests COMMAND soundcore_tests)
+    set_tests_properties(soundcore_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()

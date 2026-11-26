@@ -1,8 +1,14 @@
 #include "audiomixer.h"
 #include <cstring>
+#include <cmath>
 #include <limits>
 #include <QMutexLocker>
-AudioMixer::AudioMixer(QObject *parent) : QIODevice(parent) { QIODevice::open(QIODevice::ReadOnly); }
+// Disable QIODevice's read buffer: it may prefetch a whole frame and then
+// return only the caller's requested byte count, splitting a stereo frame.
+AudioMixer::AudioMixer(QObject *parent) : QIODevice(parent)
+{
+    QIODevice::open(QIODevice::ReadOnly | QIODevice::Unbuffered);
+}
 void AudioMixer::setTracks(QIODevice *track1, QIODevice *track2)
 {
     QMutexLocker locker(&m_mutex);
@@ -11,8 +17,8 @@ void AudioMixer::setTracks(QIODevice *track1, QIODevice *track2)
     m_positionFrames=0;
 }
 void AudioMixer::setTrackFinished(bool a, bool b) { QMutexLocker locker(&m_mutex); m_track1Finished=a; m_track2Finished=b; }
-void AudioMixer::setTrack1Settings(float v,bool l,bool r,bool m) { QMutexLocker locker(&m_mutex); m_track1Settings={v,l,r,m}; }
-void AudioMixer::setTrack2Settings(float v,bool l,bool r,bool m) { QMutexLocker locker(&m_mutex); m_track2Settings={v,l,r,m}; }
+void AudioMixer::setTrack1Settings(float v,bool l,bool r,bool m) { QMutexLocker locker(&m_mutex); v = std::isfinite(v) ? qBound(0.0f, v, 1.0f) : 0.0f; m_track1Settings={v,l,r,m}; }
+void AudioMixer::setTrack2Settings(float v,bool l,bool r,bool m) { QMutexLocker locker(&m_mutex); v = std::isfinite(v) ? qBound(0.0f, v, 1.0f) : 0.0f; m_track2Settings={v,l,r,m}; }
 bool AudioMixer::seekToPosition(qint64 milliseconds)
 {
     QMutexLocker locker(&m_mutex);
@@ -74,8 +80,22 @@ qint64 AudioMixer::readData(char *data,qint64 maxSize)
     const qint64 count=qMin(maxSize,available)/BytesPerFrame*BytesPerFrame;
     if(count==0) return 0;
     QByteArray first(static_cast<qsizetype>(count),'\0'), second(static_cast<qsizetype>(count),'\0');
-    if(m_track1 && a>0 && m_track1->read(first.data(),count)!=count) return 0;
-    if(m_track2 && b>0 && m_track2->read(second.data(),count)!=count) return 0;
+    const qint64 track1Position = m_track1 ? m_track1->pos() : 0;
+    const qint64 track2Position = m_track2 ? m_track2->pos() : 0;
+    const auto rollbackReads = [this, track1Position, track2Position]() {
+        if (m_track1)
+            m_track1->seek(track1Position);
+        if (m_track2)
+            m_track2->seek(track2Position);
+    };
+    if (m_track1 && a>0 && m_track1->read(first.data(),count)!=count) {
+        rollbackReads();
+        return 0;
+    }
+    if (m_track2 && b>0 && m_track2->read(second.data(),count)!=count) {
+        rollbackReads();
+        return 0;
+    }
     for(qint64 i=0;i<count/sizeof(qint16);++i) {
         qint16 s1=0,s2=0; const qsizetype off=static_cast<qsizetype>(i*sizeof(qint16));
         std::memcpy(&s1,first.constData()+off,sizeof(s1)); std::memcpy(&s2,second.constData()+off,sizeof(s2));
