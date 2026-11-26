@@ -82,13 +82,13 @@ The nested-playlist UI is planned as a folder tree. Users select/expand a folder
 
 
 ## Shared media path resolution
-PlaylistService validation and PlaylistModel media roles use the same `MediaPath::workspaceFilePath()` helper. Keep resolution behavior centralized; do not reintroduce independent path-joining implementations in either layer.
+PlaylistService validation and PlaylistModel media roles use the same `MediaPath::resolveWorkspacePath()` helper. Keep resolution behavior centralized; do not reintroduce independent path-joining implementations in either layer.
 
 
 The shared media resolver treats exactly one leading forward slash as an .ego workspace-root marker, removes that marker, and joins the remaining path to the selected workspace. It never interprets the marker as the host filesystem root. Legacy paths without the marker are also resolved from the workspace root.
 
 
-The common media resolver validates the stored path before joining it to the workspace: it rejects empty components, repeated or trailing separators, backslashes, colon/drive syntax, control characters, and dot/dot-dot traversal components. A single leading slash remains valid as the workspace-root marker. This is lexical containment, not a symlink-resolution feature; symbolic links on the target device are outside the supported scenario.
+The common media resolver validates the stored path before joining it to the workspace: it rejects empty components, repeated or trailing separators, backslashes, colon/drive syntax, control characters, and dot/dot-dot traversal components. A single leading slash remains valid as the workspace-root marker. This is lexical containment plus explicit rejection of existing symlink components; the application does not resolve or follow symlink targets as supported media paths.
 
 
 PlaylistStorage reads each small .ego record into one byte buffer, checks `QFile::error()` immediately, and only then parses its existing two-line representation. This prevents an I/O failure during an early `readLine()` from being misreported as an empty or incomplete record. An absent/empty second line remains valid; trailing third-line data remains invalid.
@@ -96,3 +96,10 @@ PlaylistStorage reads each small .ego record into one byte buffer, checks `QFile
 
 ### .ego enumeration and concurrent changes
 PlaylistStorage excludes symbolic links from the .ego file listing and verifies that the playlist directory remains present/readable after enumeration. It rechecks each listed file before opening, reports open/read errors, and compares file size and modification time before and after reading to catch common concurrent changes or replacement. `QDir::entryList()` does not return a separate enumeration status: a still-readable empty directory is treated as a valid empty playlist, while platform-specific enumeration diagnostics are deferred. Metadata comparison is best-effort and cannot prove that no same-size rewrite with unchanged timestamp occurred.
+
+
+### Playlist media validation consistency
+`PlaylistService::checkPlaylist()` resolves .ego paths with the shared workspace-root resolver, rejects invalid paths, and verifies that the resolved target is an existing regular file. Device filename character validation is applied to the stored SD-card path, never to the host-specific workspace mount path. Diagnostics use the actual `Song::fileNum` .ego number. PlaylistModel missing-file roles use the same resolver and regular-file requirement; MIDI existence is reported only for an existing WAV track with a regular sibling .mid file. No file-extension restriction is added to checkPlaylist without a confirmed device-format requirement.
+
+
+Media-path resolution checks each existing component beneath the workspace and rejects symbolic links rather than following them. Symlink-backed media paths are unsupported and are treated as unavailable; no symlink traversal or canonical-target feature is provided.

@@ -71,7 +71,6 @@ private:
     PlaylistStorage m_storage;
     bool m_persistenceEnabled{true};
 
-    QString workspaceFilePath(const QString &relativePath) const;
     bool isTrackMissing(const QString &path) const;
     bool persistSongList(const QList<Song> &songList);
 

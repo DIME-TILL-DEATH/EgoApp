@@ -66,16 +66,22 @@ These are areas to re-check, not confirmed defects in current HEAD:
 - Keep this distinct from playlist identifiers: playlist identifiers are relative to `PLAYLIST/`; media paths are rooted at the workspace.
 
 
-**Shared media path resolution:** PlaylistService and PlaylistModel use the common `MediaPath::workspaceFilePath()` helper so both layers interpret stored media paths consistently. Validation policy is kept separate from path resolution.
+**Shared media path resolution:** PlaylistService and PlaylistModel use the common `MediaPath::resolveWorkspacePath()` helper so both layers interpret stored media paths consistently. Validation policy is kept separate from path resolution.
 
 
 **Workspace-root marker implementation:** the shared resolver removes exactly one leading forward slash from an .ego media path and joins the remainder to the workspace directory. It does not pass the stored leading-slash path to host absolute-path resolution. Paths without the marker are also interpreted from the workspace root for compatibility.
 
 
-**Media path component validation:** the common resolver rejects empty paths, repeated/trailing separators, backslashes, drive/colon syntax, control characters, and `.`/`..` components before joining to the workspace. It deliberately accepts one leading slash as the workspace-root marker. This is lexical validation; symbolic links on the target device are not a supported scenario and are not given a separate resolution policy.
+**Media path component validation:** the common resolver rejects empty paths, repeated/trailing separators, backslashes, drive/colon syntax, control characters, and `.`/`..` components before joining to the workspace. It deliberately accepts one leading slash as the workspace-root marker. This combines lexical validation with a simple rejection of existing symbolic-link components; symlink targets are never followed as supported media paths.
 
 
 **.ego read strategy:** each numbered record is read in one `QFile::readAll()` operation. The I/O error is checked immediately before classifying empty/incomplete content or decoding UTF-8. The byte buffer is then parsed using the existing two-line format; an absent/empty second line remains valid and extra data after the second line remains an error.
 
 
 **.ego filesystem race handling:** directory enumeration uses `QDir::NoSymLinks` and checks that the playlist directory remains present/readable after listing. Each listed file is rechecked before opening; open failures are reported with the file error. Size and modification time are compared before and after reading to detect common concurrent replacement/modification cases. Qt's `QDir::entryList()` does not expose a reliable enumeration error status, so an empty result from a directory that remains readable is treated as an empty playlist; detecting partial native directory-enumeration failures would require platform-specific APIs. Metadata comparison is best-effort and cannot detect every same-size/same-timestamp rewrite.
+
+
+**Playlist media validation:** `checkPlaylist()` resolves stored media paths through the shared workspace resolver, verifies that resolved targets exist and are regular files, and applies the device's Latin-character filename rule to the stored .ego path rather than the host mount path. Diagnostics identify the actual .ego file number (`Song::fileNum`), not the current row. PlaylistModel missing-file roles use the same resolver and regular-file check. MIDI-existence checks are limited to an existing WAV track and a regular sibling .mid file. No additional extension restriction is imposed by checkPlaylist until the device's accepted media formats are explicitly confirmed.
+
+
+Media path resolution also refuses a path if any existing component below the workspace is a symbolic link. Such paths are treated as unavailable; the application does not follow or otherwise process media symlinks on the target device.

@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QDateTime>
 #include <QSaveFile>
 #include <QSet>
 #include <QHash>
@@ -161,7 +162,7 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
             continue;
         }
 
-        const qsizetype firstLineEnd = contents.indexOf('\\n');
+        const qsizetype firstLineEnd = contents.indexOf('\n');
         if (firstLineEnd < 0)
         {
             result.errors.append(egoFile.name + QObject::tr(": incomplete first line (missing newline)"));
@@ -175,7 +176,7 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
         bool hasTrailingData = false;
         if (!remaining.isEmpty())
         {
-            const qsizetype secondLineEnd = remaining.indexOf('\\n');
+            const qsizetype secondLineEnd = remaining.indexOf('\n');
             if (secondLineEnd < 0)
             {
                 secondLine = remaining;

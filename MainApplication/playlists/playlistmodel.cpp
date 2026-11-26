@@ -36,11 +36,6 @@ int PlaylistModel::rowCount(const QModelIndex &parent) const
     return m_songList.size();
 }
 
-QString PlaylistModel::workspaceFilePath(const QString &relativePath) const
-{
-    return MediaPath::workspaceFilePath(m_workspacePath, relativePath);
-}
-
 void PlaylistModel::setWorkspacePath(const QString &workspacePath)
 {
     m_workspacePath = QDir(workspacePath).absolutePath();
@@ -56,7 +51,12 @@ bool PlaylistModel::isTrackMissing(const QString &path) const
     if (path.isEmpty())
         return false;
 
-    return !QFileInfo::exists(workspaceFilePath(path));
+    QString resolvedPath;
+    if (!MediaPath::resolveWorkspacePath(m_workspacePath, path, &resolvedPath))
+        return true;
+
+    const QFileInfo fileInfo(resolvedPath);
+    return !fileInfo.exists() || !fileInfo.isFile();
 }
 
 QVariant PlaylistModel::data(const QModelIndex &index, int role) const
@@ -94,10 +94,20 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 
     case ListRoles::MidiExistRole:
     {
-        QString midiPath = workspaceFilePath(m_songList.at(index.row()).t1Path);
-        midiPath.chop(3);
-        midiPath += "mid";
-        return QFileInfo::exists(midiPath);
+        QString trackPath;
+        if (!MediaPath::resolveWorkspacePath(
+                m_workspacePath, m_songList.at(index.row()).t1Path, &trackPath))
+            return false;
+
+        const QFileInfo trackInfo(trackPath);
+        if (!trackInfo.exists() || !trackInfo.isFile()
+            || trackInfo.suffix().compare(QStringLiteral("wav"), Qt::CaseInsensitive) != 0)
+            return false;
+
+        const QString midiPath =
+            trackInfo.dir().filePath(trackInfo.completeBaseName() + QStringLiteral(".mid"));
+        const QFileInfo midiInfo(midiPath);
+        return midiInfo.exists() && midiInfo.isFile();
     }
 
     case ListRoles::FileMissingRole:

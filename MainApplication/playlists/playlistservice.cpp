@@ -129,10 +129,10 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         errors.append(QStringLiteral("\t") + QCoreApplication::translate(
             "UiCore", "Cannot load .ego record: ") + loadError);
 
-    for (int i = 0; i < playlist.songs.size(); ++i)
+    for (const Song &song : playlist.songs)
     {
-        const Song &song = playlist.songs.at(i);
-        const QString songNumber = QString::number(i + 1);
+        // Report the actual numbered .ego record, not its current display row.
+        const QString songNumber = QString::number(song.fileNum);
 
         if (song.t1Path.isEmpty())
         {
@@ -143,18 +143,31 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
         }
         else
         {
-            const QString track1Path = MediaPath::workspaceFilePath(m_workspacePath, song.t1Path);
-            const QFileInfo track1Info(track1Path);
-            if (!track1Info.exists() || !track1Info.isFile())
+            QString track1Path;
+            if (!MediaPath::resolveWorkspacePath(m_workspacePath, song.t1Path, &track1Path))
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
                               + songNumber
-                              + QCoreApplication::translate("UiCore", " track 1 not found: ")
+                              + QCoreApplication::translate("UiCore", " track 1 has an invalid workspace path: ")
                               + song.t1Path);
             }
+            else
+            {
+                const QFileInfo track1Info(track1Path);
+                if (!track1Info.exists() || !track1Info.isFile())
+                {
+                    errors.append(QStringLiteral("\t")
+                                  + QCoreApplication::translate("UiCore", "Song ")
+                                  + songNumber
+                                  + QCoreApplication::translate("UiCore", " track 1 not found: ")
+                                  + song.t1Path);
+                }
+            }
 
-            if (!englishRegex.match(track1Path).hasMatch())
+            // Device filename restrictions apply to the stored SD-card path,
+            // not to the host-specific workspace mount path.
+            if (!englishRegex.match(song.t1Path).hasMatch())
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
@@ -166,18 +179,29 @@ QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
 
         if (!song.t2Path.isEmpty())
         {
-            const QString track2Path = MediaPath::workspaceFilePath(m_workspacePath, song.t2Path);
-            const QFileInfo track2Info(track2Path);
-            if (!track2Info.exists() || !track2Info.isFile())
+            QString track2Path;
+            if (!MediaPath::resolveWorkspacePath(m_workspacePath, song.t2Path, &track2Path))
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")
                               + songNumber
-                              + QCoreApplication::translate("UiCore", " track 2 not found: ")
+                              + QCoreApplication::translate("UiCore", " track 2 has an invalid workspace path: ")
                               + song.t2Path);
             }
+            else
+            {
+                const QFileInfo track2Info(track2Path);
+                if (!track2Info.exists() || !track2Info.isFile())
+                {
+                    errors.append(QStringLiteral("\t")
+                                  + QCoreApplication::translate("UiCore", "Song ")
+                                  + songNumber
+                                  + QCoreApplication::translate("UiCore", " track 2 not found: ")
+                                  + song.t2Path);
+                }
+            }
 
-            if (!englishRegex.match(track2Path).hasMatch())
+            if (!englishRegex.match(song.t2Path).hasMatch())
             {
                 errors.append(QStringLiteral("\t")
                               + QCoreApplication::translate("UiCore", "Song ")

@@ -2,6 +2,7 @@
 #define MEDIAPATH_H
 
 #include <QDir>
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
 
@@ -27,7 +28,7 @@ inline bool resolveWorkspacePath(const QString &workspacePath,
 
     for (const QChar character : path)
     {
-        if (character.isNull() || character.isControl())
+        if (character.isNull() || character.category() == QChar::Other_Control)
             return false;
     }
 
@@ -39,17 +40,19 @@ inline bool resolveWorkspacePath(const QString &workspacePath,
             return false;
     }
 
-    *resolvedPath = QDir(workspacePath).filePath(path);
+    QString candidatePath = QDir(workspacePath).absolutePath();
+    for (const QString &component : components)
+    {
+        candidatePath = QDir(candidatePath).filePath(component);
+        const QFileInfo componentInfo(candidatePath);
+        if (componentInfo.isSymLink())
+            return false; // Symbolic links on the target device are not supported.
+    }
+
+    *resolvedPath = candidatePath;
     return true;
 }
 
-inline QString workspaceFilePath(const QString &workspacePath, const QString &storedPath)
-{
-    QString resolvedPath;
-    return resolveWorkspacePath(workspacePath, storedPath, &resolvedPath)
-               ? resolvedPath
-               : QString();
-}
 }
 
 #endif // MEDIAPATH_H
