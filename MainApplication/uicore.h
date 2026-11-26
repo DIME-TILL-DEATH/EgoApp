@@ -5,8 +5,8 @@
 #include <QTranslator>
 
 #include "sdcontentmodel.h"
-#include "playlistmodel.h"
-#include "playlistrepository.h"
+#include "playlists/playlistmodel.h"
+#include "playlists/playlistrepository.h"
 
 class UiCore : public QObject
 {

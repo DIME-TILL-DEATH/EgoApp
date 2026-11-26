@@ -2,18 +2,20 @@
 #define PLAYLISTMODEL_H
 
 #include <QAbstractListModel>
-#include <QObject>
 #include <QDir>
+#include <QObject>
 #include <QQmlEngine>
 
+#include "playliststorage.h"
 #include "song.h"
 
 class PlaylistModel : public QAbstractListModel
 {
     Q_OBJECT
     QML_ELEMENT
+
 public:
-    enum ListRoles{
+    enum ListRoles {
         FileNumRole = Qt::UserRole + 1,
         PlayNextRole,
         T1PathRole,
@@ -27,20 +29,22 @@ public:
     };
     Q_ENUM(ListRoles)
 
-    PlaylistModel(QObject *parent = nullptr);
-    PlaylistModel(const QList<Song>& songList, QObject *parent = nullptr);
+    explicit PlaylistModel(QObject *parent = nullptr);
+    PlaylistModel(const QList<Song> &songList, QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void refreshModel(const QList<Song>& songList);
+    void refreshModel(const QList<Song> &songList);
 
-    QString playlistName() const {return m_playlistName;};
-    void setPlaylistName(const QString& newName) {m_playlistName = newName;};
+    QString playlistName() const { return m_playlistName; }
+    void setPlaylistName(const QString &newName) { m_playlistName = newName; }
 
-    Q_INVOKABLE bool insertRows(int position, int count, const QModelIndex &parent = QModelIndex()) override;
-    Q_INVOKABLE bool removeRows(int position, int count, const QModelIndex &parent = QModelIndex()) override;
+    Q_INVOKABLE bool insertRows(int position, int count,
+                                const QModelIndex &parent = QModelIndex()) override;
+    Q_INVOKABLE bool removeRows(int position, int count,
+                                const QModelIndex &parent = QModelIndex()) override;
     Q_INVOKABLE void moveSong(quint16 fromPosition, quint16 toPosition);
 
     Q_INVOKABLE void setLink(const QModelIndex &index, quint8 trackNum, QString path);
@@ -55,14 +59,14 @@ signals:
 private:
     QString m_playlistName;
     QList<Song> m_songList;
-
     QDir m_dir;
+    PlaylistStorage m_storage;
 
-    bool isTrackMissing(const QString& path) const;
-    bool writeEgoFile(const Song& song);
-    bool persistSongList(const QList<Song>& songList);
+    bool isTrackMissing(const QString &path) const;
+    bool persistSongList(const QList<Song> &songList);
 
-    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
+    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
+                  const QModelIndex &destinationParent, int destinationChild) override;
 };
 
 #endif // PLAYLISTMODEL_H
