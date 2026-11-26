@@ -494,6 +494,7 @@ if(BUILD_TESTING)
     add_executable(audio_tests
         tests/audio_tests.cpp
         audio/audiomixer.cpp
+        audio/decodestream.cpp
     )
 
     target_include_directories(audio_tests
@@ -504,6 +505,7 @@ if(BUILD_TESTING)
     target_link_libraries(audio_tests
         PRIVATE
             Qt6::Core
+            Qt6::Multimedia
             Qt6::Test
     )
 
