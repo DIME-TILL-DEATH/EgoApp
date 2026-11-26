@@ -9,7 +9,8 @@
 #include <decodestream.h>
 #include <qqmlintegration.h>
 
-class SoundPlayer final : public QObject
+// QML_ELEMENT types must remain inheritable: Qt generates a QQmlElement<T> wrapper.
+class SoundPlayer : public QObject
 {
     Q_OBJECT
     QML_ELEMENT

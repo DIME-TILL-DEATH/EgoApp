@@ -123,3 +123,6 @@ A playlist song may link track 1 only, track 2 only, or both. At least one track
 
 ## Playlist QML safety
 All song-editing controls require an active playlist and a valid selected row. The Play next role binding returns an unchecked state when no row is selected, and a failed persistence operation restores the checkbox from the model. The playlist model intentionally supports moving one song per operation; grouped row moves are rejected.
+
+
+QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.

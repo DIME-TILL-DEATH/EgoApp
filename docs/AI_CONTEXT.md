@@ -99,3 +99,6 @@ Media path resolution also refuses a path if any existing component below the wo
 - If multi-file rollback cannot fully restore the previous playlist, the temporary backup is retained instead of being deleted, and its filesystem path is included in the error shown to the user for possible manual recovery.
 
 
+
+
+QML registration note: classes marked with `QML_ELEMENT` and registered as creatable QML types must not be declared `final`, because Qt generates a `QQmlElement<T>` subclass for construction.
