@@ -41,6 +41,11 @@ public:
     QString playlistName() const { return m_playlistName; }
     void setPlaylistName(const QString &newName) { m_playlistName = newName; }
 
+    QString playlistPath() const { return m_playlistPath; }
+    void setPlaylistPath(const QString &newPath) { m_playlistPath = newPath; }
+
+    void setWorkspacePath(const QString &workspacePath);
+
     Q_INVOKABLE bool insertRows(int position, int count,
                                 const QModelIndex &parent = QModelIndex()) override;
     Q_INVOKABLE bool removeRows(int position, int count,
@@ -58,10 +63,13 @@ signals:
 
 private:
     QString m_playlistName;
+    QString m_playlistPath;
+    QString m_workspacePath;
     QList<Song> m_songList;
     QDir m_dir;
     PlaylistStorage m_storage;
 
+    QString workspaceFilePath(const QString &relativePath) const;
     bool isTrackMissing(const QString &path) const;
     bool persistSongList(const QList<Song> &songList);
 

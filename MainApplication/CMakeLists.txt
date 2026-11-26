@@ -115,6 +115,8 @@ qt_add_qml_module(${PROJECT_NAME}
         playlists/playlistmodel.cpp
         playlists/playlistrepository.h
         playlists/playlistrepository.cpp
+        playlists/playlistservice.h
+        playlists/playlistservice.cpp
         playlists/playliststorage.h
         playlists/playliststorage.cpp
         playlists/song.h

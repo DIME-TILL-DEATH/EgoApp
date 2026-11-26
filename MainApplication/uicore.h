@@ -5,8 +5,7 @@
 #include <QTranslator>
 
 #include "sdcontentmodel.h"
-#include "playlists/playlistmodel.h"
-#include "playlists/playlistrepository.h"
+#include "playlists/playlistservice.h"
 
 class UiCore : public QObject
 {
@@ -18,7 +17,7 @@ class UiCore : public QObject
     Q_PROPERTY(PlaylistModel* currentPlaylist READ currentPlaylist NOTIFY currentPlaylistChanged FINAL)
     Q_PROPERTY(QStringList avaliablePlaylists READ avaliablePlaylists NOTIFY workspaceChanged FINAL)
     Q_PROPERTY(QString workspacePath READ workspacePath NOTIFY workspaceChanged FINAL)
-    Q_PROPERTY(qint16 currentPlaylistIndex READ currentPlaylistIndex WRITE setCurrentPlaylistIndex NOTIFY currentPlaylistIndexChanged FINAL)
+    Q_PROPERTY(int currentPlaylistIndex READ currentPlaylistIndex WRITE setCurrentPlaylistIndex NOTIFY currentPlaylistIndexChanged FINAL)
 
     Q_PROPERTY(QString appLanguageCode READ appLanguageCode NOTIFY translatorChanged)
 public:
@@ -28,20 +27,21 @@ public:
 
     Q_INVOKABLE void setWorkspace(QUrl workspaceFolderPath);
 
-    Q_INVOKABLE void addPlaylist(QString plsName);
+    // Accepts a slash-separated path relative to PLAYLIST, e.g. "Collections/Rock".
+    Q_INVOKABLE void addPlaylist(QString playlistPath);
     Q_INVOKABLE void deletePlaylist(quint16 index);
 
     QString workspacePath() const;
     QStringList avaliablePlaylists() const;
     PlaylistModel* currentPlaylist() const;
 
-    quint16 currentPlaylistIndex() const;
-    void setCurrentPlaylistIndex(qint16 newCurrentPlylistInex);
+    int currentPlaylistIndex() const;
+    void setCurrentPlaylistIndex(int newCurrentPlylistInex);
 
     Q_INVOKABLE void openManualExternally(QString fileName);
     Q_INVOKABLE void runWavConvertor();
 
-    Q_INVOKABLE void checkPlaylists();
+    Q_INVOKABLE void checkPlaylist(const QString &playlistPath);
 
     Q_INVOKABLE void setLanguage(QString languageCode);
     QString appLanguageCode();
@@ -59,9 +59,8 @@ signals:
 
 private:
     SdContentModel m_sdContentModel{this};
-    QDir m_workspaceDir;
     QSettings m_settings;
-    PlaylistRepository m_playlistRepository;
+    PlaylistService m_playlistService;
 
     QTranslator m_translator;
     QMap<QString, QString> pathFromCode
@@ -70,11 +69,9 @@ private:
         {"ru", ":/translations/EgoGIG_ru.qm"},
     };
 
-    QList<PlaylistModel*> m_avaliablePlaylists;
     PlaylistModel* m_currentPlaylist{nullptr};
 
-    void readPlaylistFolder();
-    quint16 m_currentPlaylistIndex{0};
+    int m_currentPlaylistIndex{0};
 
     void loadTranslator(QString languageCode);
     void loadDefaultTranslator();
