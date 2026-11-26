@@ -109,10 +109,10 @@ qt_add_qml_module(${PROJECT_NAME}
         ${QML_FILES}
 
     SOURCES
-        audiomixer.h
-        audiomixer.cpp
-        decodestream.h
-        decodestream.cpp
+        audio/audiomixer.h
+        audio/audiomixer.cpp
+        audio/decodestream.h
+        audio/decodestream.cpp
         playlists/playlistmodel.h
         playlists/playlistmodel.cpp
         playlists/playlistrepository.h
@@ -125,10 +125,10 @@ qt_add_qml_module(${PROJECT_NAME}
         playlists/song.cpp
         sdcontentmodel.h
         sdcontentmodel.cpp
-        soundcore.h
-        soundcore.cpp
-        soundplayer.h
-        soundplayer.cpp
+        audio/soundcore.h
+        audio/soundcore.cpp
+        audio/soundplayer.h
+        audio/soundplayer.cpp
         uicore.h
         uicore.cpp
         ${RCC_FILES}
@@ -140,6 +140,7 @@ qt_add_qml_module(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/playlists"
+        "${CMAKE_CURRENT_SOURCE_DIR}/audio"
 )
 
 find_package(Qt6 REQUIRED COMPONENTS
@@ -492,12 +493,12 @@ if(BUILD_TESTING)
 
     add_executable(audio_tests
         tests/audio_tests.cpp
-        audiomixer.cpp
+        audio/audiomixer.cpp
     )
 
     target_include_directories(audio_tests
         PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/audio
     )
 
     target_link_libraries(audio_tests
