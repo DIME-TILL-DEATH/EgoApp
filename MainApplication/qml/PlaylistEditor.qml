@@ -116,7 +116,8 @@ Rectangle {
                         onDropped: function (drag) {
                             var from = (drag.source as Item).dragParent.modelIndex;
                             var to = (drag.source as Item).visualIndex;
-                            UiCore.currentPlaylist.moveSong(from, to);
+                            if (!UiCore.currentPlaylist.moveSong(from, to))
+                                _visualModel.items.move(to, from);
                         }
 
                         Rectangle{
@@ -558,8 +559,10 @@ Rectangle {
                 | QmlDialogs.MessageDialog.Cancel
 
         onAccepted: {
-            UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);
-            _listView.currentIndex = _listView.currentIndex - 1
+            var removedRow = _listView.currentIndex;
+            if (UiCore.currentPlaylist.removeRows(removedRow, 1))
+                _listView.currentIndex = Math.min(removedRow,
+                                                  UiCore.currentPlaylist.rowCount() - 1)
         }
     }
 }

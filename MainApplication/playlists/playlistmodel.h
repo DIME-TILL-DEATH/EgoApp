@@ -50,7 +50,7 @@ public:
                                 const QModelIndex &parent = QModelIndex()) override;
     Q_INVOKABLE bool removeRows(int position, int count,
                                 const QModelIndex &parent = QModelIndex()) override;
-    Q_INVOKABLE void moveSong(int fromPosition, int toPosition);
+    Q_INVOKABLE bool moveSong(int fromPosition, int toPosition);
 
     Q_INVOKABLE void setLink(const QModelIndex &index, quint8 trackNum, QString path);
     Q_INVOKABLE void setPlayNext(const QModelIndex &index, bool state);

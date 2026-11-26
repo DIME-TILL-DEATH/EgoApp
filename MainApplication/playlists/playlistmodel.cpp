@@ -129,10 +129,13 @@ void PlaylistModel::refreshModel(const QList<Song> &songList)
 
 bool PlaylistModel::insertRows(int position, int count, const QModelIndex &parent)
 {
-    if (parent.isValid() || count <= 0)
+    const int currentRowCount = m_songList.size();
+    if (parent.isValid() || count <= 0 || position < 0
+        || position > currentRowCount
+        || count > std::numeric_limits<int>::max() - currentRowCount)
         return false;
 
-    const int insertPosition = qBound(0, position, m_songList.size());
+    const int insertPosition = position;
     QList<Song> updatedSongs = m_songList;
 
     for (int offset = 0; offset < count; ++offset)
@@ -219,8 +222,9 @@ bool PlaylistModel::insertRows(int position, int count, const QModelIndex &paren
 
 bool PlaylistModel::removeRows(int position, int count, const QModelIndex &parent)
 {
+    const int currentRowCount = m_songList.size();
     if (parent.isValid() || count <= 0 || position < 0
-        || position + count > m_songList.size())
+        || position >= currentRowCount || count > currentRowCount - position)
         return false;
 
     QList<Song> updatedSongs = m_songList;
@@ -236,18 +240,20 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
     return true;
 }
 
-void PlaylistModel::moveSong(int fromPosition, int toPosition)
+bool PlaylistModel::moveSong(int fromPosition, int toPosition)
 {
     const int currentRowCount = m_songList.size();
     if (fromPosition < 0 || fromPosition >= currentRowCount
-        || toPosition < 0 || toPosition >= currentRowCount
-        || fromPosition == toPosition)
-        return;
+        || toPosition < 0 || toPosition >= currentRowCount)
+        return false;
+
+    if (fromPosition == toPosition)
+        return true;
 
     // moveSong uses the final row index; moveRows uses Qt's insertion position
     // before the source rows are removed.
     const int destinationChild = fromPosition < toPosition ? toPosition + 1 : toPosition;
-    moveRows(QModelIndex(), fromPosition, 1, QModelIndex(), destinationChild);
+    return moveRows(QModelIndex(), fromPosition, 1, QModelIndex(), destinationChild);
 }
 
 bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
