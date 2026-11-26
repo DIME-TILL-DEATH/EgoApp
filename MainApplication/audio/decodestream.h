@@ -47,12 +47,14 @@ private:
     bool isCurrentSession(quint64 generation) const;
     void handleBufferReady(quint64 generation);
     void handleDecoderError(quint64 generation, QAudioDecoder::Error error);
+    void reportDuration(qint64 duration);
 
     QString m_sourcePath;
     QFile *m_sourceFile{nullptr};
     std::unique_ptr<QTemporaryFile> m_pcmFile;
     QAudioDecoder *m_decoder{nullptr};
     QAudioFormat m_format;
+    qint64 m_reportedDuration{0};
     quint64 m_generation{0};
     std::atomic_bool m_decodingFinished{true};
     std::atomic_bool m_decoderFailed{false};

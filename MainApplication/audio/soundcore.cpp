@@ -79,19 +79,19 @@ void SoundCore::playContent(const QModelIndex &contentIndex)
         return;
 
     const QString absolutePath = fileInfo.absoluteFilePath();
-    if (!m_soundPlayer.play(SoundPlayer::PlaySd, absolutePath))
-    {
-        stop();
-        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-        return;
-    }
-
     m_egoTrackPosition = 0;
     m_sdTrackPosition = 0;
     m_egoTrackDuration = 0;
     m_sdTrackDuration = 0;
     emit qmlTrackPositionChanged();
     emit qmlTrackDurationChanged();
+
+    if (!m_soundPlayer.play(SoundPlayer::PlaySd, absolutePath))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
 
     m_wavPlaying = QDir::fromNativeSeparators(
         QDir(model->rootPath()).relativeFilePath(absolutePath));
@@ -169,19 +169,19 @@ void SoundCore::playEgo(const QModelIndex &contentIndex)
         }
     }
 
-    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
-    {
-        stop();
-        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
-        return;
-    }
-
     m_egoTrackPosition = 0;
     m_sdTrackPosition = 0;
     m_egoTrackDuration = 0;
     m_sdTrackDuration = 0;
     emit qmlTrackPositionChanged();
     emit qmlTrackDurationChanged();
+
+    if (!m_soundPlayer.play(SoundPlayer::PlayEgo, t1Path, t2Path))
+    {
+        stop();
+        emit errorOccured(QObject::tr("Unable to open the selected audio track."));
+        return;
+    }
 
     const QString t1Name = plsModel->data(contentIndex, PlaylistModel::T1NameRole).toString();
     const QString t2Name = plsModel->data(contentIndex, PlaylistModel::T2NameRole).toString();
@@ -352,6 +352,16 @@ bool SoundCore::playbackActive() const
 bool SoundCore::playbackPaused() const
 {
     return m_soundPlayer.isPaused();
+}
+
+bool SoundCore::egoPlaybackActive() const
+{
+    return m_soundPlayer.state() == SoundPlayer::PlayEgo;
+}
+
+bool SoundCore::sdPlaybackActive() const
+{
+    return m_soundPlayer.state() == SoundPlayer::PlaySd;
 }
 
 float SoundCore::track1Volume() const

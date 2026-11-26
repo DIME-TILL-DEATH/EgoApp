@@ -65,6 +65,7 @@ bool DecodeStream::open(OpenMode mode)
     }
 
     m_closing.store(false);
+    m_reportedDuration = 0;
     m_decodingFinished.store(false);
     m_decoderFailed.store(false);
     const quint64 generation = ++m_generation;
@@ -77,7 +78,7 @@ bool DecodeStream::open(OpenMode mode)
     connect(m_decoder, &QAudioDecoder::durationChanged, this,
             [this, generation](qint64 duration) {
                 if (isCurrentSession(generation))
-                    emit durationChanged(duration);
+                    reportDuration(duration);
             });
     connect(m_decoder, &QAudioDecoder::bufferReady, this,
             [this, generation]() {
@@ -248,7 +249,31 @@ void DecodeStream::handleBufferReady(quint64 generation)
         return;
     }
 
+    const qint64 bytesPerFrame = m_format.bytesPerFrame();
+    const int sampleRate = m_format.sampleRate();
+    if (bytesPerFrame > 0 && sampleRate > 0)
+    {
+        qint64 decodedBytes = 0;
+        {
+            QMutexLocker locker(&m_pcmMutex);
+            if (m_pcmFile && m_pcmFile->isOpen())
+                decodedBytes = m_pcmFile->size();
+        }
+
+        const qint64 decodedFrames = decodedBytes / bytesPerFrame;
+        reportDuration(decodedFrames * 1000 / sampleRate);
+    }
+
     emit readyRead();
+}
+
+void DecodeStream::reportDuration(qint64 duration)
+{
+    if (duration <= m_reportedDuration)
+        return;
+
+    m_reportedDuration = duration;
+    emit durationChanged(duration);
 }
 
 void DecodeStream::handleDecoderError(quint64 generation, QAudioDecoder::Error error)

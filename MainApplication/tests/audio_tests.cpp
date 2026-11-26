@@ -284,7 +284,8 @@ private slots:
         QSignalSpy duration(&player, &SoundPlayer::track1DurationChanged); QVERIFY(duration.isValid());
         QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
         player.pauseResume(); QVERIFY(player.isPaused());
-        QTRY_VERIFY_WITH_TIMEOUT(duration.count() > 0, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(
+            duration.count() > 0 && duration.last().at(0).toLongLong() > 0, 5000);
         QTest::qWait(100); QCOMPARE(fake->startCount(), 0);
         player.pauseResume(); QVERIFY(!player.isPaused());
         QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000); player.stop();

@@ -536,6 +536,7 @@ Rectangle {
 
             value: SoundCore.egoTrackPosition
             duration: SoundCore.egoTrackDuration
+            playbackActive: SoundCore.egoPlaybackActive
 
             onPlayPause: {
                 if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)

@@ -16,7 +16,7 @@ Rectangle {
     property alias duration: _slider.to
     property alias value: _slider.value
     property alias position: _slider.position
-    property bool playbackActive: SoundCore.playbackActive
+    property bool playbackActive: false
     property bool playbackPaused: SoundCore.playbackPaused
 
     // property alias timeLabel: _timeLabel.text

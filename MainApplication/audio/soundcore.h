@@ -32,6 +32,8 @@ class SoundCore : public QObject
     Q_PROPERTY(qint64 sdTrackPosition READ sdTrackPosition NOTIFY qmlTrackPositionChanged FINAL)
     Q_PROPERTY(bool playbackActive READ playbackActive NOTIFY playbackStateChanged FINAL)
     Q_PROPERTY(bool playbackPaused READ playbackPaused NOTIFY playbackStateChanged FINAL)
+    Q_PROPERTY(bool egoPlaybackActive READ egoPlaybackActive NOTIFY playbackStateChanged FINAL)
+    Q_PROPERTY(bool sdPlaybackActive READ sdPlaybackActive NOTIFY playbackStateChanged FINAL)
 
     Q_PROPERTY(float track1Volume READ track1Volume WRITE setTrack1Volume NOTIFY track1VolumeChanged FINAL)
     Q_PROPERTY(float track2Volume READ track2Volume WRITE setTrack2Volume NOTIFY track2VolumeChanged FINAL)
@@ -93,6 +95,8 @@ public:
     qint64 sdTrackPosition() const;
     bool playbackActive() const;
     bool playbackPaused() const;
+    bool egoPlaybackActive() const;
+    bool sdPlaybackActive() const;
 
     bool track1LMuted() const;
     void setTrack1LMuted(bool newTrack1Muted);

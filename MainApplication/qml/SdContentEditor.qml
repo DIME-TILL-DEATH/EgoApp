@@ -189,6 +189,7 @@ Item{
 
             value: SoundCore.sdTrackPosition
             duration: SoundCore.sdTrackDuration
+            playbackActive: SoundCore.sdPlaybackActive
 
             onPlayPause: {
                 SoundCore.PlayPause(SoundPlayer.PlaySd, _itemSelectionModel.currentIndex);
