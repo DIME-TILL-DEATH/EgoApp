@@ -136,6 +136,12 @@ void DecodeStream::close()
     m_closing.store(false);
 }
 
+bool DecodeStream::canAppendPcmBytes(qint64 currentSize, qint64 appendSize)
+{
+    return currentSize >= 0 && currentSize <= MaxPcmBytes
+           && appendSize >= 0 && appendSize <= MaxPcmBytes - currentSize;
+}
+
 bool DecodeStream::isCurrentSession(quint64 generation) const
 {
     return generation == m_generation && !m_closing.load()
@@ -214,7 +220,7 @@ void DecodeStream::handleBufferReady(quint64 generation)
             return;
 
         const qint64 currentSize = m_pcmFile->size();
-        if (buffer.byteCount() > MaxPcmBytes - currentSize)
+        if (!canAppendPcmBytes(currentSize, buffer.byteCount()))
         {
             writeError = tr("Decoded audio exceeds the one-hour per-track limit.");
         }
@@ -229,12 +235,14 @@ void DecodeStream::handleBufferReady(quint64 generation)
                     buffer.constData<char>(), buffer.byteCount());
                 const bool flushed = m_pcmFile->flush();
                 writeError = m_pcmFile->errorString();
-                m_pcmFile->seek(readPosition);
+                const bool restored = m_pcmFile->seek(readPosition);
 
-                if (written == buffer.byteCount() && flushed)
+                if (written == buffer.byteCount() && flushed && restored)
                     writeError.clear();
                 else if (writeError.isEmpty())
-                    writeError = tr("Unable to store decoded audio data.");
+                    writeError = restored
+                                     ? tr("Unable to store decoded audio data.")
+                                     : tr("Unable to restore the decoded audio read position.");
             }
         }
     }

@@ -1,6 +1,7 @@
 #include <QAudioFormat>
 #include <QBuffer>
 #include <QDataStream>
+#include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryFile>
 #include <QtTest>
@@ -49,6 +50,24 @@ public:
             return false;
         return QBuffer::seek(position);
     }
+};
+
+class ShortReadBuffer final : public QBuffer
+{
+public:
+    using QBuffer::QBuffer;
+    void shortReadOnce() { m_shortReadOnce = true; }
+protected:
+    qint64 readData(char *data, qint64 maxSize) override
+    {
+        if (m_shortReadOnce) {
+            m_shortReadOnce = false;
+            return QBuffer::readData(data, maxSize / 2);
+        }
+        return QBuffer::readData(data, maxSize);
+    }
+private:
+    bool m_shortReadOnce{false};
 };
 
 class AudioTests final : public QObject
@@ -230,6 +249,83 @@ private slots:
         QCOMPARE(positionSpy.count(), 0);
     }
 
+    void partialSecondTrackReadRollsBackBothCursors()
+    {
+        const QByteArray samples = pcm({100, 100, 100, 100});
+        QBuffer first;
+        ShortReadBuffer second;
+        first.setData(samples);
+        second.setData(samples);
+        QVERIFY(first.open(QIODevice::ReadOnly | QIODevice::Unbuffered));
+        QVERIFY(second.open(QIODevice::ReadOnly | QIODevice::Unbuffered));
+
+        AudioMixer mixer;
+        mixer.setTracks(&first, &second);
+        mixer.setTrackFinished(true, true);
+        QSignalSpy positionSpy(&mixer, &AudioMixer::positionUpdated);
+        QVERIFY(positionSpy.isValid());
+
+        second.shortReadOnce();
+        char output[8]{};
+        QCOMPARE(mixer.read(output, sizeof(output)), qint64(0));
+        QCOMPARE(first.pos(), qint64(0));
+        QCOMPARE(second.pos(), qint64(0));
+        QCOMPARE(mixer.position(), qint64(0));
+        QCOMPARE(positionSpy.count(), 0);
+
+        QCOMPARE(mixer.read(output, sizeof(output)), qint64(sizeof(output)));
+        QCOMPARE(first.pos(), qint64(sizeof(output)));
+        QCOMPARE(second.pos(), qint64(sizeof(output)));
+        QCOMPARE(first.bytesAvailable(), qint64(samples.size() - sizeof(output)));
+        QCOMPARE(second.bytesAvailable(), qint64(samples.size() - sizeof(output)));
+        QCOMPARE(mixer.position(), qint64(0));
+        QCOMPARE(positionSpy.count(), 1);
+        QCOMPARE(sampleAt(QByteArray(output, sizeof(output)), 0), qint16(200));
+    }
+
+    void mixerClampsInvalidTrackVolumes()
+    {
+        const QList<QPair<float, qint16>> cases{
+            {2.0f, 1000},
+            {-1.0f, 0},
+            {std::numeric_limits<float>::quiet_NaN(), 0},
+            {std::numeric_limits<float>::infinity(), 0}
+        };
+        for (const auto &testCase : cases) {
+            QBuffer track;
+            track.setData(pcm({1000, 1000}));
+            QVERIFY(track.open(QIODevice::ReadOnly | QIODevice::Unbuffered));
+            AudioMixer mixer;
+            mixer.setTracks(&track, nullptr);
+            mixer.setTrack1Settings(testCase.first, true, true, false);
+            char output[4]{};
+            QCOMPARE(mixer.read(output, sizeof(output)), qint64(sizeof(output)));
+            QCOMPARE(sampleAt(QByteArray(output, sizeof(output)), 0), testCase.second);
+            QCOMPARE(sampleAt(QByteArray(output, sizeof(output)), 1), testCase.second);
+        }
+    }
+
+    void mixerRejectsInvalidSeekWithoutMovingSources()
+    {
+        const QByteArray samples(50000, '\0');
+        QBuffer first, second;
+        first.setData(samples);
+        second.setData(samples);
+        QVERIFY(first.open(QIODevice::ReadOnly));
+        QVERIFY(second.open(QIODevice::ReadOnly));
+        AudioMixer mixer;
+        mixer.setTracks(&first, &second);
+        QSignalSpy positionSpy(&mixer, &AudioMixer::positionUpdated);
+        QVERIFY(positionSpy.isValid());
+
+        QVERIFY(!mixer.seekToPosition(-1));
+        QVERIFY(!mixer.seekToPosition(std::numeric_limits<qint64>::max()));
+        QCOMPARE(first.pos(), qint64(0));
+        QCOMPARE(second.pos(), qint64(0));
+        QCOMPARE(mixer.position(), qint64(0));
+        QCOMPARE(positionSpy.count(), 0);
+    }
+
     void reportsConsumedPlaybackPosition()
     {
         const QByteArray samples(176400, '\0');
@@ -290,6 +386,39 @@ private slots:
     {
         QCOMPARE(DecodeStream::MaxPcmBytes, qint64(635040000));
     }
+    void decodeStreamEnforcesPcmSpoolLimit()
+    {
+        const qint64 limit = DecodeStream::MaxPcmBytes;
+        QVERIFY(DecodeStream::canAppendPcmBytes(0, limit));
+        QVERIFY(DecodeStream::canAppendPcmBytes(limit - 1, 1));
+        QVERIFY(DecodeStream::canAppendPcmBytes(limit, 0));
+        QVERIFY(!DecodeStream::canAppendPcmBytes(limit, 1));
+        QVERIFY(!DecodeStream::canAppendPcmBytes(limit + 1, 0));
+        QVERIFY(!DecodeStream::canAppendPcmBytes(-1, 1));
+        QVERIFY(!DecodeStream::canAppendPcmBytes(0, -1));
+        QVERIFY(!DecodeStream::canAppendPcmBytes(
+            std::numeric_limits<qint64>::max(), 1));
+    }
+
+    void decodeStreamRemovesTemporarySpoolOnClose()
+    {
+        auto wave = makeWaveFile(250);
+        QVERIFY(wave);
+        DecodeStream decoder;
+        decoder.setFormat(pcmFormat());
+        QVERIFY(decoder.open(wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(decoder.size() > 0, 5000);
+
+        QVERIFY(decoder.m_pcmFile);
+        const QString spoolPath = decoder.m_pcmFile->fileName();
+        QVERIFY(QFileInfo::exists(spoolPath));
+
+        decoder.close();
+        QVERIFY(!QFileInfo::exists(spoolPath));
+        QCOMPARE(decoder.size(), qint64(0));
+        QCOMPARE(decoder.bytesAvailable(), qint64(0));
+    }
+
     void missingSourceFailsWithoutOpeningStream()
     {
         DecodeStream decoder;
@@ -298,6 +427,21 @@ private slots:
         QVERIFY(!decoder.isOpen());
         QVERIFY(decoder.isDecodingFinished());
     }
+    void decodeStreamRejectsUnsupportedOpenModes()
+    {
+        auto wave = makeWaveFile(100);
+        QVERIFY(wave);
+        DecodeStream decoder;
+        decoder.setFormat(pcmFormat());
+
+        QVERIFY(!decoder.open(wave->fileName(), QIODevice::WriteOnly));
+        QVERIFY(!decoder.isOpen());
+        QVERIFY(decoder.isDecodingFinished());
+        QVERIFY(!decoder.open(wave->fileName(), QIODevice::ReadWrite));
+        QVERIFY(!decoder.isOpen());
+        QVERIFY(decoder.isDecodingFinished());
+    }
+
     void decodeStreamKeepsSpoolCursorAlignedWithConsumedBytes()
     {
         auto wave = makeWaveFile(250);
@@ -551,19 +695,63 @@ private slots:
             QStringLiteral("Audio decoding failed:")));
     }
 
+    void soundPlayerResumesAfterPauseAndDrainsShortTrack()
+    {
+        auto wave = makeWaveFile(100);
+        QVERIFY(wave);
+        auto output = std::make_unique<FakeAudioOutput>();
+        auto *fake = output.get();
+        SoundPlayer player(std::move(output));
+        QSignalSpy finished(&player, &SoundPlayer::playingFinished);
+        QVERIFY(finished.isValid());
+
+        QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        player.pauseResume();
+        QVERIFY(player.isPaused());
+        QTest::qWait(150);
+        QCOMPARE(fake->state(), QtAudio::SuspendedState);
+        QCOMPARE(finished.count(), 0);
+
+        player.pauseResume();
+        QVERIFY(!player.isPaused());
+        qint64 consumed = 0;
+        QTRY_VERIFY_WITH_TIMEOUT([&]() {
+            consumed += fake->consumeAvailable().size();
+            return consumed >= 17640;
+        }(), 5000);
+        fake->simulateState(QtAudio::IdleState);
+        QTRY_COMPARE_WITH_TIMEOUT(player.state(), SoundPlayer::Idle, 5000);
+        QCOMPARE(finished.count(), 1);
+    }
+
     void soundPlayerFinishesAfterOutputBufferIsDrained()
     {
         auto wave = makeWaveFile(100); QVERIFY(wave);
         auto output = std::make_unique<FakeAudioOutput>(); auto *fake = output.get();
         SoundPlayer player(std::move(output));
-        QSignalSpy finished(&player, &SoundPlayer::playingFinished); QVERIFY(finished.isValid());
+        QSignalSpy finished(&player, &SoundPlayer::playingFinished);
+        QSignalSpy track1Durations(&player, &SoundPlayer::track1DurationChanged);
+        QSignalSpy track2Durations(&player, &SoundPlayer::track2DurationChanged);
+        QVERIFY(finished.isValid());
+        QVERIFY(track1Durations.isValid());
+        QVERIFY(track2Durations.isValid());
         QVERIFY(player.play(SoundPlayer::PlaySd, wave->fileName()));
         QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(
+            track1Durations.count() > 1 && track1Durations.last().at(0).toLongLong() > 0,
+            5000);
+        const int track1SignalsBeforeFinish = track1Durations.count();
+        const int track2SignalsBeforeFinish = track2Durations.count();
         QByteArray consumed;
         QTRY_VERIFY_WITH_TIMEOUT([&]() { consumed += fake->consumeAvailable(); return consumed.size() >= 44100 * 4 / 10; }(), 5000);
         QTest::qWait(100); fake->simulateState(QtAudio::IdleState);
         QTRY_COMPARE_WITH_TIMEOUT(player.state(), SoundPlayer::Idle, 5000);
         QCOMPARE(finished.count(), 1);
+        QCOMPARE(track1Durations.count(), track1SignalsBeforeFinish + 1);
+        QCOMPARE(track2Durations.count(), track2SignalsBeforeFinish + 1);
+        QCOMPARE(track1Durations.last().at(0).toLongLong(), qint64(0));
+        QCOMPARE(track2Durations.last().at(0).toLongLong(), qint64(0));
     }
 
 };

@@ -44,6 +44,9 @@ signals:
     void errorOccurred(QString errorString);
 
 private:
+    friend class AudioTests;
+
+    static bool canAppendPcmBytes(qint64 currentSize, qint64 appendSize);
     bool isCurrentSession(quint64 generation) const;
     void handleBufferReady(quint64 generation);
     void handleDecoderError(quint64 generation, QAudioDecoder::Error error);

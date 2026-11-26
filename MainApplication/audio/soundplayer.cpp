@@ -320,6 +320,8 @@ void SoundPlayer::finishPlayback()
     emit positionUpdated(0);
     m_track1Duration = 0;
     m_track2Duration = 0;
+    emit track1DurationChanged(0);
+    emit track2DurationChanged(0);
     emit playbackDurationChanged(0);
     m_streamTrack1.close();
     m_streamTrack2.close();
