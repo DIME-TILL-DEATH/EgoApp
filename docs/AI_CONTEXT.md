@@ -14,8 +14,7 @@ EgoApp is AMT's desktop application for AMT EgoGig4 users. It manages playlists 
 Verify paths against the current tree.
 | Area | Files |
 |---|---|
-| PlaylistModel | `MainApplication/playlistmodel.cpp/.h` |
-| Playlist persistence | `MainApplication/playlistrepository.cpp/.h` |
+| Playlist feature | `MainApplication/playlists/playlistmodel.cpp/.h`, `playlistrepository.cpp/.h`, `song.cpp/.h` |
 | SdContentModel | `MainApplication/sdcontentmodel.cpp/.h` |
 | UiCore | `MainApplication/uicore.cpp/.h` |
 | Player | `MainApplication/soundplayer.cpp/.h` |
