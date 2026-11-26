@@ -400,4 +400,27 @@
         <translation>Вы точно хотите удалить объект?</translation>
     </message>
 </context>
+<context>
+    <name>PlaylistService</name>
+    <message>
+        <source>Unable to load playlists: %1</source>
+        <translation>Не удалось загрузить плейлисты: %1</translation>
+    </message>
+    <message>
+        <source>The workspace directory is unavailable or unreadable.</source>
+        <translation>Рабочая папка недоступна или не может быть прочитана.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST path is not a supported directory.</source>
+        <translation>Путь PLAYLIST не является поддерживаемой папкой.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory is unavailable or unreadable.</source>
+        <translation>Папка PLAYLIST недоступна или не может быть прочитана.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory became unavailable while loading.</source>
+        <translation>Папка PLAYLIST стала недоступна во время загрузки.</translation>
+    </message>
+</context>
 </TS>

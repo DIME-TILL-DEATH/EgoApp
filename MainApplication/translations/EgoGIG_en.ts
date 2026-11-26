@@ -400,4 +400,27 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>PlaylistService</name>
+    <message>
+        <source>Unable to load playlists: %1</source>
+        <translation>Unable to load playlists: %1</translation>
+    </message>
+    <message>
+        <source>The workspace directory is unavailable or unreadable.</source>
+        <translation>The workspace directory is unavailable or unreadable.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST path is not a supported directory.</source>
+        <translation>The PLAYLIST path is not a supported directory.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory is unavailable or unreadable.</source>
+        <translation>The PLAYLIST directory is unavailable or unreadable.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory became unavailable while loading.</source>
+        <translation>The PLAYLIST directory became unavailable while loading.</translation>
+    </message>
+</context>
 </TS>

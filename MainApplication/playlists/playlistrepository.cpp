@@ -4,6 +4,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QCoreApplication>
 
 namespace
 {
@@ -122,7 +123,7 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath,
     if (workspace.isEmpty() || !QDir(workspace).isReadable())
     {
         if (errorString)
-            *errorString = QStringLiteral("The workspace directory is unavailable or unreadable.");
+            *errorString = QCoreApplication::translate("PlaylistService", "The workspace directory is unavailable or unreadable.");
         return result;
     }
 
@@ -137,7 +138,7 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath,
     if (rootInfo.isSymLink() || !rootInfo.isDir())
     {
         if (errorString)
-            *errorString = QStringLiteral("The PLAYLIST path is not a supported directory.");
+            *errorString = QCoreApplication::translate("PlaylistService", "The PLAYLIST path is not a supported directory.");
         return result;
     }
 
@@ -145,7 +146,7 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath,
     if (rootPath.isEmpty() || !QDir(rootPath).isReadable())
     {
         if (errorString)
-            *errorString = QStringLiteral("The PLAYLIST directory is unavailable or unreadable.");
+            *errorString = QCoreApplication::translate("PlaylistService", "The PLAYLIST directory is unavailable or unreadable.");
         return result;
     }
 
@@ -157,7 +158,7 @@ QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath,
     {
         result.clear();
         if (errorString)
-            *errorString = QStringLiteral("The PLAYLIST directory became unavailable while loading.");
+            *errorString = QCoreApplication::translate("PlaylistService", "The PLAYLIST directory became unavailable while loading.");
     }
 
     return result;
