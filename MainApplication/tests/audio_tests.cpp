@@ -39,6 +39,18 @@ private:
     int m_startCount{0};
 };
 
+class SeekFailingBuffer final : public QBuffer
+{
+public:
+    using QBuffer::QBuffer;
+    bool seek(qint64 position) override
+    {
+        if (position > 0)
+            return false;
+        return QBuffer::seek(position);
+    }
+};
+
 class AudioTests final : public QObject
 {
     Q_OBJECT
@@ -196,6 +208,28 @@ private slots:
         QVERIFY(positionSpy.count() >= 1);
         QCOMPARE(positionSpy.last().at(0).toLongLong(), qint64(100));
     }
+    void failedSecondTrackSeekRollsBackFirstTrack()
+    {
+        const QByteArray samples(50000, '\0');
+        QBuffer first;
+        SeekFailingBuffer second;
+        first.setData(samples);
+        second.setData(samples);
+        QVERIFY(first.open(QIODevice::ReadOnly));
+        QVERIFY(second.open(QIODevice::ReadOnly));
+
+        AudioMixer mixer;
+        mixer.setTracks(&first, &second);
+        QSignalSpy positionSpy(&mixer, &AudioMixer::positionUpdated);
+        QVERIFY(positionSpy.isValid());
+
+        QVERIFY(!mixer.seekToPosition(100));
+        QCOMPARE(first.pos(), qint64(0));
+        QCOMPARE(second.pos(), qint64(0));
+        QCOMPARE(mixer.position(), qint64(0));
+        QCOMPARE(positionSpy.count(), 0);
+    }
+
     void reportsConsumedPlaybackPosition()
     {
         const QByteArray samples(176400, '\0');
