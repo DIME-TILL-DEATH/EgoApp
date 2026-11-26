@@ -107,3 +107,7 @@ Media-path resolution checks each existing component beneath the workspace and r
 
 ### Playlist playback path resolution
 SoundCore must not infer the workspace root by walking upward from a playlist directory: playlist nesting depth is variable. PlaylistModel provides the shared workspace-rooted media-path resolution used by playlist validation and model roles. Before playback, SoundCore validates the model/index, rejects structurally corrupted playlists, requires track 1 to resolve to an existing regular file, and validates track 2 when it is present. An empty track-2 path is optional and is passed to SoundPlayer as empty; it is not converted into the workspace directory.
+
+
+### Playlist root loading errors
+A workspace with no PLAYLIST/ directory is a valid empty workspace. If the workspace is unreadable, or an existing PLAYLIST/ path is a symlink, non-directory, or unreadable, PlaylistRepository returns an explicit load error that PlaylistService forwards through loadIssuesFound. The repository checks the root again after traversal and discards the loaded snapshot if the root disappeared or became unreadable. It does not attempt platform-specific diagnosis of partial enumeration failures in nested directories.

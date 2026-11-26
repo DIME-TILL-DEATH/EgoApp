@@ -21,7 +21,7 @@ class PlaylistRepository
 public:
     // Every directory below PLAYLIST is exposed as a playlist. Directories may
     // contain both their own .ego files and child playlist directories.
-    QList<PlaylistData> load(const QString &workspacePath) const;
+    QList<PlaylistData> load(const QString &workspacePath, QString *errorString = nullptr) const;
     bool loadPlaylist(const QString &workspacePath, const QString &relativePath,
                       PlaylistData *playlist) const;
     bool create(const QString &workspacePath, const QString &relativePath) const;

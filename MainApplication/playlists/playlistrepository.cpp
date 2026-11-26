@@ -111,14 +111,55 @@ bool PlaylistRepository::isValidRelativePath(const QString &relativePath)
     return true;
 }
 
-QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath) const
+QList<PlaylistData> PlaylistRepository::load(const QString &workspacePath,
+                                                   QString *errorString) const
 {
     QList<PlaylistData> result;
-    const QString rootPath = canonicalPlaylistRoot(workspacePath);
-    if (rootPath.isEmpty())
+    if (errorString)
+        errorString->clear();
+
+    const QString workspace = canonicalWorkspacePath(workspacePath);
+    if (workspace.isEmpty() || !QDir(workspace).isReadable())
+    {
+        if (errorString)
+            *errorString = QStringLiteral("The workspace directory is unavailable or unreadable.");
+        return result;
+    }
+
+    const QString rootCandidate =
+        QDir(workspace).filePath(QStringLiteral("PLAYLIST"));
+    const QFileInfo rootInfo(rootCandidate);
+
+    // A workspace without a PLAYLIST directory is a valid empty workspace.
+    if (!rootInfo.exists() && !rootInfo.isSymLink())
         return result;
 
+    if (rootInfo.isSymLink() || !rootInfo.isDir())
+    {
+        if (errorString)
+            *errorString = QStringLiteral("The PLAYLIST path is not a supported directory.");
+        return result;
+    }
+
+    const QString rootPath = canonicalPlaylistRoot(workspace);
+    if (rootPath.isEmpty() || !QDir(rootPath).isReadable())
+    {
+        if (errorString)
+            *errorString = QStringLiteral("The PLAYLIST directory is unavailable or unreadable.");
+        return result;
+    }
+
     loadDirectories(rootPath, rootPath, {}, result);
+
+    // Do not expose a partial snapshot if the root disappeared or became
+    // inaccessible while the directory tree was being enumerated.
+    if (!QDir(rootPath).exists() || !QDir(rootPath).isReadable())
+    {
+        result.clear();
+        if (errorString)
+            *errorString = QStringLiteral("The PLAYLIST directory became unavailable while loading.");
+    }
+
     return result;
 }
 

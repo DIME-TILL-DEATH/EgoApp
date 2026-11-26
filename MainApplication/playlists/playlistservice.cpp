@@ -229,9 +229,14 @@ void PlaylistService::reload()
     if (m_workspacePath.isEmpty())
         return;
 
-    const QList<PlaylistData> playlistData = m_repository.load(m_workspacePath);
+    QString repositoryError;
+    const QList<PlaylistData> playlistData = m_repository.load(m_workspacePath, &repositoryError);
     m_playlists.reserve(playlistData.size());
     QStringList loadIssues;
+
+    if (!repositoryError.isEmpty())
+        loadIssues.append(QCoreApplication::translate(
+            "PlaylistService", "Unable to load playlists: %1").arg(repositoryError));
 
     for (const PlaylistData &playlist : playlistData)
     {
