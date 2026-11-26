@@ -14,6 +14,8 @@ endif()
 
 project(EgoGIG)
 
+include(CTest)
+
 option(EGOGIG_VERIFY_MIN_MACOS "macOS Release: fail the build if any Mach-O/Info.plist requires a newer OS than EGOGIG_MIN_MACOS" ON)
 option(EGOGIG_PRUNE_BUNDLE "macOS Release: remove Qt modules the app does not use from the .app after macdeployqt" ON)
 
