@@ -2,7 +2,12 @@
 #include <cstring>
 #include <limits>
 #include <QMutexLocker>
-AudioMixer::AudioMixer(QObject *parent) : QIODevice(parent) { QIODevice::open(QIODevice::ReadOnly); }
+// Disable QIODevice's read buffer: it may prefetch a whole frame and then
+// return only the caller's requested byte count, splitting a stereo frame.
+AudioMixer::AudioMixer(QObject *parent) : QIODevice(parent)
+{
+    QIODevice::open(QIODevice::ReadOnly | QIODevice::Unbuffered);
+}
 void AudioMixer::setTracks(QIODevice *track1, QIODevice *track2)
 {
     QMutexLocker locker(&m_mutex);
