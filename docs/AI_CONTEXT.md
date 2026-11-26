@@ -36,15 +36,19 @@ Verify paths against the current tree.
 - PlaylistModel receives the workspace path explicitly; it must not infer it by walking upward from its playlist directory because playlists may be nested.
 - The playlist creation dialog accepts slash-separated relative paths. Removing a directory removes its entire nested subtree.
 
+**Qt Model/View contract:**
+- PlaylistModel is a flat list and returns zero rows for a valid parent index.
+- moveSong() uses final row indexes; its implementation translates them to Qt moveRows() destination-child insertion positions. Moving to the end is supported.
+- dataChanged() notifications specify the roles affected by each song update.
+
 **Audio import:** Qt is the primary conversion path. On failure, source data and previous destination assignment must remain available.
 **Playback:** check decoder/stream ownership, track switching, stop, errors, teardown, and buffering of long files.
 
 ## Previous static-audit areas
 These are areas to re-check, not confirmed defects in current HEAD:
-- PlaylistModel index bounds and move semantics.
 - Failure-safe multi-file .ego updates and rollback.
 - Preserving previous destination on failed import.
 - Import queue terminal state after errors.
 - Player/decoder lifetime and memory growth.
 - Remaining UiCore/SdContentModel responsibility split (workspace policy, validation, localization, media import).
-- Tests and CI on minimum OS versions.
+- Automated tests for playlist persistence and Qt Model/View contracts are deferred until playlist architecture work is complete.

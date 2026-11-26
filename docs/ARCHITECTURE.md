@@ -44,6 +44,11 @@ CMake registers QML sources from MainApplication/qml/ and assigns each source it
 - Qt audio conversion: primary audio-preparation path.
 - SoX: isolated legacy component, not the primary audio path; do not modify third-party internals.
 
+## PlaylistModel Qt Model/View contract
+- PlaylistModel is a flat list: `rowCount(parent)` returns zero for a valid parent index.
+- `moveSong(from, to)` accepts final row indexes. Internally it translates the target into Qt's `moveRows()` destination-child insertion position, which may equal the pre-move row count when moving an item to the end. `moveRows()` rejects overlapping/no-op destinations and uses Qt's required pre-removal destination-child semantics.
+- Updates to one song emit `dataChanged()` with the exact affected roles: PlayNext changes only PlayNextRole; track-link changes notify the path, name, missing-state and (for track 1) MIDI-existence roles.
+
 ## Nested playlist directories
 A playlist's stable identifier is its path relative to PLAYLIST/, not its basename. For example, Collections/Rock and Live/Rock are distinct playlists even though both have the display name Rock. The backend exposes every directory below PLAYLIST/ as a playlist; directories can contain both their own numbered .ego files and child directories. Existing top-level directories continue to use their existing names as identifiers.
 
@@ -62,7 +67,7 @@ Repository operations reject traversal and symbolic-link components and verify c
 Each individual .ego replacement is protected by QSaveFile. A playlist update spans multiple files, however, so a failure partway through the batch can still leave a mixed on-disk generation. A subsequent hardening step should stage the complete generation and provide rollback/commit semantics before removing stale files. Do not describe the current batch operation as atomic.
 
 ## Errors and tests
-Test file-open/write/commit failures, stale-file removal failures, empty playlists, numeric file ordering, model index boundaries, reorder boundaries, and cancellation. Nested repository tests should cover recursive discovery, duplicate basenames at different depths, old top-level paths, invalid traversal, symlink rejection, and nested create/remove behavior. The current repository does not yet have dedicated automated tests for the playlist persistence layer.
+Test file-open/write/commit failures, stale-file removal failures, empty playlists, numeric file ordering, model index boundaries, reorder boundaries, and cancellation. Nested repository tests should cover recursive discovery, duplicate basenames at different depths, old top-level paths, invalid traversal, symlink rejection, and nested create/remove behavior. The current repository does not yet have dedicated automated tests for the playlist persistence layer. Model contract tests for flat parent handling, reorder boundaries and dataChanged role lists are deferred until the playlist architecture work is complete.
 
 ## Open questions
 Further UiCore extractions: workspace policy/settings, playlist validation, localization, and external application launching.

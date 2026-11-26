@@ -29,7 +29,9 @@ PlaylistModel::PlaylistModel(const QList<Song> &songList, QObject *parent)
 
 int PlaylistModel::rowCount(const QModelIndex &parent) const
 {
-    Q_UNUSED(parent)
+    if (parent.isValid())
+        return 0;
+
     return m_songList.size();
 }
 
@@ -234,9 +236,18 @@ bool PlaylistModel::removeRows(int position, int count, const QModelIndex &paren
     return true;
 }
 
-void PlaylistModel::moveSong(quint16 fromPosition, quint16 toPosition)
+void PlaylistModel::moveSong(int fromPosition, int toPosition)
 {
-    moveRows(QModelIndex(), fromPosition, 1, QModelIndex(), toPosition);
+    const int currentRowCount = m_songList.size();
+    if (fromPosition < 0 || fromPosition >= currentRowCount
+        || toPosition < 0 || toPosition >= currentRowCount
+        || fromPosition == toPosition)
+        return;
+
+    // moveSong uses the final row index; moveRows uses Qt's insertion position
+    // before the source rows are removed.
+    const int destinationChild = fromPosition < toPosition ? toPosition + 1 : toPosition;
+    moveRows(QModelIndex(), fromPosition, 1, QModelIndex(), destinationChild);
 }
 
 bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
@@ -244,14 +255,22 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
 {
     if (sourceParent.isValid() || destinationParent.isValid())
         return false;
-    if (count != 1 || sourceRow < 0 || sourceRow >= m_songList.size()
-        || destinationChild < 0 || destinationChild >= m_songList.size())
-        return false;
-    if (sourceRow == destinationChild)
+
+    const int currentRowCount = m_songList.size();
+    if (count != 1 || sourceRow < 0 || sourceRow >= currentRowCount
+        || destinationChild < 0 || destinationChild > currentRowCount)
         return false;
 
+    // Qt disallows destinations inside or immediately adjacent to the source range.
+    if (destinationChild >= sourceRow && destinationChild <= sourceRow + count)
+        return false;
+
+    const int targetRow = destinationChild > sourceRow
+                              ? destinationChild - count
+                              : destinationChild;
+
     QList<Song> updatedSongs = m_songList;
-    updatedSongs.move(sourceRow, destinationChild);
+    updatedSongs.move(sourceRow, targetRow);
 
     QList<quint16> numberingScheme;
     numberingScheme.reserve(m_songList.size());
@@ -261,11 +280,20 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
     for (int i = 0; i < updatedSongs.size(); ++i)
         updatedSongs[i].fileNum = numberingScheme.at(i);
 
+    // Persist first so a storage failure cannot leave the in-memory model changed.
     if (!persistSongList(updatedSongs))
         return false;
 
-    const int destinationRow = sourceRow < destinationChild ? destinationChild + 1 : destinationChild;
-    beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationRow);
+    if (!beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1,
+                       destinationParent, destinationChild))
+    {
+        // The prevalidated flat-list move should be accepted by Qt. Restore the
+        // previous persisted state if Qt rejects the notification unexpectedly.
+        persistSongList(m_songList);
+        emit errorOccured(QObject::tr("Can't move song: the model rejected the move"));
+        return false;
+    }
+
     m_songList = updatedSongs;
     endMoveRows();
     return true;
@@ -273,7 +301,8 @@ bool PlaylistModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int
 
 void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString path)
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= m_songList.size())
+    if (!index.isValid() || index.row() < 0 || index.row() >= m_songList.size()
+        || trackNum > 1)
         return;
 
     QList<Song> updatedSongs = m_songList;
@@ -282,7 +311,29 @@ void PlaylistModel::setLink(const QModelIndex &index, quint8 trackNum, QString p
         return;
 
     m_songList = updatedSongs;
-    emit dataChanged(index, index);
+
+    QList<int> changedRoles;
+    if (trackNum == 0)
+    {
+        changedRoles = {
+            T1PathRole,
+            T1NameRole,
+            MidiExistRole,
+            FileMissingRole,
+            T1MissingRole
+        };
+    }
+    else
+    {
+        changedRoles = {
+            T2PathRole,
+            T2NameRole,
+            FileMissingRole,
+            T2MissingRole
+        };
+    }
+
+    emit dataChanged(index, index, changedRoles);
 }
 
 void PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
@@ -296,7 +347,7 @@ void PlaylistModel::setPlayNext(const QModelIndex &index, bool state)
         return;
 
     m_songList = updatedSongs;
-    emit dataChanged(index, index);
+    emit dataChanged(index, index, {PlayNextRole});
 }
 
 QDir PlaylistModel::dir() const
