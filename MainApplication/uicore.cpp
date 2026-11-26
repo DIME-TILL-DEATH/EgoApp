@@ -57,8 +57,10 @@ UiCore::UiCore(QObject *parent)
     m_sdContentModel.setWorkspace(workspacePath);
 
     connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
+    connect(&m_playlistService, &PlaylistService::errorOccurred,
+            this, &UiCore::errorOccured);
 
-    readPlaylistFolder();
+    m_playlistService.setWorkspacePath(m_workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     QString appLanguage = m_settings.value("application_language", "autoselect").toString();
@@ -87,52 +89,42 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 
     m_settings.setValue("workspace_path", path);
 
-    readPlaylistFolder();
+    m_playlistService.setWorkspacePath(m_workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     emit workspaceChanged();
 }
 
-void UiCore::addPlaylist(QString plsName)
+void UiCore::addPlaylist(QString playlistPath)
 {
-    if (!m_playlistRepository.create(m_workspaceDir.absolutePath(), plsName))
+    QString errorString;
+    if (!m_playlistService.createPlaylist(playlistPath, &errorString))
     {
-        const QString targetPath = m_workspaceDir.absoluteFilePath(QStringLiteral("PLAYLIST/") + plsName);
-
-        if (QFileInfo::exists(targetPath))
-            emit errorOccured(QObject::tr("Playlist already exist"));
-        else
-            emit errorOccured(QObject::tr("Can't create playlist"));
+        emit errorOccured(errorString);
         return;
     }
 
-    readPlaylistFolder();
-
-    for (int i = 0; i < m_avaliablePlaylists.size(); ++i)
-    {
-        if(m_avaliablePlaylists.at(i)->playlistName() == plsName)
-        {
-            emit workspaceChanged();
-            setCurrentPlaylistIndex(i);
-        }
-    }
+    emit workspaceChanged();
+    const int playlistIndex = m_playlistService.indexOfPath(playlistPath);
+    if (playlistIndex >= 0)
+        setCurrentPlaylistIndex(playlistIndex);
 }
 
 void UiCore::deletePlaylist(quint16 index)
 {
-    if (index >= m_avaliablePlaylists.size())
+    PlaylistModel *playlist = m_playlistService.playlistAt(index);
+    if (!playlist)
         return;
 
-    const QString name = m_avaliablePlaylists.at(index)->playlistName();
-    if (!m_playlistRepository.remove(m_workspaceDir.absolutePath(), name))
+    const QString playlistPath = playlist->playlistPath();
+    QString errorString;
+    if (!m_playlistService.removePlaylist(playlistPath, &errorString))
     {
-        emit errorOccured(QObject::tr("Refusing to delete a folder outside of PLAYLIST"));
+        emit errorOccured(errorString);
         return;
     }
 
-    readPlaylistFolder();
     emit workspaceChanged();
-
     setCurrentPlaylistIndex(0);
 }
 
@@ -143,14 +135,7 @@ QString UiCore::workspacePath() const
 
 QStringList UiCore::avaliablePlaylists() const
 {
-    QStringList playlists;
-
-    foreach (PlaylistModel* plsModel, m_avaliablePlaylists)
-    {
-        playlists.append(plsModel->playlistName());
-    }
-
-    return playlists;
+    return m_playlistService.playlistPaths();
 }
 
 PlaylistModel* UiCore::currentPlaylist() const
@@ -158,44 +143,23 @@ PlaylistModel* UiCore::currentPlaylist() const
     return m_currentPlaylist;
 }
 
-void UiCore::readPlaylistFolder()
-{
-    qDeleteAll(m_avaliablePlaylists);
-    m_avaliablePlaylists.clear();
-    m_currentPlaylist = nullptr;
-
-    const QList<PlaylistData> playlists =
-        m_playlistRepository.load(m_workspaceDir.absolutePath());
-
-    for (const PlaylistData &playlist : playlists)
-    {
-        PlaylistModel *model = new PlaylistModel(playlist.songs, this);
-        model->setPlaylistName(playlist.name);
-        model->setDir(QDir(playlist.directoryPath));
-        connect(model, &PlaylistModel::errorOccured, this, &UiCore::errorOccured);
-        m_avaliablePlaylists.append(model);
-    }
-}
-
-
-quint16 UiCore::currentPlaylistIndex() const
+int UiCore::currentPlaylistIndex() const
 {
     return m_currentPlaylistIndex;
 }
 
-void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
+void UiCore::setCurrentPlaylistIndex(int newCurrentPlaylistIndex)
 {
-    m_currentPlaylistIndex = newCurrentPlaylistIndex;
-
-    if(m_avaliablePlaylists.size() == 0)
+    const int playlistCount = m_playlistService.playlists().size();
+    if (playlistCount == 0)
     {
         m_currentPlaylist = nullptr;
         m_currentPlaylistIndex = -1;
     }
     else
     {
-        if(m_currentPlaylistIndex <  m_avaliablePlaylists.size())
-            m_currentPlaylist = m_avaliablePlaylists.at(m_currentPlaylistIndex);
+        m_currentPlaylistIndex = qBound(0, newCurrentPlaylistIndex, playlistCount - 1);
+        m_currentPlaylist = m_playlistService.playlistAt(m_currentPlaylistIndex);
     }
 
     emit currentPlaylistChanged();
@@ -209,11 +173,11 @@ void UiCore::checkPlaylists()
     QRegularExpression englishRegex("^[a-zA-Z0-9\\\\:/._\\-\\s()&]+$");
 
 
-    foreach(PlaylistModel* playlist, m_avaliablePlaylists)
+    for (PlaylistModel *playlist : m_playlistService.playlists())
     {
         quint32 songsCount = playlist->rowCount(QModelIndex());
 
-        result.append(playlist->playlistName() + ":");
+        result.append(playlist->playlistPath() + ":");
         QStringList errors;
         for(int i=0; i < songsCount; i++)
         {
