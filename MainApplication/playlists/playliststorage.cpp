@@ -445,9 +445,9 @@ bool PlaylistStorage::saveChanges(const QString &directoryPath,
             // could not complete, and expose its location for manual recovery.
             backupDirectory.setAutoRemove(false);
             *errorString = QObject::tr("Playlist update failed: %1. The previous state could not be fully restored: %2. Backup files were kept at: %3. Stop editing and check the SD card and its connection.")
-                               .arg(failure,
-                                    restorationErrors.join(QStringLiteral("; ")),
-                                    backupDirectory.path());
+                               .arg(failure)
+                               .arg(restorationErrors.join(QStringLiteral("; ")))
+                               .arg(backupDirectory.path());
         }
     }
     return false;
