@@ -76,3 +76,6 @@ These are areas to re-check, not confirmed defects in current HEAD:
 
 
 **.ego read strategy:** each numbered record is read in one `QFile::readAll()` operation. The I/O error is checked immediately before classifying empty/incomplete content or decoding UTF-8. The byte buffer is then parsed using the existing two-line format; an absent/empty second line remains valid and extra data after the second line remains an error.
+
+
+**.ego filesystem race handling:** directory enumeration uses `QDir::NoSymLinks` and checks that the playlist directory remains present/readable after listing. Each listed file is rechecked before opening; open failures are reported with the file error. Size and modification time are compared before and after reading to detect common concurrent replacement/modification cases. Qt's `QDir::entryList()` does not expose a reliable enumeration error status, so an empty result from a directory that remains readable is treated as an empty playlist; detecting partial native directory-enumeration failures would require platform-specific APIs. Metadata comparison is best-effort and cannot detect every same-size/same-timestamp rewrite.

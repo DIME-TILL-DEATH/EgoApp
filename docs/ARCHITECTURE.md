@@ -92,3 +92,7 @@ The common media resolver validates the stored path before joining it to the wor
 
 
 PlaylistStorage reads each small .ego record into one byte buffer, checks `QFile::error()` immediately, and only then parses its existing two-line representation. This prevents an I/O failure during an early `readLine()` from being misreported as an empty or incomplete record. An absent/empty second line remains valid; trailing third-line data remains invalid.
+
+
+### .ego enumeration and concurrent changes
+PlaylistStorage excludes symbolic links from the .ego file listing and verifies that the playlist directory remains present/readable after enumeration. It rechecks each listed file before opening, reports open/read errors, and compares file size and modification time before and after reading to catch common concurrent changes or replacement. `QDir::entryList()` does not return a separate enumeration status: a still-readable empty directory is treated as a valid empty playlist, while platform-specific enumeration diagnostics are deferred. Metadata comparison is best-effort and cannot prove that no same-size rewrite with unchanged timestamp occurred.

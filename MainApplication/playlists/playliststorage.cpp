@@ -35,8 +35,21 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
     QList<EgoFile> validFiles;
     QHash<quint16, int> numberOccurrences;
 
+    // QDir does not expose a distinct enumeration error status. Verify the
+    // directory both before and after listing; an empty readable directory is
+    // valid, while a directory lost during enumeration is reported.
     const QStringList egoFiles =
-        directory.entryList({"*.ego"}, QDir::Files, QDir::Name);
+        directory.entryList({"*.ego"}, QDir::Files | QDir::NoSymLinks, QDir::Name);
+
+    QFileInfo directoryInfoAfterListing(directoryPath);
+    directoryInfoAfterListing.refresh();
+    if (!directoryInfoAfterListing.exists() || !directoryInfoAfterListing.isDir()
+        || !directoryInfoAfterListing.isReadable())
+    {
+        result.errors.append(QObject::tr("Playlist directory became unavailable while listing .ego files: ")
+                             + directoryPath);
+        return result;
+    }
 
     for (const QString &fileName : egoFiles)
     {
@@ -99,6 +112,18 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
             continue;
 
         const QString filePath = directory.absoluteFilePath(egoFile.name);
+        QFileInfo fileInfoBefore(filePath);
+        fileInfoBefore.refresh();
+        if (!fileInfoBefore.exists() || !fileInfoBefore.isFile() || fileInfoBefore.isSymLink())
+        {
+            result.errors.append(egoFile.name
+                                 + QObject::tr(": file became unavailable after directory listing"));
+            continue;
+        }
+
+        const qint64 sizeBeforeRead = fileInfoBefore.size();
+        const QDateTime modifiedBeforeRead = fileInfoBefore.lastModified();
+
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly))
         {
@@ -110,6 +135,23 @@ PlaylistLoadResult PlaylistStorage::loadSongs(const QString &directoryPath)
         if (file.error() != QFile::NoError)
         {
             result.errors.append(egoFile.name + QObject::tr(": read error: ") + file.errorString());
+            continue;
+        }
+
+        QFileInfo fileInfoAfter(filePath);
+        fileInfoAfter.refresh();
+        if (!fileInfoAfter.exists() || !fileInfoAfter.isFile() || fileInfoAfter.isSymLink())
+        {
+            result.errors.append(egoFile.name
+                                 + QObject::tr(": file disappeared or changed type while being read"));
+            continue;
+        }
+
+        if (fileInfoAfter.size() != sizeBeforeRead
+            || fileInfoAfter.lastModified() != modifiedBeforeRead)
+        {
+            result.errors.append(egoFile.name
+                                 + QObject::tr(": file changed while being read"));
             continue;
         }
 
