@@ -236,8 +236,14 @@ void SoundCore::PlayPause(SoundPlayer::State mode, const QModelIndex &contentInd
         }
 
         const auto *model = qobject_cast<const SdContentModel *>(proxy->sourceModel());
+        if (!model)
+        {
+            playContent(contentIndex);
+            return;
+        }
+
         const QModelIndex sourceIndex = proxy->mapToSource(contentIndex);
-        if (!model || !sourceIndex.isValid())
+        if (!sourceIndex.isValid())
         {
             playContent(contentIndex);
             return;

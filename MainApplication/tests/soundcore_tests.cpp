@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSignalSpy>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
 #include <QTemporaryDir>
 #include <QtTest>
 #include <memory>
@@ -236,7 +238,6 @@ private slots:
         SdContentModel sdModel;
         sdModel.setWorkspace(QDir(workspace.path()));
         QTRY_VERIFY_WITH_TIMEOUT(proxyIndex(sdModel, sdPath).isValid(), 5000);
-        const QModelIndex sdIndex = proxyIndex(sdModel, sdPath);
 
         auto output = std::make_unique<FakeAudioOutput>();
         auto *fake = output.get();
@@ -256,13 +257,17 @@ private slots:
         QVERIFY(!core.sdPlaybackActive());
         QVERIFY(core.playbackPaused());
 
-        core.PlayPause(SoundPlayer::PlaySd, sdIndex);
+        const QModelIndex sdIndexForSwitch = proxyIndex(sdModel, sdPath);
+        QVERIFY(sdIndexForSwitch.isValid());
+        core.PlayPause(SoundPlayer::PlaySd, sdIndexForSwitch);
         QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() >= 2, 5000);
         QVERIFY(!core.egoPlaybackActive());
         QVERIFY(core.sdPlaybackActive());
         QVERIFY(!core.playbackPaused());
 
-        core.PlayPause(SoundPlayer::PlaySd, sdIndex);
+        const QModelIndex sdIndexForPause = proxyIndex(sdModel, sdPath);
+        QVERIFY(sdIndexForPause.isValid());
+        core.PlayPause(SoundPlayer::PlaySd, sdIndexForPause);
         QVERIFY(!core.egoPlaybackActive());
         QVERIFY(core.sdPlaybackActive());
         QVERIFY(core.playbackPaused());
@@ -426,6 +431,44 @@ private slots:
         QVERIFY(core.wavPlaying().isEmpty());
         QCOMPARE(core.egoTrackDuration(), qint64(0));
         QCOMPARE(core.egoTrackPosition(), qint64(0));
+    }
+
+    void foreignProxyRequestDoesNotInterruptCurrentPlayback()
+    {
+        QTemporaryDir workspace;
+        QVERIFY(workspace.isValid());
+        QVERIFY(QDir(workspace.path()).mkdir("SONGS"));
+        QVERIFY(writeWave(workspace.filePath("SONGS/good.wav")));
+
+        PlaylistModel playlist({makeSong("/SONGS/good.wav")});
+        playlist.setWorkspacePath(workspace.path());
+
+        auto output = std::make_unique<FakeAudioOutput>();
+        auto *fake = output.get();
+        SoundCore core(std::move(output));
+        QSignalSpy errors(&core, &SoundCore::errorOccured);
+        QVERIFY(errors.isValid());
+
+        core.PlayPause(SoundPlayer::PlayEgo, playlist.index(0, 0));
+        QTRY_VERIFY_WITH_TIMEOUT(fake->startCount() > 0, 5000);
+        QCOMPARE(core.egoSongPlaying(), QStringLiteral("good.wav"));
+        const int startCount = fake->startCount();
+
+        QStandardItemModel unrelatedSource;
+        unrelatedSource.appendRow(new QStandardItem(QStringLiteral("not an SD item")));
+        QSortFilterProxyModel unrelatedProxy;
+        unrelatedProxy.setSourceModel(&unrelatedSource);
+        const QModelIndex unrelatedIndex = unrelatedProxy.index(0, 0);
+        QVERIFY(unrelatedIndex.isValid());
+
+        core.PlayPause(SoundPlayer::PlaySd, unrelatedIndex);
+
+        QCOMPARE(errors.count(), 1);
+        QVERIFY(core.playbackActive());
+        QVERIFY(core.egoPlaybackActive());
+        QVERIFY(!core.sdPlaybackActive());
+        QCOMPARE(core.egoSongPlaying(), QStringLiteral("good.wav"));
+        QCOMPARE(fake->startCount(), startCount);
     }
 
     void switchingFromSdToPlaylistClearsThePreviousSourceMetadata()
