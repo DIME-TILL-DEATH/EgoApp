@@ -4,7 +4,7 @@
 > This file records the current state, evidence, dependencies, and the next recommended action. It is not a substitute for source code, tests, or detailed design documents.
 
 **Last verified:** 2026-11-27  
-**Tracking baseline:** `dev` at `5e6d8ed81fc36db8f6f9e2749882420bf1f05db8` when this file was created  
+**Tracking baseline:** `dev` at `45469999dd50a18da8aaa0fa891db479a6389418` (2026-11-27 checkpoint; see the history policy below)  
 **Current plan:** architecture baseline → audio test protection → SdContentModel audit → UiCore audit → integration tests → CI hardening
 
 ## How to use this file
@@ -35,13 +35,42 @@ Use these labels consistently. A checked box means the specific subtask is compl
 | ID | Workstream | Status | Current outcome |
 |---|---|---|---|
 | T1 | Record and reconcile current architecture | **IN PROGRESS** | Architecture/context documents exist; platform and test-status statements still need reconciliation |
-| T2 | Complete audio-core test protection | **PARTIAL** | SoundPlayer and SoundCore tests already exist; CI validation is green on PR #4, but the test-fixture correction is not yet in `dev` |
+| T2 | Complete audio-core test protection | **PARTIAL** | Playlist fixture correction is merged; all three test targets pass on `dev`; remaining SoundPlayer transition coverage is still open |
 | T3 | Audit SdContentModel | **NOT STARTED** | Responsibility and failure-mode audit remains |
 | T4 | Audit UiCore | **NOT STARTED** | Facade boundary and application-flow audit remains |
 | T5 | Add integration tests | **PARTIAL** | C++ SoundCore integration tests exist; QML and broader workspace/import/playlist integration remain |
-| T6 | Establish CI and build validation | **IN PROGRESS** | PR #4 has green three-platform CI; it is not merged into `dev`, and Release validation remains |
+| T6 | Establish CI and build validation | **IN PROGRESS** | CI workflow is merged and active on `dev`; post-merge three-platform CI is green; Release validation remains |
 
 ---
+
+
+## Repository history and branch policy
+
+**Policy adopted:** 2026-11-27. Preserve the existing history of the two long-lived branches; do not rewrite either branch. The current branch heads were recorded before this documentation update:
+
+| Branch | Checkpoint SHA | Role |
+|---|---|---|
+| `dev` | `45469999dd50a18da8aaa0fa891db479a6389418` | Active integration/development branch |
+| `master` | `56f1c5cdc315d9848c7f778c3d822d729d230c60` | Existing release history; preserve independently |
+
+These SHAs are historical control points, not branch names or instructions to reset either branch. Updating this handoff creates a normal new commit on `dev`; it does not amend, rebase, or force-update either existing history.
+
+### Branch workflow
+
+- Keep `dev` and `master` as the only long-lived branches.
+- Create feature branches from the current `dev` only when work needs isolation or a reviewable unit.
+- Keep feature branches temporary. Open a pull request targeting `dev`; after review and validation, use **Squash and merge**.
+- Delete a feature branch after its squash-merged changes are verified on `dev`. Do not retain completed work branches as parallel development histories.
+- Do not use merge commits or rebase/force-push to rewrite the history of `dev` or `master`.
+- Do not delete a branch solely because it is old or absent from the current workflow. First verify its unique commits and confirm that all intended content is present on `dev` or deliberately archived.
+- Keep `master` separate from `dev` unless a release operation explicitly calls for a reviewed integration.
+
+### Cleanup status at checkpoint
+
+The repository branch list contained `dev`, `master`, `ci/github-actions`, `refactoring/audio`, and `test`. PR #4 (`ci/github-actions`) was squash-merged into `dev`; the remaining three refs are cleanup candidates, not yet deleted. Their heads have commits outside the ancestry of `dev` (the audio and test refs each have one unique commit; the CI ref has seven), so deletion must follow a final content-equivalence/backup check. In particular, do not infer that a unique commit's content is missing merely because its SHA is not an ancestor: squash merges intentionally create different commit identities.
+
+The current GitHub integration available to this workflow can inspect and update refs but does not expose a branch-delete operation. Branch deletion therefore remains a GitHub UI/repository-owner action; no branch has been deleted by this update.
+
 
 ## T1 — Record and reconcile the current architecture
 
@@ -86,27 +115,27 @@ Use these labels consistently. A checked box means the specific subtask is compl
 
 ### Remaining work
 
-- [ ] Bring the playlist test-fixture correction from PR #4 into `dev` by merging/reviewing that PR; do not copy it manually without checking whether the PR has already been merged.
-- [ ] Re-run all three Qt Test targets on the updated `dev` and record the exact run/commit.
+- [x] Merge the playlist test-fixture correction from PR #4 into `dev` (squash merge `ff6f4321b6d9d26dc8efa1b736bec8b416c06c0c`).
+- [x] Re-run all three Qt Test targets on updated `dev`; run `45973266798` passed on commit `f3241bc04eb545154e902cd3f9dbb21aee7b588d`.
 - [ ] Review remaining SoundPlayer transition/error cases against the state machine; add tests only for uncovered behavior rather than duplicating existing cases.
 - [ ] Keep production QAudioSink adapter/hardware behavior explicitly classified as platform integration testing, not as covered by the fake output tests.
 
 ### Acceptance criteria
 
-- [ ] All three Qt Test targets pass on `dev`.
+- [x] All three Qt Test targets pass on `dev`.
 - [ ] SoundPlayer state transitions and terminal paths have deterministic hardware-independent coverage.
 - [ ] SoundCore-facing playback metadata/state is verified for normal completion, stop, source switch, and terminal errors.
 - [ ] Any untested hardware/QML behavior is documented as a manual or separate integration check.
 
 ### Current evidence and dependency
 
-The three test targets were run successfully on the PR #4 head `cf0f85f46c688dc533bb148002ff039d3698d7a4` (2026-11-27), on Ubuntu 22.04 / Qt 6.12.1, macOS 15 Intel / Qt 6.7.3, and Windows Server 2022 / Qt 6.12.1. Both the Push and Pull Request workflow runs succeeded:
+The three test targets passed on PR #4 head `36b0c1462d7ef6e4ea3a6bb3f159a5a11eae4c31` (2026-11-27), on Ubuntu 22.04 / Qt 6.12.1, macOS 15 Intel / Qt 6.7.3, and Windows Server 2022 / Qt 6.12.1. The successful Pull Request workflow run is [45971998479](https://github.com/DIME-TILL-DEATH/EgoApp/actions/runs/45971998479). PR #4 was squash-merged into `dev` as `ff6f4321b6d9d26dc8efa1b736bec8b416c06c0c`.
 
-- [Push CI run](https://github.com/DIME-TILL-DEATH/EgoApp/actions/runs/45968453268)
-- [Pull Request CI run](https://github.com/DIME-TILL-DEATH/EgoApp/actions/runs/45968461705)
-- [PR #4](https://github.com/DIME-TILL-DEATH/EgoApp/pull/4)
+The post-merge Push workflow run [45973266798](https://github.com/DIME-TILL-DEATH/EgoApp/actions/runs/45973266798) completed successfully on `dev` commit `f3241bc04eb545154e902cd3f9dbb21aee7b588d`: all three targets passed on Ubuntu 22.04 / Qt 6.12.1, Windows Server 2022 / Qt 6.12.1, and macOS 15 Intel / Qt 6.7.3. An earlier post-merge run was superseded by the HANDOFF-only documentation update; this successful run includes that update. The fixture correction fixes a pre-existing assumption in `repositoryCreatesDiscoversAndRemovesNestedPlaylists()`: the shared test setup creates a default `PLAYLIST/Test` directory, while the repository test expected only the three directories it created.
 
-Important: PR #4 is separate from `dev`. Its test-fixture correction fixes a pre-existing assumption in `repositoryCreatesDiscoversAndRemovesNestedPlaylists()`: the shared test setup creates a default `PLAYLIST/Test` directory, while the repository test expected only the three directories it created. Until PR #4 is merged and tests are rerun on `dev`, do not report the `dev` test baseline as green.
+The CI cleanup also updates `actions/checkout` and `actions/upload-artifact` to Node.js 24-compatible v7 releases, replaces the machine-specific absolute SoX symlink with a sibling-relative link, removes a noisy warning for unsupported PlaylistModel roles (and adds a regression test), replaces a deprecated QDateTime constructor, and installs the Linux VA-API / PipeWire runtime libraries used by Qt Multimedia tests.
+
+One non-blocking CMake warning remains on Qt 6.12.1: Qt's optional `Qt6QmlAssetDownloaderPrivate` plugin dependency lookup cannot find the separate `Qt6TaskTree` module. The application does not use TaskTree; the module is a Qt technology preview. Expected FFmpeg warnings from tests that intentionally open invalid media are retained because they verify decoder-error paths.
 
 ---
 
@@ -189,7 +218,7 @@ Important: PR #4 is separate from `dev`. Its test-fixture correction fixes a pre
 ## T6 — Establish CI and build validation
 
 **Status:** IN PROGRESS  
-**Relevant workflow:** `.github/workflows/ci.yml` (currently proposed on PR #4, not yet in `dev`).
+**Relevant workflow:** `.github/workflows/ci.yml` (merged into `dev` by PR #4 squash merge).
 
 ### Work items
 
@@ -199,15 +228,15 @@ Important: PR #4 is separate from `dev`. Its test-fixture correction fixes a pre
 - [x] Run on Push and Pull Request.
 - [x] Fix the first CI-discovered Linux runtime dependency, Windows resource-file configuration, and playlist test-fixture issue on the CI branch.
 - [x] Verify green CI on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
-- [ ] Review and merge PR #4 into `dev` (maintainer decision; do not merge without explicit authorization).
-- [ ] Confirm the workflow is present and green on `dev` after merge.
+- [x] Review and squash-merge PR #4 into `dev`.
+- [x] Confirm post-merge Push workflow run `45973266798` is green on `dev`.
 - [ ] Add a Release configuration check where it can be separated from packaging/signing side effects.
 - [ ] Decide which full-application build/package checks are safe and practical on hosted runners; keep minimum-OS runtime and physical audio/SD-card checks separate.
 
 ### Acceptance criteria
 
-- [ ] CI is active on `dev` for Push and Pull Request.
-- [ ] All supported test targets build and pass on the agreed matrix.
+- [x] CI is active on `dev` for Push and Pull Request.
+- [x] All three current test targets build and pass on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
 - [ ] Debug and Release validation are both covered, without accidentally running signing/deployment steps in a test-only job.
 - [ ] Logs are retained and easy to retrieve after a failure.
 - [ ] CI claims distinguish hosted-runner build validation from actual runtime validation on minimum OS versions.
@@ -233,9 +262,9 @@ The requested Windows 10 hosted runner is not available in the selected GitHub-h
 
 ## Next action
 
-1. Review PR #4 and, once explicitly approved, merge it into `dev`; then verify that the green CI workflow and playlist fixture correction are present on `dev`.
-2. Continue T1: reconcile platform/test documentation and verify the architecture diagram/contracts against current source.
-3. Only after the architecture baseline is accurate, proceed to the focused SdContentModel audit (T3), then UiCore (T4).
+1. Continue T1: reconcile platform/test documentation and verify the architecture diagram/contracts against current source.
+2. Only after the architecture baseline is accurate, proceed to the focused SdContentModel audit (T3), then UiCore (T4).
+3. Keep T2 partial until the remaining SoundPlayer transition coverage is reviewed and tested.
 
 ## Tracking sources and conventions
 
