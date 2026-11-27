@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QTimeZone>
 #include <QtTest>
 
 #include "playlistmodel.h"
@@ -54,7 +55,7 @@ private:
         QFile file(path);
         if (!file.open(QIODevice::ReadWrite))
             return {};
-        const QDateTime oldTime(QDate(2001, 1, 1), QTime(0, 0), Qt::UTC);
+        const QDateTime oldTime(QDate(2001, 1, 1), QTime(0, 0), QTimeZone::UTC);
         if (!file.setFileTime(oldTime, QFileDevice::FileModificationTime))
             return {};
         file.close();
