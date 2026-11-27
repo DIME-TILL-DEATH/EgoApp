@@ -59,7 +59,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libva2 libva-drm2
+          sudo apt-get install -y libva2 libva-drm2 libva-x11-2 libpipewire-0.3-0
 
       - name: Verify toolchain versions
         shell: bash
