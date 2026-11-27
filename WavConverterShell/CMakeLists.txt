@@ -11,8 +11,16 @@ if(WIN32)
     project(WavConverter VERSION 1.0.0 LANGUAGES CXX)
     add_compile_definitions(WAVCONVERTERLIB_LIBRARY)
 
+    # Generate the converter icon resource in the build tree so a clean
+    # checkout can configure the complete Windows application.
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources.rc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
+        @ONLY
+    )
+
     set(PLATFORM_SPECIFIC_SOURCES
-        resources.rc
+        "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
     )
 
 elseif(APPLE)
