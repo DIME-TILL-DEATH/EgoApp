@@ -43,7 +43,7 @@ Use RAII and explicit ownership. Async operations need success/failure/cancelled
 - Keep C++ files in their current location until focused module boundaries are defined.
 
 ## Workflow
-Trace data flow before editing; keep changes local; add tests; test Debug/Release for resource-lifetime changes; update docs. Report changes, checks, and limitations.
+Before continuing planned work, read the root `HANDOFF.md` and verify its status against the current branch. Keep it updated with each coherent implementation group. Trace data flow before editing; keep changes local; add tests; test Debug/Release for resource-lifetime changes; update docs. Report changes, checks, and limitations.
 
 ## Checklist
 - [ ] Source data survives failures.

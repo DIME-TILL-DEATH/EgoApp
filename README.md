@@ -24,4 +24,4 @@ GNU Lesser General Public License v3.0 (LGPL-3.0)
 
 ## Developer and AI-agent documentation
 
-See [AGENTS.md](AGENTS.md).
+See [AGENTS.md](AGENTS.md) for repository rules and [HANDOFF.md](HANDOFF.md) for the current engineering plan, progress, evidence, and next actions.
