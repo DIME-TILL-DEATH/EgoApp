@@ -1,21 +1,23 @@
 # EgoApp Architecture
 
-*Working overview; verify against the current implementation.*
+*Architecture baseline verified against the `dev` source tree on 2026-11-27. Update this document whenever component boundaries, data flow, or public contracts change.*
 
 ```mermaid
 flowchart TD
- QML[QML UI in MainApplication/qml] --> CORE[UiCore]
+ QML[QML UI] --> CORE[UiCore]
  QML --> SOUNDCORE[SoundCore]
  CORE --> SERVICE[PlaylistService]
  CORE --> SD[SdContentModel]
- SERVICE --> PL[PlaylistModel]
  SERVICE --> REPO[PlaylistRepository]
- PL --> STORAGE[PlaylistStorage]
- REPO --> STORAGE
- STORAGE --> FS[Numbered .ego files]
- SD --> FS
- CORE --> IMP[Qt audio import / conversion]
- IMP --> FS
+ SERVICE --> PL[PlaylistModel]
+ REPO --> STORAGE[PlaylistStorage]
+ PL --> STORAGE
+ STORAGE --> EGO[Numbered .ego files]
+ SD --> FSM[QFileSystemModel / workspace files]
+ SD --> DEC[QAudioDecoder]
+ DEC --> WAV[Prepared WAV files]
+ SOUNDCORE --> PL
+ SOUNDCORE --> PROXY[SdProxyModel]
  SOUNDCORE --> PLAYER[SoundPlayer]
  PLAYER --> DEC1[DecodeStream: Track 1]
  PLAYER --> DEC2[DecodeStream: Track 2]
@@ -23,7 +25,7 @@ flowchart TD
  DEC2 --> MIX
  MIX --> OUT[AudioOutput interface]
  OUT --> SINK[QAudioSink adapter]
- LEGACY[Legacy SoX converter] -. isolated legacy .-> FS
+ LEGACY[Legacy SoX converter] -. isolated legacy path .-> EGO
 ```
 
 This is a conceptual diagram, not a complete call graph.
@@ -42,15 +44,15 @@ SoundCore publishes the selected playback metadata before starting asynchronous 
 
 ## Responsibility areas
 - QML: presentation and lightweight coordination.
-- UiCore: QML-facing application facade; owns UI state and translates application results into Qt signals. Its constructor only establishes internal signal connections. The root QML component calls `initialize()` from `Component.onCompleted`; only then does UiCore configure the initial workspace, load playlists, and configure the application language. After the workspace and playlist models are ready, UiCore emits `workspaceChanged()` to notify QML bindings to `workspacePath` and `avaliablePlaylists`. Playlist load diagnostics are delivered directly by signal because QML connections are ready before initialization starts. UiCore does not retain workspace-directory state: the workspace path is passed to SdContentModel and PlaylistService, while PlaylistService is the authoritative source for the active workspace path. UiCore does not own playlist discovery or directory lifecycle logic.
+- UiCore: QML-facing application facade and application-level coordinator. Its constructor establishes internal signal connections; the root QML component calls `initialize()` from `Component.onCompleted`, after QML signal handlers are ready. Initialization restores or creates the workspace, configures `SdContentModel` and `PlaylistService`, loads playlists, and applies the saved language. `setWorkspace()` validates and persists a new workspace, then updates both collaborators. UiCore delegates playlist discovery/lifecycle to PlaylistService and filesystem browsing/import operations to SdContentModel; it exposes QML invokables for playlist operations, playlist checks, manual/converter launch, and language selection. PlaylistService remains the authoritative source for the active workspace path; UiCore does not retain a duplicate workspace-directory object.
 - PlaylistService: coordinates playlist discovery, creation/removal, model construction, and model lifetimes for the active workspace. It also validates an individual playlist by its stable relative path, loading song records through PlaylistRepository/PlaylistStorage and resolving media paths against its workspace root; validation does not inspect PlaylistModel roles or indexes. It is independent of QML and exposes the playlist models to UiCore.
 - PlaylistRepository: recursively discovers playlist directories and safely creates/removes slash-separated relative paths under PLAYLIST/. It returns plain PlaylistData records and has no QML or Qt item-model dependency.
 - PlaylistStorage: reads and writes numbered .ego files and preserves their existing two-line format (including the optional > marker). The .ego format is immutable for this work.
 - PlaylistModel: one playlist’s song state and Qt Model/View contracts. It delegates persistence to PlaylistStorage and does not implement file-format parsing or filesystem discovery. It receives the workspace root explicitly so media links resolve correctly regardless of playlist nesting depth. It also exposes a structural `corrupted` state derived only from `.ego` load, filename, and numbering errors; missing WAV/media files do not set this state. Corrupted playlists are read-only at every model mutation entry point and cannot be played; QML warns on selection and visually dims the selector entry and editor controls.
-- SdContentModel: selected media/folder contents. A proxy `QModelIndex` is only valid for the current model state; callers must reacquire it after source/proxy updates and must not cache it across resets.
+- SdContentModel: workspace media browser built on `QFileSystemModel`, exposing an `SdProxyModel` to QML. It owns selected-path/filter/track-selection state, creates folders, imports media, performs Qt `QAudioDecoder`-based WAV preparation, and restricts deletion to items canonically contained in `<workspace>/SONGS`. It emits progress/completion/error signals for asynchronous decoding. It currently combines model integration, filesystem operations, and import orchestration; T3 will audit whether those responsibilities should be separated. A proxy `QModelIndex` is transient: callers must reacquire it after source/proxy updates and must not cache it across resets.
 - Audio module (MainApplication/audio/): SoundCore is the QML-facing playback facade; it validates playlist and SD-content playback requests against the exact supplied model indexes, resolves media paths, tracks source-model/row identity for PlayPause, persists playback settings, exposes generic and source-specific playback state, and clears selected-track metadata after natural completion or terminal playback errors; natural completion resets both per-track duration signals as well as the combined duration. It depends on playlist/SD models only at the application integration boundary. SoundPlayer owns playback lifecycle, two DecodeStream instances, AudioMixer, and an AudioOutput interface; the production QAudioSinkOutput adapter wraps QAudioSink, while tests inject a fake output to exercise lifecycle behavior without a physical device; DecodeStream decodes one source and spools PCM to a temporary file; AudioMixer mixes PCM independently of the physical output device.
 - SoundCore: validates playlist playback requests and resolves stored media paths through the PlaylistModel's workspace-rooted resolver; it resets QML-facing position/duration before invoking `SoundPlayer::play()` so a duration notification emitted during startup is not overwritten; it rejects corrupted playlists and missing/non-file tracks and exposes generic playback state plus separate `egoPlaybackActive` and `sdPlaybackActive` properties so only the active source panel displays Pause. SoundPlayer: coordinates decoder streams, the audio mixer, and QAudioSink state transitions. DecodeStream: decodes one source file, owns its source and temporary PCM spool, and reports data arrival, successful completion, duration, and errors. It uses unbuffered QIODevice reads so the temporary-file cursor remains the authoritative consumed position; seek targets may lie beyond the currently decoded extent, while newly decoded PCM is appended without disturbing that target. Duration is derived from decoded PCM size and output format, with decoder-reported duration used when it is larger, so WAV metadata is not required. Each decoder instance is scoped to one playback session; closing invalidates the session before stopping and retiring the decoder so late signals cannot affect a subsequent source. PCM spool growth is capped at one hour per track (44.1 kHz, stereo, signed 16-bit; about 606 MiB). Decoder errors terminate the stream as failures and are not reported as successful completion. Its spool access is mutex-protected because decoder writes and audio-output reads may occur on different threads. AudioMixer: reads and mixes PCM from zero, one, or two streams, applies channel/volume/mute settings, and reports the consumed playback position; it has no audio-device dependency. If either source returns a partial read, it restores both source cursors and leaves the reported position unchanged. Track gains are clamped to 0–1, and non-finite values are treated as zero. Seeking is transactional across active streams: a failed seek restores previous stream positions and leaves the reported mixer position unchanged.
-- Qt audio conversion: primary audio-preparation path.
+- Audio import: the current primary preparation path uses Qt Multimedia (`QAudioDecoder`) under SdContentModel; SoX is not the primary path.
 - SoX: isolated legacy component, not the primary audio path; do not modify third-party internals.
 
 ## PlaylistModel Qt Model/View contract
@@ -85,7 +87,7 @@ Test file-open/read/write/commit failures, malformed and duplicate .ego filename
 PCM spool files are capped at one hour per track at the fixed 44.1 kHz, stereo, signed 16-bit output format (635,040,000 bytes, approximately 606 MiB). The append check rejects negative or over-limit sizes without arithmetic overflow; closing a DecodeStream removes its temporary spool. Each DecodeStream creates a decoder for one playback session and invalidates that session before retiring the decoder on close. Successful decoder completion and decoder failure are separate terminal outcomes. A spool append is accepted only after a complete write, successful flush, and successful restoration of the consumer cursor; otherwise decoding fails. Natural playback completion resets both per-track duration signals and the combined duration. `audio_tests` covers the mixer with QBuffer fixtures (including clipping and frame alignment), DecodeStream lifecycle and seek-ahead behavior with generated PCM WAV files, and SoundPlayer state transitions using an injected fake AudioOutput, including invalid mode and Track 2-only playback. `soundcore_tests` covers SoundCore integration with PlaylistModel and SdContentModel proxy indexes, SD selection reset, PlayPause source identity, source switching, QML-facing playback state and position updates after simulated output consumption, invalid playlist requests preserving current playback, explicit stop reset, and metadata cleanup after decoder failure or natural completion without a physical output device. The production QAudioSink adapter and QML automation still require manual platform integration checks. Terminal decoder/output errors are forwarded through SoundCore after clearing the selected-track metadata.
 
 ## Open questions
-Further UiCore extractions: workspace policy/settings, playlist validation, localization, and external application launching.
+T3 and T4 will audit the remaining responsibility boundaries in SdContentModel and UiCore. The current placement of workspace coordination, settings/localization, media import, and external-process launch is documented as implemented; no extraction is assumed until the audit and tests justify it.
 
 
 ## Media path semantics in .ego

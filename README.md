@@ -14,9 +14,9 @@ EgoApp is AMT's desktop application for **AMT EgoGig4** users. It helps create a
 |---|---:|---|
 | macOS | 6.7 | macOS 11 |
 | Windows | 6.11/6.12 | Windows 10 1809 |
-| Linux | 6.11/6.12 | Ubuntu 22.04, 24.04; Debian 12 |
+| Linux | 6.11/6.12 | Ubuntu 22.04 |
 
-These are targets, not proof of runtime validation. See [PLATFORM_SUPPORT.md](docs/PLATFORM_SUPPORT.md).
+Ubuntu 22.04 is the only Linux distribution baseline currently claimed by the project; do not infer support for other distributions. These are targets, not proof of runtime validation. See [PLATFORM_SUPPORT.md](docs/PLATFORM_SUPPORT.md).
 
 ## License
 
