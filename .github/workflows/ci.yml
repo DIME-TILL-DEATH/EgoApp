@@ -118,11 +118,11 @@ jobs:
 
 
   release-build:
-    name: \${{ matrix.platform }} / Release build
+    name: ${{ matrix.platform }} / Release build
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
       (github.event_name == 'pull_request' && github.base_ref == 'master')
-    runs-on: \${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
 
     strategy:
@@ -150,11 +150,11 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: \${{ matrix.qt-version }}
-          arch: \${{ matrix.qt-arch }}
+          version: ${{ matrix.qt-version }}
+          arch: ${{ matrix.qt-arch }}
           modules: qtmultimedia qtshadertools
-          aqtsource: \${{ matrix.aqt-source }}
-          install-deps: \${{ matrix.install-deps }}
+          aqtsource: ${{ matrix.aqt-source }}
+          install-deps: ${{ matrix.install-deps }}
           cache: true
 
       - name: Install Linux multimedia runtime dependencies
@@ -166,7 +166,7 @@ jobs:
       - name: Verify toolchain versions
         shell: bash
         env:
-          EXPECTED_QT_VERSION: \${{ matrix.qt-version }}
+          EXPECTED_QT_VERSION: ${{ matrix.qt-version }}
         run: |
           set -euo pipefail
           actual_qt_version="$(qmake -query QT_VERSION)"
@@ -196,7 +196,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: \${{ matrix.artifact-name }}
+          name: ${{ matrix.artifact-name }}
           if-no-files-found: ignore
           retention-days: 14
           path: |
