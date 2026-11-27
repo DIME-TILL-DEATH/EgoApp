@@ -323,6 +323,12 @@ private slots:
 
     void repositoryCreatesDiscoversAndRemovesNestedPlaylists()
     {
+        // init() creates a default Test playlist for the other fixtures. This
+        // repository test owns the complete directory tree it wants to assert.
+        const QString defaultPlaylistPath =
+            QDir(m_workspacePath).filePath("PLAYLIST/Test");
+        QVERIFY(QDir(defaultPlaylistPath).removeRecursively());
+
         PlaylistRepository repository;
         QVERIFY(repository.create(m_workspacePath, "Collections/Rock"));
         QVERIFY(repository.create(m_workspacePath, "Collections/Jazz"));

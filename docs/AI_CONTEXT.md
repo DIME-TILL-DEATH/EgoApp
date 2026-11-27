@@ -127,6 +127,6 @@ The workflow in `.github/workflows/ci.yml` runs on every push and pull request. 
 | macOS 15 Intel | 6.7.3 | `clang_64` |
 | Windows Server 2022 | 6.12.1 | `win64_msvc2022_64` |
 
-The workflow verifies the installed Qt version, configures Release tests, and uploads configure/build/CTest logs for 14 days even when a job fails. Ubuntu installs the VA-API runtime libraries required by the Qt Multimedia linker dependencies. CI configures with `EGOGIG_BUILD_CONVERTER=OFF`: the standalone converter is not part of these test jobs, while normal application builds keep it enabled by default. Windows CI uses a hosted Windows Server 2022 runner; runtime compatibility with the minimum Windows 10 1809 target still requires a separate VM or physical-device check.
+The workflow verifies the installed Qt version, configures Debug test targets, and uploads configure/build/CTest logs for 14 days even when a job fails. Ubuntu installs the VA-API runtime libraries required by the Qt Multimedia linker dependencies. CI configures with `EGOGIG_BUILD_CONVERTER=OFF`: the standalone converter is not part of these test jobs, while normal application builds keep it enabled by default. Windows CI uses a hosted Windows Server 2022 runner; runtime compatibility with the minimum Windows 10 1809 target still requires a separate VM or physical-device check.
 
 These jobs validate the three test suites, not full application packaging, audio hardware, QML interaction, removable-media workflows, signing, or launch on every minimum OS version.

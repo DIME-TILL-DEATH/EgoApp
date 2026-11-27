@@ -79,7 +79,7 @@ jobs:
           set -euo pipefail
           cmake -S . -B build-tests \
             -DBUILD_TESTING=ON \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=Debug \
             -DEGOGIG_BUILD_CONVERTER=OFF \
             -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" 2>&1 | tee configure.log
 
@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           cmake --build build-tests \
-            --config Release \
+            --config Debug \
             --target playlist_tests audio_tests soundcore_tests \
             --parallel 2 2>&1 | tee build.log
 
@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           ctest --test-dir build-tests \
-            --build-config Release \
+            --build-config Debug \
             --output-on-failure \
             --verbose 2>&1 | tee test-output.log
 

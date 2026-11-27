@@ -38,12 +38,12 @@ Qt 6.12.1 in CI; minimum OS Ubuntu 22.04. Validate glibc, libstdc++, Qt, and aud
 
 ## CI and release
 
-The workflow `.github/workflows/ci.yml` runs on every push and pull request. It builds and runs `playlist_tests`, `audio_tests`, and `soundcore_tests` with pinned Qt versions:
+The workflow `.github/workflows/ci.yml` runs on every push and pull request. It configures Debug test builds and runs `playlist_tests`, `audio_tests`, and `soundcore_tests` with pinned Qt versions:
 - Ubuntu 22.04 / Qt 6.12.1.
 - macOS 15 Intel / Qt 6.7.3.
 - Windows Server 2022 / Qt 6.12.1.
 
-Configure, build, and CTest logs are uploaded as platform-specific artifacts for 14 days, including failed jobs. The workflow disables the standalone converter target because these jobs validate test suites rather than the full desktop application. The Windows hosted runner does not replace runtime validation on Windows 10 1809.
+Configure, build, and CTest logs are uploaded as platform-specific artifacts for 14 days, including failed jobs. The workflow disables the standalone converter target and uses Debug configuration so test jobs do not invoke Release packaging/signing steps. The Windows icon resource is generated from a tracked template during configuration, keeping clean checkouts reproducible. These jobs validate test suites rather than the full desktop application. The Windows hosted runner does not replace runtime validation on Windows 10 1809.
 
 These CI jobs are regression checks, not release certification. Before release, still validate full application builds and packaging, minimum-OS launch, audio output and codecs, QML interaction, removable-media behavior, signing, and installers.
 

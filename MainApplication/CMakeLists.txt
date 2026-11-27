@@ -21,8 +21,16 @@ if(WIN32)
         LANGUAGES CXX
     )
 
+    # Keep the Windows icon resource in the build tree. The .rc file is
+    # generated from a tracked template so clean CI checkouts have it too.
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/icons/icon.rc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/icon.rc"
+        @ONLY
+    )
+
     set(PLATFORM_SPECIFIC_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/icons/icon.rc
+        "${CMAKE_CURRENT_BINARY_DIR}/icon.rc"
         ${CMAKE_CURRENT_SOURCE_DIR}/version.rc
     )
 
