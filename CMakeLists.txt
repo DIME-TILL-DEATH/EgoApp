@@ -18,6 +18,7 @@ include(CTest)
 
 option(EGOGIG_VERIFY_MIN_MACOS "macOS Release: fail the build if any Mach-O/Info.plist requires a newer OS than EGOGIG_MIN_MACOS" ON)
 option(EGOGIG_PRUNE_BUNDLE "macOS Release: remove Qt modules the app does not use from the .app after macdeployqt" ON)
+option(EGOGIG_ENABLE_RELEASE_PACKAGING "Enable platform deployment, signing, and installer post-build steps" ON)
 
 if(APPLE AND NOT IOS)
     if(CMAKE_OSX_DEPLOYMENT_TARGET VERSION_GREATER EGOGIG_MIN_MACOS)
