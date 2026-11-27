@@ -4,7 +4,7 @@
 > This file records the current state, evidence, dependencies, and the next recommended action. It is not a substitute for source code, tests, or detailed design documents.
 
 **Last verified:** 2026-11-27  
-**Tracking baseline:** `dev` at `d4a1c079e875388ece9fd7e9c23470f0a8757c95` (verified before this documentation change)  
+**Tracking baseline:** `dev` at `a3307ef71789e53ffc5679d9d052f75e3bc424c2` (after PR #5 squash merge; T6 work is isolated on a temporary branch)  
 **Current plan:** architecture baseline → audio test protection → SdContentModel audit → UiCore audit → integration tests → CI hardening
 
 ## How to use this file
@@ -67,9 +67,9 @@ These SHAs are historical control points, not branch names or instructions to re
 
 ### Current branch refs
 
-Before this task, the branch list contained exactly `dev` and `master`; the former working refs (`ci/github-actions`, `refactoring/audio`, and `test`) were no longer present, and no cleanup task remained. This task uses one temporary branch, `docs/t1-documentation`, for a reviewable documentation change. Delete it after its PR is squash-merged and verified on `dev`.
+At the start of T6, the verified long-lived heads were `dev=a3307ef71789e53ffc5679d9d052f75e3bc424c2` and `master=56f1c5cdc315d9848c7f778c3d822d729d230c60`. Temporary branches currently include `docs/t1-documentation` (PR #5 is merged; branch cleanup remains) and `ci/t6-release-build` (active T6 implementation). Delete completed temporary branches after their intended changes are verified on `dev`.
 
-Keep only `dev` and `master` as long-lived branches. Do not introduce a permanent `pre-release` branch unless a concrete release workflow later demonstrates that a PR targeting `master` is insufficient. Release validation can be scoped to PRs whose base is `master`, without adding another branch.
+Keep only `dev` and `master` as long-lived branches. Do not introduce a permanent `pre-release` branch: Release validation is scoped to PRs whose base is `master` and pushes to `master`.
 
 ## T1 — Record and reconcile the current architecture
 
@@ -231,25 +231,33 @@ These are audit leads, not completed findings or evidence that a specific user-d
 - [x] Verify green CI on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
 - [x] Review and squash-merge PR #4 into `dev`.
 - [x] Confirm post-merge Push workflow run `45973266798` is green on `dev`.
-- [ ] Add a build-only Release configuration for the full Windows and Linux application, gated to pull requests targeting `master` and pushes to `master`.
-- [ ] Add a CMake switch that disables platform packaging/deployment post-build commands for CI; keep the local packaging path enabled by default. Current blockers: Windows calls `windeployqt` and `ISCC.exe`; Linux calls `cqtdeployer`, `dpkg-deb`, and a hard-coded Qt 6.8.1 `qmake` path; macOS invokes signing/package tools.
-- [ ] Keep macOS Release signing and package generation local-only; CI must not require or receive signing credentials.
-- [ ] Upload Release configure/build logs. Do not publish installers or bundles in the initial validation stage.
-- [ ] Keep minimum-OS runtime, physical audio/SD-card, Windows 10 1809, and local macOS signing/package checks separate.
+- [x] Add a build-only Release configuration for the full Windows and Linux application, gated to pull requests targeting `master` and pushes to `master`.
+- [x] Add the top-level `EGOGIG_ENABLE_RELEASE_PACKAGING` switch (default `ON`) and gate deployment/packaging post-build hooks in MainApplication, WavConverterShell, and WavConverterLib.
+- [x] Keep macOS Release signing and package generation local-only; CI does not receive signing credentials.
+- [x] Upload Release configure/build logs as 14-day artifacts. Do not publish installers or bundles in the initial validation stage.
+- [x] Keep minimum-OS runtime, physical audio/SD-card, Windows 10 1809, and local macOS signing/package checks separate.
 
 ### Acceptance criteria
 
 - [x] CI is active on `dev` for Push and Pull Request.
 - [x] All three current test targets build and pass on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
-- [ ] Debug tests remain on the three-platform matrix; full-app Release builds run on Windows/Linux only for PRs targeting `master` and pushes to `master`.
-- [ ] Release CI can build the application without invoking Inno Setup, cqtdeployer/dpkg, macdeployqt, codesign, or productbuild.
-- [ ] macOS Release signing/package validation remains a documented local owner step.
-- [ ] Logs are retained and easy to retrieve after a failure.
-- [ ] CI claims distinguish hosted-runner build validation from actual runtime validation on minimum OS versions.
+- [x] Debug tests remain on the three-platform matrix; full-app Release builds are configured for Windows/Linux only on PRs targeting `master` and pushes to `master`.
+- [ ] Both Release matrix legs pass on the PR-to-`master` acceptance run.
+- [ ] Release CI builds the application without invoking Inno Setup, cqtdeployer/dpkg, macdeployqt, codesign, or productbuild.
+- [x] macOS Release signing/package validation remains a documented local owner step.
+- [x] Logs are retained as 14-day artifacts and are retrievable after a failure.
+- [x] CI claims distinguish hosted-runner build validation from actual runtime validation on minimum OS versions.
 
 ### Platform caveat
 
 The requested Windows 10 hosted runner is not available in the selected GitHub-hosted matrix. Windows Server 2022 validates the Windows/MSVC build and tests, but does not prove runtime compatibility with Windows 10 1809. A Windows 10 self-hosted runner or clean VM is still needed for that claim.
+
+### T6 implementation evidence (pending first Release run)
+
+- Added `release-build` to `.github/workflows/ci.yml`; it is gated to PRs with base `master` and pushes to `master`, with Ubuntu 22.04 and Windows Server 2022 / Qt 6.12.1 matrix legs.
+- The job configures the full project with `BUILD_TESTING=OFF`, `CMAKE_BUILD_TYPE=Release`, and `EGOGIG_ENABLE_RELEASE_PACKAGING=OFF`, then builds all default targets. Configure/build logs are uploaded for 14 days.
+- Added the packaging switch in the root CMake project and guarded app, converter-shell, and converter-library deployment/signing/installer hooks.
+- Updated `docs/PLATFORM_SUPPORT.md` and `docs/AI_CONTEXT.md`. This is implementation evidence only; the new workflow must still be exercised by a PR targeting `master` before T6 can be marked DONE.
 
 ---
 
@@ -270,9 +278,9 @@ The requested Windows 10 hosted runner is not available in the selected GitHub-h
 
 ## Next action
 
-1. Continue T2: compare the SoundPlayer state machine with existing fake-output tests and add only missing deterministic transition/error cases.
-2. Then start T3 with a focused SdContentModel import/filesystem failure audit, using TDD before changing behavior.
-3. Continue T4, T5, and T6 in order. For T6, implement the documented Windows/Linux master-only Release build-only validation; do not add a permanent pre-release branch or macOS signing to public CI.
+1. Open a validation PR from `ci/t6-release-build` to `master` so the new Release matrix actually runs. Iterate on CMake/workflow failures until both Ubuntu and Windows Release builds pass.
+2. After both Release jobs pass, close the validation-only PR without merging into `master`; open a PR from the same feature branch to `dev` and squash-merge it automatically. Then remove the temporary feature branch and refresh this handoff with the final run/merge SHAs.
+3. Resume T2: compare the SoundPlayer state machine with existing fake-output tests and add only missing deterministic transition/error cases, then proceed to T3 and T4/T5.
 
 ## Tracking sources and conventions
 
