@@ -115,3 +115,91 @@ jobs:
             build.log
             test-output.log
             build-tests/Testing/Temporary/
+
+
+  release-build:
+    name: \${{ matrix.platform }} / Release build
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'master')
+    runs-on: \${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Ubuntu 22.04
+            os: ubuntu-22.04
+            qt-version: '6.12.1'
+            qt-arch: linux_gcc_64
+            install-deps: true
+            artifact-name: release-build-ubuntu-22-04
+          - platform: Windows Server 2022
+            os: windows-2022
+            qt-version: '6.12.1'
+            qt-arch: win64_msvc2022_64
+            install-deps: false
+            artifact-name: release-build-windows-server-2022
+            aqt-source: git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: \${{ matrix.qt-version }}
+          arch: \${{ matrix.qt-arch }}
+          modules: qtmultimedia qtshadertools
+          aqtsource: \${{ matrix.aqt-source }}
+          install-deps: \${{ matrix.install-deps }}
+          cache: true
+
+      - name: Install Linux multimedia runtime dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libva2 libva-drm2 libva-x11-2 libpipewire-0.3-0
+
+      - name: Verify toolchain versions
+        shell: bash
+        env:
+          EXPECTED_QT_VERSION: \${{ matrix.qt-version }}
+        run: |
+          set -euo pipefail
+          actual_qt_version="$(qmake -query QT_VERSION)"
+          echo "Qt version: $actual_qt_version"
+          test "$actual_qt_version" = "$EXPECTED_QT_VERSION"
+          cmake --version
+
+      - name: Configure full application (Release, packaging disabled)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-release \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DEGOGIG_ENABLE_RELEASE_PACKAGING=OFF \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" 2>&1 | tee configure-release.log
+
+      - name: Build full application (Release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build build-release \
+            --config Release \
+            --parallel 2 2>&1 | tee build-release.log
+
+      - name: Upload Release build logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: \${{ matrix.artifact-name }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            configure-release.log
+            build-release.log
+            build-release/CMakeFiles/CMakeConfigureLog.yaml
