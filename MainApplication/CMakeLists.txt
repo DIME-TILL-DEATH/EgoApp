@@ -185,7 +185,7 @@ if(WIN32)
         WIN32_EXECUTABLE TRUE
     )
 
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
         set(DEPLOY_PATH ${PROJECT_SOURCE_DIR}/../deploy_windows/)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -231,7 +231,7 @@ if(APPLE)
         MACOSX_BUNDLE TRUE
     )
 
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
         set(RELEASE_APP_PATH ${CMAKE_BINARY_DIR}/MainApplication/EgoGIG.app)
 
         add_dependencies(${PROJECT_NAME} wavconverter)
@@ -413,7 +413,7 @@ if(APPLE)
     endif()
 endif()
 
-if(LINUX AND CMAKE_BUILD_TYPE STREQUAL "Release")
+if(LINUX AND EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
     set(DEPLOY_PATH ${PROJECT_SOURCE_DIR}/../deploy_linux/)
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
