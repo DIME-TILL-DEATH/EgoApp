@@ -42,6 +42,13 @@ Use RAII and explicit ownership. Async operations need success/failure/cancelled
 - Load with `QQmlApplicationEngine::loadFromModule("EgoApp", "Main")`; never switch to source-relative runtime loading.
 - Keep C++ files in their current location until focused module boundaries are defined.
 
+## Documentation maintenance (mandatory)
+- Treat documentation as part of the implementation, not as optional follow-up work. Keep it accurate in the same coherent change as the code/configuration it describes.
+- Before changing behavior, build configuration, supported platforms, public component contracts, or CI, inspect the affected documentation and search for related claims elsewhere in the repository.
+- Update every affected source of truth together: `README.md`, `docs/ARCHITECTURE.md`, `docs/AI_CONTEXT.md`, `docs/PLATFORM_SUPPORT.md`, `AGENTS.md`, agent-specific instruction files (`CLAUDE.md`, `GEMINI.md`, `QWEN.md`), and `HANDOFF.md` as applicable.
+- Update `HANDOFF.md` in the same logical change: refresh branch baseline/status, evidence, decisions, risks, and the next action. Do not leave known stale status or branch information for a later session.
+- Keep claims evidence-based. Distinguish implemented behavior, automated CI coverage, manual validation, supported targets, and proposals. Never describe a planned check or unverified OS/distribution as supported or tested.
+- When a change makes a statement obsolete, remove or rewrite it rather than appending a contradictory note. Keep duplicate agent instruction files aligned with this file.
 ## Workflow
 Before continuing planned work, read the root `HANDOFF.md` and verify its status against the current branch. Keep it updated with each coherent implementation group. Trace data flow before editing; keep changes local; add tests; test Debug/Release for resource-lifetime changes; update docs. Report changes, checks, and limitations.
 

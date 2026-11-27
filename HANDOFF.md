@@ -4,7 +4,7 @@
 > This file records the current state, evidence, dependencies, and the next recommended action. It is not a substitute for source code, tests, or detailed design documents.
 
 **Last verified:** 2026-11-27  
-**Tracking baseline:** `dev` at `45469999dd50a18da8aaa0fa891db479a6389418` (2026-11-27 checkpoint; see the history policy below)  
+**Tracking baseline:** `dev` at `d4a1c079e875388ece9fd7e9c23470f0a8757c95` (verified before this documentation change)  
 **Current plan:** architecture baseline → audio test protection → SdContentModel audit → UiCore audit → integration tests → CI hardening
 
 ## How to use this file
@@ -34,7 +34,7 @@ Use these labels consistently. A checked box means the specific subtask is compl
 
 | ID | Workstream | Status | Current outcome |
 |---|---|---|---|
-| T1 | Record and reconcile current architecture | **IN PROGRESS** | Architecture/context documents exist; platform and test-status statements still need reconciliation |
+| T1 | Record and reconcile current architecture | **DONE** | Platform baseline, component responsibilities, test inventory, agent rules, and documentation-maintenance policy reconciled on `dev` |
 | T2 | Complete audio-core test protection | **PARTIAL** | Playlist fixture correction is merged; all three test targets pass on `dev`; remaining SoundPlayer transition coverage is still open |
 | T3 | Audit SdContentModel | **NOT STARTED** | Responsibility and failure-mode audit remains |
 | T4 | Audit UiCore | **NOT STARTED** | Facade boundary and application-flow audit remains |
@@ -48,10 +48,10 @@ Use these labels consistently. A checked box means the specific subtask is compl
 
 **Policy adopted:** 2026-11-27. Preserve the existing history of the two long-lived branches; do not rewrite either branch. The current branch heads were recorded before this documentation update:
 
-| Branch | Checkpoint SHA | Role |
+| Branch | Verified head before this change | Role |
 |---|---|---|
-| `dev` | `45469999dd50a18da8aaa0fa891db479a6389418` | Active integration/development branch |
-| `master` | `56f1c5cdc315d9848c7f778c3d822d729d230c60` | Existing release history; preserve independently |
+| `dev` | `d4a1c079e875388ece9fd7e9c23470f0a8757c95` | Active integration/development branch |
+| `master` | `56f1c5cdc315d9848c7f778c3d822d729d230c60` | Release branch; preserve independently |
 
 These SHAs are historical control points, not branch names or instructions to reset either branch. Updating this handoff creates a normal new commit on `dev`; it does not amend, rebase, or force-update either existing history.
 
@@ -65,42 +65,35 @@ These SHAs are historical control points, not branch names or instructions to re
 - Do not delete a branch solely because it is old or absent from the current workflow. First verify its unique commits and confirm that all intended content is present on `dev` or deliberately archived.
 - Keep `master` separate from `dev` unless a release operation explicitly calls for a reviewed integration.
 
-### Cleanup status at checkpoint
+### Current branch refs
 
-The repository branch list contained `dev`, `master`, `ci/github-actions`, `refactoring/audio`, and `test`. PR #4 (`ci/github-actions`) was squash-merged into `dev`; the remaining three refs are cleanup candidates, not yet deleted. Their heads have commits outside the ancestry of `dev` (the audio and test refs each have one unique commit; the CI ref has seven), so deletion must follow a final content-equivalence/backup check. In particular, do not infer that a unique commit's content is missing merely because its SHA is not an ancestor: squash merges intentionally create different commit identities.
+Before this task, the branch list contained exactly `dev` and `master`; the former working refs (`ci/github-actions`, `refactoring/audio`, and `test`) were no longer present, and no cleanup task remained. This task uses one temporary branch, `docs/t1-documentation`, for a reviewable documentation change. Delete it after its PR is squash-merged and verified on `dev`.
 
-The current GitHub integration available to this workflow can inspect and update refs but does not expose a branch-delete operation. Branch deletion therefore remains a GitHub UI/repository-owner action; no branch has been deleted by this update.
-
+Keep only `dev` and `master` as long-lived branches. Do not introduce a permanent `pre-release` branch unless a concrete release workflow later demonstrates that a PR targeting `master` is insufficient. Release validation can be scoped to PRs whose base is `master`, without adding another branch.
 
 ## T1 — Record and reconcile the current architecture
 
-**Status:** IN PROGRESS  
-**Relevant documents:** `docs/ARCHITECTURE.md`, `docs/AI_CONTEXT.md`, `docs/PLATFORM_SUPPORT.md`, `README.md`, `AGENTS.md`
+**Status:** DONE  
+**Verified baseline:** `dev` at `d4a1c079e875388ece9fd7e9c23470f0a8757c95` (before the documentation branch commit).
 
-### Work items
+### Completed
 
-- [ ] Reconcile all platform claims across README, AI_CONTEXT, PLATFORM_SUPPORT, CMake configuration, and actual CI. In particular, verify Linux minimum/distribution claims and the Windows validation wording.
-- [ ] Verify and update the dependency diagram in `docs/ARCHITECTURE.md` against current source and CMake targets. Keep it a responsibility/dependency diagram, not a speculative call graph.
-- [ ] Document stable public contracts at component boundaries: inputs, outputs, ownership/lifetime, error reporting, threading/async behavior, and invariants. Prioritize `SdContentModel`, `UiCore`, `SoundCore`, `SoundPlayer`, `DecodeStream`, `AudioMixer`, `AudioOutput`, and the playlist service/repository/storage boundary.
-- [ ] Separate implemented automated checks, manual integration checks, platform validation, and proposed future tests. Do not describe a planned check as implemented.
-- [ ] Remove or clearly label stale statements (for example, UI behavior described as planned when it is already implemented).
+- [x] Reconciled platform claims: Ubuntu 22.04 is the only claimed Linux baseline; macOS 11 / Qt 6.7 and Windows 10 1809 / Qt 6.11–6.12 remain target requirements with validation caveats.
+- [x] Corrected the README Linux row; removed unsupported Ubuntu 24.04 and Debian 12 claims.
+- [x] Verified the architecture flow against current source and CMake: QML → UiCore/SoundCore; UiCore → PlaylistService/SdContentModel; playlist storage/repository/model; SD model and Qt decoder; SoundCore/audio playback pipeline.
+- [x] Documented UiCore and SdContentModel responsibilities and their current boundaries without claiming that their audits/refactors are complete.
+- [x] Reconciled the documented automated test inventory with the existing three Qt Test targets and the Debug-only CI matrix. Hardware, QML automation, minimum-OS runtime, and release packaging remain separate validation areas.
+- [x] Updated AGENTS.md and the agent-specific instruction files to require documentation and HANDOFF updates in the same coherent change.
+- [x] Updated branch references and status information to the current repository state.
 
-### Acceptance criteria
+### Evidence and limitations
 
-- [ ] Platform/Qt/OS statements agree across the relevant documentation and match what has actually been tested.
-- [ ] The architecture diagram matches the current source layout and dependency direction.
-- [ ] Each major component has a concise contract and explicit responsibility boundary.
-- [ ] Test documentation distinguishes automated tests that run today from manual checks and future work.
-- [ ] No known stale or contradictory architecture statements remain, or every unresolved discrepancy is explicitly recorded.
-
-### Existing evidence / starting point
-
-- `docs/ARCHITECTURE.md` already contains a Mermaid dependency overview and responsibility descriptions.
-- `docs/AI_CONTEXT.md` contains extensive playlist, media-path, and audio invariants.
-- `docs/PLATFORM_SUPPORT.md` and `README.md` currently contain platform claims that need a line-by-line consistency check. Do not treat a platform as confirmed solely because it appears in a support table.
+- Repository documentation inventory: README.md, AGENTS.md, CLAUDE.md, GEMINI.md, QWEN.md, HANDOFF.md, and the three files under docs/.
+- Current branch refs at verification: `dev=d4a1c079e875388ece9fd7e9c23470f0a8757c95`, `master=56f1c5cdc315d9848c7f778c3d822d729d230c60`; no other long-lived branches were present.
+- CI currently builds/runs the three test targets in Debug on Ubuntu 22.04 / Qt 6.12.1, macOS 15 Intel / Qt 6.7.3, and Windows Server 2022 / Qt 6.12.1. It does not build the full application in Release.
+- Documentation-only change; no source or runtime tests are required for this workstream. Documentation content and GitHub refs are rechecked after commit.
 
 ---
-
 ## T2 — Complete the audio-core test protection
 
 **Status:** PARTIAL  
@@ -143,6 +136,14 @@ One non-blocking CMake warning remains on Qt 6.12.1: Qt's optional `Qt6QmlAssetD
 
 **Status:** NOT STARTED  
 **Relevant code:** `MainApplication/sdcontentmodel.cpp/.h`, related proxy/model classes, WAV import/conversion code, and their callers.
+
+### Preliminary observations (source inspection only; not yet confirmed by focused tests)
+
+- The current import path opens/creates the destination WAV before asynchronous decoding has succeeded; opening an existing destination with `WriteOnly` may truncate it. Confirm the exact behavior and add a regression test before changing it.
+- `slBufferReady()` writes decoded blocks without checking the returned byte count; final header/copy operations and MIDI copy results also need failure-path review.
+- Decoder errors are currently forwarded as a signal; verify cleanup and terminal queue/state behavior.
+
+These are audit leads, not completed findings or evidence that a specific user-data-loss scenario has been reproduced.
 
 ### Work items
 
@@ -230,14 +231,19 @@ One non-blocking CMake warning remains on Qt 6.12.1: Qt's optional `Qt6QmlAssetD
 - [x] Verify green CI on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
 - [x] Review and squash-merge PR #4 into `dev`.
 - [x] Confirm post-merge Push workflow run `45973266798` is green on `dev`.
-- [ ] Add a Release configuration check where it can be separated from packaging/signing side effects.
-- [ ] Decide which full-application build/package checks are safe and practical on hosted runners; keep minimum-OS runtime and physical audio/SD-card checks separate.
+- [ ] Add a build-only Release configuration for the full Windows and Linux application, gated to pull requests targeting `master` and pushes to `master`.
+- [ ] Add a CMake switch that disables platform packaging/deployment post-build commands for CI; keep the local packaging path enabled by default. Current blockers: Windows calls `windeployqt` and `ISCC.exe`; Linux calls `cqtdeployer`, `dpkg-deb`, and a hard-coded Qt 6.8.1 `qmake` path; macOS invokes signing/package tools.
+- [ ] Keep macOS Release signing and package generation local-only; CI must not require or receive signing credentials.
+- [ ] Upload Release configure/build logs. Do not publish installers or bundles in the initial validation stage.
+- [ ] Keep minimum-OS runtime, physical audio/SD-card, Windows 10 1809, and local macOS signing/package checks separate.
 
 ### Acceptance criteria
 
 - [x] CI is active on `dev` for Push and Pull Request.
 - [x] All three current test targets build and pass on Ubuntu 22.04, macOS 15 Intel, and Windows Server 2022.
-- [ ] Debug and Release validation are both covered, without accidentally running signing/deployment steps in a test-only job.
+- [ ] Debug tests remain on the three-platform matrix; full-app Release builds run on Windows/Linux only for PRs targeting `master` and pushes to `master`.
+- [ ] Release CI can build the application without invoking Inno Setup, cqtdeployer/dpkg, macdeployqt, codesign, or productbuild.
+- [ ] macOS Release signing/package validation remains a documented local owner step.
 - [ ] Logs are retained and easy to retrieve after a failure.
 - [ ] CI claims distinguish hosted-runner build validation from actual runtime validation on minimum OS versions.
 
@@ -248,6 +254,8 @@ The requested Windows 10 hosted runner is not available in the selected GitHub-h
 ---
 
 ## Cross-cutting engineering rules
+
+- Documentation is part of every implementation: update all affected docs, agent rules, and this handoff in the same coherent change. Never leave known documentation drift for a later task.
 
 - Preserve user data above convenience or speed. Never destroy source data or the previous destination on a failed operation.
 - Keep the existing numbered `.ego` file format and workspace-rooted media-path semantics backward compatible.
@@ -262,9 +270,9 @@ The requested Windows 10 hosted runner is not available in the selected GitHub-h
 
 ## Next action
 
-1. Continue T1: reconcile platform/test documentation and verify the architecture diagram/contracts against current source.
-2. Only after the architecture baseline is accurate, proceed to the focused SdContentModel audit (T3), then UiCore (T4).
-3. Keep T2 partial until the remaining SoundPlayer transition coverage is reviewed and tested.
+1. Continue T2: compare the SoundPlayer state machine with existing fake-output tests and add only missing deterministic transition/error cases.
+2. Then start T3 with a focused SdContentModel import/filesystem failure audit, using TDD before changing behavior.
+3. Continue T4, T5, and T6 in order. For T6, implement the documented Windows/Linux master-only Release build-only validation; do not add a permanent pre-release branch or macOS signing to public CI.
 
 ## Tracking sources and conventions
 

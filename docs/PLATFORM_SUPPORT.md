@@ -19,7 +19,7 @@ Where the minimum OS is defined (keep these in sync):
 - `MainApplication/MacOS/Info.plist`: `LSMinimumSystemVersion` (Finder/LaunchServices refuse to open the app below it). The nested converter's `WavConverterShell/MacOS/Info.plist` is currently unused but kept consistent.
 - `deploy_mac/verify_min_macos.sh`: runs after `macdeployqt` in Release builds and fails the build if the `.app`, a nested app, or any bundled Qt framework/plugin/dylib requires a newer macOS. Disable with `-DEGOGIG_VERIFY_MIN_MACOS=OFF`.
 
-Bundle contents: `deploy_mac/check_bundle.sh` runs after `macdeployqt` and only reads the bundle: it fails if any binary links a Qt framework that is not in `Contents/Frameworks`, or if a QML module needed by EgoGIG/WavConverter is missing from `Resources/qml`, and prints the size of the largest items. Disable with `-DEGOGIG_CHECK_BUNDLE=OFF`. Frameworks are deliberately NOT removed by hand: `macdeployqt` places QML plugins in both `Resources/qml` and `PlugIns/quick`, so deleting "unused" modules is fragile and saved only ~17 MB of ~167 MB.
+Bundle contents: `deploy_mac/check_bundle.sh` is called after `macdeployqt` only when `EGOGIG_CHECK_BUNDLE` is true. It reads the bundle and fails if a binary links a Qt framework that is not in `Contents/Frameworks`, or if a QML module needed by EgoGIG/WavConverter is missing from `Resources/qml`, and prints the size of the largest items. Note: the top-level CMake currently declares `EGOGIG_PRUNE_BUNDLE`, while the application CMake checks `EGOGIG_CHECK_BUNDLE`; these names are not aligned, and the declared prune option is not used by the inspected application build logic. Resolve this CMake/documentation mismatch before relying on either option. Frameworks are deliberately NOT removed by hand: `macdeployqt` places QML plugins in both `Resources/qml` and `PlugIns/quick`, so deleting "unused" modules is fragile and saved only ~17 MB of ~167 MB.
 
 WavConverter on macOS is a second executable, `EgoGIG.app/Contents/MacOS/wavconverter`, not a nested `.app`:
 - `WavConverterShell` builds a plain executable; `MainApplication` copies it into the bundle and runs `macdeployqt -executable=...` with both QML directories, so the converter uses the single shared `Contents/Frameworks`, `PlugIns`, `Resources/qml`. `UiCore::runWavConvertor()` starts it with `QProcess`.
@@ -34,7 +34,7 @@ Qt 6.7 supports macOS 11-14; Qt 6.8+ supports macOS 12+ only, so macOS 11 builds
 Qt 6.12.1 in CI; minimum Windows 10 version 1809. CI uses the MSVC 2022 Qt kit on a Windows Server 2022 hosted runner. Validate toolchain, MSVC runtime, Qt DLLs/plugins, audio backend, and installer. Test on clean Windows 10 1809. APIs newer than 1809 need a tested fallback.
 
 ## Linux
-Qt 6.12.1 in CI; minimum OS Ubuntu 22.04. Validate glibc, libstdc++, Qt, and audio dependencies. Do not claim support for all distributions without an ABI contract.
+Qt 6.12.1 in CI; Ubuntu 22.04 is the minimum and only currently claimed Linux distribution baseline. Ubuntu 24.04, Debian, and other distributions are not claimed as supported until they are added to the validation matrix and checked at runtime. Validate glibc, libstdc++, Qt, and audio dependencies. Do not claim support for all distributions without an ABI contract.
 
 ## CI and release
 
@@ -54,3 +54,9 @@ These CI jobs are regression checks, not release certification. Before release, 
 - [ ] Runtime dependencies and packaging checked.
 - [ ] Minimum-OS launch tested.
 - [ ] Matrix and release notes updated.
+
+## Release validation status
+
+The current GitHub Actions workflow runs Debug test targets only. It does not build the full desktop application in Release mode or produce release packages. macOS Release builds invoke the project's signing and package-generation commands; those operations require the owner's private signing environment and remain local-only. Do not add signing identities, certificates, provisioning profiles, or notarization credentials to public CI.
+
+The planned T6 extension is to build the full Windows and Linux application in Release mode only for pull requests targeting `master` and pushes to `master`. The first CI stage should be build-only: skip platform deployment/package post-build commands, upload logs, and do not publish installers or application bundles. Current packaging hooks are not CI-ready as-is: Windows invokes `windeployqt` and `ISCC.exe`; Linux invokes `cqtdeployer`, `dpkg-deb`, and a machine-specific Qt 6.8.1 `qmake` path; macOS invokes `macdeployqt`, `codesign`, `productbuild`, and `pkgbuild`. This requires an explicit CMake switch to disable release packaging in CI. It does not replace local macOS signing/package validation or minimum-OS runtime checks. This plan is not implemented yet.
