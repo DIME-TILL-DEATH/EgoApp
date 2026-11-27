@@ -31,7 +31,7 @@ WavConverter on macOS is a second executable, `EgoGIG.app/Contents/MacOS/wavconv
 Qt 6.7 supports macOS 11-14; Qt 6.8+ supports macOS 12+ only, so macOS 11 builds must use Qt 6.7.x (configure fails otherwise).
 
 ## Windows
-Qt 6.12.1 in CI; minimum Windows 10 version 1809. CI uses the MSVC 2022 Qt kit on a Windows Server 2022 hosted runner. Validate toolchain, MSVC runtime, Qt DLLs/plugins, audio backend, and installer. Test on clean Windows 10 1809. APIs newer than 1809 need a tested fallback.
+Qt 6.12.1 in CI; minimum Windows 10 version 1809. CI uses the MSVC 2022 Qt kit on a Windows Server 2022 hosted runner for Debug tests and the master-only full-app Release build. Both the main application and standalone converter Windows icon resources are generated from tracked templates during configuration, keeping clean checkouts reproducible. Validate toolchain, MSVC runtime, Qt DLLs/plugins, audio backend, and installer. Test on clean Windows 10 1809. APIs newer than 1809 need a tested fallback.
 
 ## Linux
 Qt 6.12.1 in CI; Ubuntu 22.04 is the minimum and only currently claimed Linux distribution baseline. Ubuntu 24.04, Debian, and other distributions are not claimed as supported until they are added to the validation matrix and checked at runtime. Validate glibc, libstdc++, Qt, and audio dependencies. Do not claim support for all distributions without an ABI contract.
