@@ -115,3 +115,18 @@ ctest --test-dir build-tests --output-on-failure
 ```
 
 Mixer tests use QBuffer fixtures; decoder lifecycle tests use generated PCM WAV files and do not construct QAudioSink. The `soundcore_tests` target exercises SoundCore integration with PlaylistModel and SdContentModel proxy indexes, source switching, PlayPause model identity, SD selection-path synchronization, QML-facing playback-state and playback-position properties, invalid playlist requests preserving an active source, explicit stop reset, and metadata cleanup after decoder failure or natural completion through a fake output. Physical output-device integration and full QML automation still require a separate platform integration setup.
+
+
+## GitHub Actions CI
+
+The workflow in `.github/workflows/ci.yml` runs on every push and pull request. It builds and runs all three Qt Test targets (`playlist_tests`, `audio_tests`, and `soundcore_tests`) with this pinned matrix:
+
+| Runner | Qt | Kit |
+|---|---:|---|
+| Ubuntu 22.04 | 6.12.1 | `linux_gcc_64` |
+| macOS 15 Intel | 6.7.3 | `clang_64` |
+| Windows Server 2022 | 6.12.1 | `win64_msvc2022_64` |
+
+The workflow verifies the installed Qt version, configures Release tests, and uploads configure/build/CTest logs for 14 days even when a job fails. Ubuntu installs the VA-API runtime libraries required by the Qt Multimedia linker dependencies. CI configures with `EGOGIG_BUILD_CONVERTER=OFF`: the standalone converter is not part of these test jobs, while normal application builds keep it enabled by default. Windows CI uses a hosted Windows Server 2022 runner; runtime compatibility with the minimum Windows 10 1809 target still requires a separate VM or physical-device check.
+
+These jobs validate the three test suites, not full application packaging, audio hardware, QML interaction, removable-media workflows, signing, or launch on every minimum OS version.

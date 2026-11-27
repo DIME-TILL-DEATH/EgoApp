@@ -2,17 +2,17 @@
 
 *Target versions were specified by the project owner. Support is not confirmed until builds and runtime checks pass on the minimum OS.*
 
-| Platform | Qt | Minimum target OS | Status |
-|---|---:|---|---|
-| macOS | 6.7 | macOS 11 | Validation required |
-| Windows | 6.11/6.12 | Windows 10 1809 | Confirmed |
-| Linux | 6.11/6.12 | Ubuntu 22.04 | Confirmed |
+| Platform | CI Qt | Minimum target OS | CI runner | Validation status |
+|---|---:|---|---|---|
+| macOS | 6.7.3 | macOS 11 | macOS 15 Intel | Build/tests in CI; minimum-OS runtime validation required |
+| Windows | 6.12.1 | Windows 10 1809 | Windows Server 2022 | Build/tests in CI; Windows 10 1809 runtime validation required |
+| Linux | 6.12.1 | Ubuntu 22.04 | Ubuntu 22.04 | Build/tests in CI; runtime validation required |
 
 ## General validation
 Check Qt/OS APIs, compiler and C++ runtime, system libraries/ABI, Qt plugins, audio backend/codecs, signing and packaging, removable-media behavior, and launch on the minimum OS. A build on a current system does not establish compatibility with an older one.
 
 ## macOS
-Qt 6.7; minimum macOS 11. Validate deployment target, binary architectures, Qt plugins, signing, and launch on a clean macOS 11 installation. Do not silently raise the deployment target.
+Qt 6.7.3 in CI; minimum macOS 11. Validate deployment target, binary architectures, Qt plugins, signing, and launch on a clean macOS 11 installation. Do not silently raise the deployment target.
 
 Where the minimum OS is defined (keep these in sync):
 - `CMakeLists.txt` (top level): `EGOGIG_MIN_MACOS` -> `CMAKE_OSX_DEPLOYMENT_TARGET`, set before `project()`. This sets the Mach-O `minos` of all binaries built from this tree. Universal build (`x86_64;arm64`) by default.
@@ -31,13 +31,21 @@ WavConverter on macOS is a second executable, `EgoGIG.app/Contents/MacOS/wavconv
 Qt 6.7 supports macOS 11-14; Qt 6.8+ supports macOS 12+ only, so macOS 11 builds must use Qt 6.7.x (configure fails otherwise).
 
 ## Windows
-Qt 6.11 or 6.12; minimum Windows 10 version 1809. Validate toolchain, MSVC runtime, Qt DLLs/plugins, audio backend, and installer. Test on clean Windows 10 1809. APIs newer than 1809 need a tested fallback.
+Qt 6.12.1 in CI; minimum Windows 10 version 1809. CI uses the MSVC 2022 Qt kit on a Windows Server 2022 hosted runner. Validate toolchain, MSVC runtime, Qt DLLs/plugins, audio backend, and installer. Test on clean Windows 10 1809. APIs newer than 1809 need a tested fallback.
 
 ## Linux
-Qt 6.11 or 6.12; minimum OS Ubuntu 24.04 package format-.dpkg. Validate glibc, libstdc++, Qt, and audio dependencies. Do not claim support for all distributions without an ABI contract.
+Qt 6.12.1 in CI; minimum OS Ubuntu 22.04. Validate glibc, libstdc++, Qt, and audio dependencies. Do not claim support for all distributions without an ABI contract.
 
 ## CI and release
-Recommended: pinned-Qt builds for all platforms, model and file-operation tests, packaging/plugin checks, smoke/runtime tests on minimum OS or clean VM, and manual SD-card/audio-hardware checks before release.
+
+The workflow `.github/workflows/ci.yml` runs on every push and pull request. It builds and runs `playlist_tests`, `audio_tests`, and `soundcore_tests` with pinned Qt versions:
+- Ubuntu 22.04 / Qt 6.12.1.
+- macOS 15 Intel / Qt 6.7.3.
+- Windows Server 2022 / Qt 6.12.1.
+
+Configure, build, and CTest logs are uploaded as platform-specific artifacts for 14 days, including failed jobs. The workflow disables the standalone converter target because these jobs validate test suites rather than the full desktop application. The Windows hosted runner does not replace runtime validation on Windows 10 1809.
+
+These CI jobs are regression checks, not release certification. Before release, still validate full application builds and packaging, minimum-OS launch, audio output and codecs, QML interaction, removable-media behavior, signing, and installers.
 
 ## Checklist
 - [ ] Minimum Qt/OS versions checked.

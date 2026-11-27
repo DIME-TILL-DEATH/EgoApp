@@ -40,8 +40,13 @@ if(APPLE AND NOT IOS)
 endif()
 
 add_subdirectory (WavConverterLib)
-if(NOT ANDROID AND NOT IOS)
-add_subdirectory (WavConverterShell)
+
+# The standalone converter is not needed when configuring only the automated
+# MainApplication test suites. Keep it enabled by default for normal builds.
+option(EGOGIG_BUILD_CONVERTER "Build the standalone WavConverter application" ON)
+if(NOT ANDROID AND NOT IOS AND EGOGIG_BUILD_CONVERTER)
+    add_subdirectory (WavConverterShell)
 endif()
+
 add_subdirectory (MainApplication)
 

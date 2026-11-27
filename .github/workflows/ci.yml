@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.platform }} / Qt ${{ matrix.qt-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Ubuntu 22.04
+            os: ubuntu-22.04
+            qt-version: '6.12.1'
+            qt-arch: linux_gcc_64
+            install-deps: true
+            artifact-name: logs-ubuntu-22-04-qt-6-12-1
+          - platform: macOS 15 Intel
+            os: macos-15-intel
+            qt-version: '6.7.3'
+            qt-arch: clang_64
+            install-deps: false
+            artifact-name: logs-macos-15-intel-qt-6-7-3
+          - platform: Windows Server 2022
+            os: windows-2022
+            qt-version: '6.12.1'
+            qt-arch: win64_msvc2022_64
+            install-deps: false
+            artifact-name: logs-windows-server-2022-qt-6-12-1
+            aqt-source: git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt-version }}
+          arch: ${{ matrix.qt-arch }}
+          modules: qtmultimedia qtshadertools
+          aqtsource: ${{ matrix.aqt-source }}
+          install-deps: ${{ matrix.install-deps }}
+          cache: true
+
+      - name: Install Linux multimedia runtime dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libva2 libva-drm2
+
+      - name: Verify toolchain versions
+        shell: bash
+        env:
+          EXPECTED_QT_VERSION: ${{ matrix.qt-version }}
+        run: |
+          set -euo pipefail
+          actual_qt_version="$(qmake -query QT_VERSION)"
+          echo "Qt version: $actual_qt_version"
+          test "$actual_qt_version" = "$EXPECTED_QT_VERSION"
+          cmake --version
+          ctest --version
+
+      - name: Configure
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-tests \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DEGOGIG_BUILD_CONVERTER=OFF \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" 2>&1 | tee configure.log
+
+      - name: Build test targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build build-tests \
+            --config Release \
+            --target playlist_tests audio_tests soundcore_tests \
+            --parallel 2 2>&1 | tee build.log
+
+      - name: Run tests
+        shell: bash
+        env:
+          QT_MEDIA_BACKEND: ffmpeg
+        run: |
+          set -euo pipefail
+          ctest --test-dir build-tests \
+            --build-config Release \
+            --output-on-failure \
+            --verbose 2>&1 | tee test-output.log
+
+      - name: Upload build and test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            configure.log
+            build.log
+            test-output.log
+            build-tests/Testing/Temporary/
