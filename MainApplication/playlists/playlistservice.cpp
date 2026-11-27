@@ -1,0 +1,245 @@
+#include "playlistservice.h"
+#include "mediapath.h"
+
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QtAlgorithms>
+
+
+PlaylistService::PlaylistService(QObject *parent)
+    : QObject{parent}
+{
+}
+
+void PlaylistService::setWorkspacePath(const QString &workspacePath)
+{
+    m_workspacePath = workspacePath.isEmpty()
+                          ? QString()
+                          : QDir(workspacePath).absolutePath();
+    reload();
+}
+
+QString PlaylistService::workspacePath() const
+{
+    return m_workspacePath;
+}
+
+QList<PlaylistModel *> PlaylistService::playlists() const
+{
+    return m_playlists;
+}
+
+QStringList PlaylistService::playlistPaths() const
+{
+    QStringList paths;
+    paths.reserve(m_playlists.size());
+
+    for (const PlaylistModel *playlist : m_playlists)
+        paths.append(playlist->playlistPath());
+
+    return paths;
+}
+
+PlaylistModel *PlaylistService::playlistAt(int index) const
+{
+    if (index < 0 || index >= m_playlists.size())
+        return nullptr;
+
+    return m_playlists.at(index);
+}
+
+int PlaylistService::indexOfPath(const QString &relativePath) const
+{
+    for (int i = 0; i < m_playlists.size(); ++i)
+    {
+        if (m_playlists.at(i)->playlistPath() == relativePath)
+            return i;
+    }
+
+    return -1;
+}
+
+bool PlaylistService::createPlaylist(const QString &relativePath, QString *errorString)
+{
+    if (m_workspacePath.isEmpty())
+    {
+        if (errorString)
+            *errorString = QCoreApplication::translate("UiCore", "Can't create playlist");
+        return false;
+    }
+
+    if (!m_repository.create(m_workspacePath, relativePath))
+    {
+        const QString targetPath =
+            QDir(m_workspacePath).filePath(QStringLiteral("PLAYLIST/") + relativePath);
+
+        if (errorString)
+        {
+            *errorString = QFileInfo::exists(targetPath)
+                               ? QCoreApplication::translate("UiCore", "Playlist already exist")
+                               : QCoreApplication::translate("UiCore", "Can't create playlist");
+        }
+        return false;
+    }
+
+    reload();
+    return true;
+}
+
+bool PlaylistService::removePlaylist(const QString &relativePath, QString *errorString)
+{
+    if (m_workspacePath.isEmpty())
+    {
+        if (errorString)
+            *errorString = QCoreApplication::translate(
+                "UiCore", "Refusing to delete a folder outside of PLAYLIST");
+        return false;
+    }
+
+    if (!m_repository.remove(m_workspacePath, relativePath))
+    {
+        if (errorString)
+            *errorString = QCoreApplication::translate("UiCore", "Refusing to delete a folder outside of PLAYLIST");
+        return false;
+    }
+
+    reload();
+    return true;
+}
+
+
+QStringList PlaylistService::checkPlaylist(const QString &relativePath) const
+{
+    PlaylistData playlist;
+    if (m_workspacePath.isEmpty()
+        || !m_repository.loadPlaylist(m_workspacePath, relativePath, &playlist))
+    {
+        return {QCoreApplication::translate("UiCore", "Playlist not found: %1")
+                    .arg(relativePath)};
+    }
+
+    const QRegularExpression englishRegex(QStringLiteral("^[a-zA-Z0-9\\\\:/._\\-\\s()&]+$"));
+    QStringList result;
+    QStringList errors;
+    result.append(playlist.relativePath + QStringLiteral(":"));
+
+    for (const QString &loadError : playlist.loadErrors)
+        errors.append(QStringLiteral("\t") + QCoreApplication::translate(
+            "UiCore", "Cannot load .ego record: ") + loadError);
+
+    for (const Song &song : playlist.songs)
+    {
+        // Report the actual numbered .ego record, not its current display row.
+        const QString songNumber = QString::number(song.fileNum);
+
+        if (song.t1Path.isEmpty() && song.t2Path.isEmpty())
+        {
+            errors.append(QStringLiteral("\t")
+                          + QCoreApplication::translate("UiCore", "Song ")
+                          + songNumber
+                          + QCoreApplication::translate("UiCore", " has no linked tracks"));
+        }
+
+        const auto validateTrack = [&](const QString &storedPath, const QString &trackLabel) {
+            if (storedPath.isEmpty())
+                return;
+
+            QString resolvedPath;
+            if (!MediaPath::resolveWorkspacePath(m_workspacePath, storedPath, &resolvedPath))
+            {
+                errors.append(QStringLiteral("\t")
+                              + QCoreApplication::translate("UiCore", "Song ")
+                              + songNumber
+                              + QCoreApplication::translate("UiCore", " ")
+                              + trackLabel
+                              + QCoreApplication::translate("UiCore", " has an invalid workspace path: ")
+                              + storedPath);
+            }
+            else
+            {
+                const QFileInfo trackInfo(resolvedPath);
+                if (!trackInfo.exists() || !trackInfo.isFile())
+                {
+                    errors.append(QStringLiteral("\t")
+                                  + QCoreApplication::translate("UiCore", "Song ")
+                                  + songNumber
+                                  + QCoreApplication::translate("UiCore", " ")
+                                  + trackLabel
+                                  + QCoreApplication::translate("UiCore", " not found: ")
+                                  + storedPath);
+                }
+            }
+
+            if (!englishRegex.match(storedPath).hasMatch())
+            {
+                errors.append(QStringLiteral("\t")
+                              + QCoreApplication::translate("UiCore", "Song ")
+                              + songNumber
+                              + QCoreApplication::translate("UiCore", " ")
+                              + trackLabel
+                              + QCoreApplication::translate("UiCore", " contains non latin symbols."));
+            }
+        };
+
+        validateTrack(song.t1Path, QCoreApplication::translate("UiCore", "track 1"));
+        validateTrack(song.t2Path, QCoreApplication::translate("UiCore", "track 2"));
+    }
+
+    if (errors.isEmpty())
+        result.append(QStringLiteral("\t")
+                      + QCoreApplication::translate("UiCore", "Playlist is OK"));
+    else
+        result.append(errors);
+
+    result.append(QString());
+    return result;
+}
+
+void PlaylistService::reload()
+{
+    clearModels();
+
+    if (m_workspacePath.isEmpty())
+        return;
+
+    QString repositoryError;
+    const QList<PlaylistData> playlistData = m_repository.load(m_workspacePath, &repositoryError);
+    m_playlists.reserve(playlistData.size());
+    QStringList loadIssues;
+
+    if (!repositoryError.isEmpty())
+        loadIssues.append(QCoreApplication::translate(
+            "PlaylistService", "Unable to load playlists: %1").arg(repositoryError));
+
+    for (const PlaylistData &playlist : playlistData)
+    {
+        for (const QString &loadError : playlist.loadErrors)
+            loadIssues.append(playlist.relativePath + QStringLiteral(": ") + loadError);
+
+        auto *model = new PlaylistModel(playlist.songs, this);
+        model->setPlaylistName(playlist.name);
+        model->setPlaylistPath(playlist.relativePath);
+        model->setWorkspacePath(m_workspacePath);
+        // Structural .ego errors corrupt the playlist. Missing media files are
+        // checked separately and do not disable editing.
+        model->setCorrupted(!playlist.loadErrors.isEmpty());
+        model->setDir(QDir(playlist.directoryPath));
+
+        connect(model, &PlaylistModel::errorOccured,
+                this, &PlaylistService::errorOccurred);
+
+        m_playlists.append(model);
+    }
+
+    if (!loadIssues.isEmpty())
+        emit loadIssuesFound(loadIssues);
+}
+
+void PlaylistService::clearModels()
+{
+    qDeleteAll(m_playlists);
+    m_playlists.clear();
+}
+

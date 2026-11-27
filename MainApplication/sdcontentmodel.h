@@ -43,6 +43,7 @@ public:
     Q_INVOKABLE void addContent(QModelIndex parentIndex, QList<QUrl> filesPathList);
     Q_INVOKABLE void addFolder(QModelIndex parentIndex, QString name);
     Q_INVOKABLE void deleteObject(QModelIndex index);
+    Q_INVOKABLE QString fileNameAt(QModelIndex index) const;
 
     bool canSetTrack() const;
     void setCanSetTrack(bool newCanSetTrack);

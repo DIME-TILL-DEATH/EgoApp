@@ -34,16 +34,18 @@ if(LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.linux/libsox.so        
     )
 
-    set(DEPLOY_PATH ${PROJECT_SOURCE_DIR}/../deploy_linux/)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterLib/libconverter-lib.so"
-            "${DEPLOY_PATH}/app/lib/libconverter-lib.so")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(DEPLOY_PATH ${PROJECT_SOURCE_DIR}/../deploy_linux/)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_BINARY_DIR}/WavConverterLib/libconverter-lib.so"
+                "${DEPLOY_PATH}/app/lib/libconverter-lib.so")
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.linux/"
-            "${DEPLOY_PATH}/app/lib/")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.linux/"
+                "${DEPLOY_PATH}/app/lib/")
+    endif()
 endif()
 
 if(WIN32)
@@ -59,19 +61,31 @@ if(WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.msvc2019/libgsm.lib
     )
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/WavConverterLib/WavConverterLib.dll"
-            "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverterLib.dll")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_BINARY_DIR}/WavConverterLib/WavConverterLib.dll"
+                "${PROJECT_SOURCE_DIR}/../deploy_windows/release/WavConverterLib.dll")
+    endif()
 endif()
 
+
 if(APPLE)
+    # libsox.a собрана с обработчиком CoreAudio, ему нужны системные фреймворки
+    find_library(COREAUDIO_FRAMEWORK CoreAudio REQUIRED)
+    find_library(AUDIOTOOLBOX_FRAMEWORK AudioToolbox REQUIRED)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+
     target_link_libraries(converter-lib PUBLIC
         Qt6::Core
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/lib.mac/libsox.a
+        ${COREAUDIO_FRAMEWORK}
+        ${AUDIOTOOLBOX_FRAMEWORK}
+        ${COREFOUNDATION_FRAMEWORK}
     )
 endif()
+
 
 target_include_directories(converter-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../sox_lib/include/

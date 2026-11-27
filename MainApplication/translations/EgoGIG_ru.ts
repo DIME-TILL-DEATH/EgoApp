@@ -237,6 +237,14 @@
         <source>Do you really want to delete song?</source>
         <translation>Вы точно хотите удалить песню?</translation>
     </message>
+    <message>
+        <source>Damaged playlist</source>
+        <translation>Повреждённый плейлист</translation>
+    </message>
+    <message>
+        <source>This playlist contains invalid or unreadable .ego files or incorrect .ego numbering. Editing and playback are disabled until the playlist files are fixed.</source>
+        <translation>В плейлисте обнаружены повреждённые или нечитаемые файлы .ego либо ошибки нумерации. Редактирование и воспроизведение отключены до исправления файлов плейлиста.</translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>
@@ -298,6 +306,103 @@
         <source>Playlist is OK</source>
         <translation>Ошибок не найдено</translation>
     </message>
+    <message>
+        <source>Can't play the selected playlist track.</source>
+        <translation>Не удалось воспроизвести выбранную дорожку плейлиста.</translation>
+    </message>
+    <message>
+        <source>Playback is disabled because the playlist contains invalid or unreadable .ego files.</source>
+        <translation>Воспроизведение отключено: плейлист содержит некорректные или нечитаемые файлы .ego.</translation>
+    </message>
+    <message>
+        <source>Track 1 has an invalid workspace path.</source>
+        <translation>Некорректный путь к треку 1 в рабочей папке.</translation>
+    </message>
+    <message>
+        <source>Track 2 has an invalid workspace path.</source>
+        <translation>Некорректный путь к треку 2 в рабочей папке.</translation>
+    </message>
+    <message>
+        <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
+        <translation>Редактирование плейлиста отключено: не удалось загрузить один или несколько файлов .ego. Исправьте указанные файлы, чтобы избежать потери данных.</translation>
+    </message>
+    <message>
+        <source>Invalid playlist persistence range.</source>
+        <translation>Некорректный диапазон сохранения плейлиста.</translation>
+    </message>
+    <message>
+        <source>Can't create playlist backup. Check the SD card and its available space.</source>
+        <translation>Не удалось создать резервную копию плейлиста. Проверьте SD-карту и наличие свободного места.</translation>
+    </message>
+    <message>
+        <source>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</source>
+        <translation>Не удалось создать резервную копию файла плейлиста %1. Файлы плейлиста не изменялись. Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't open playlist file for writing: %1 (%2)</source>
+        <translation>Не удалось открыть файл плейлиста для записи: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't write playlist file: %1 (%2)</source>
+        <translation>Не удалось записать файл плейлиста: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't finalize playlist file: %1 (%2)</source>
+        <translation>Не удалось завершить запись файла плейлиста: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't remove obsolete playlist file: %1</source>
+        <translation>Не удалось удалить устаревший файл плейлиста: %1</translation>
+    </message>
+    <message>
+        <source>%1: can't read backup</source>
+        <translation>%1: не удалось прочитать резервную копию</translation>
+    </message>
+    <message>
+        <source>%1: can't open for restoration</source>
+        <translation>%1: не удалось открыть файл для восстановления</translation>
+    </message>
+    <message>
+        <source>%1: restoration failed</source>
+        <translation>%1: восстановление не удалось</translation>
+    </message>
+    <message>
+        <source>%1: can't remove newly created file</source>
+        <translation>%1: не удалось удалить созданный файл</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</source>
+        <translation>Не удалось обновить плейлист: %1. Предыдущее состояние плейлиста восстановлено. Проверьте SD-карту, её подключение и наличие свободного места.</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous state could not be fully restored: %2. Stop editing and check the SD card and its connection.</source>
+        <translation>Не удалось обновить плейлист: %1. Не удалось полностью восстановить предыдущее состояние: %2. Резервные копии сохранены здесь: %3. Прекратите редактирование и проверьте SD-карту и её подключение.</translation>
+    </message>
+    <message>
+        <source>Can't save playlist file: %1 (%2). Check the SD card.</source>
+        <translation>Не удалось сохранить файл плейлиста: %1 (%2). Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't remove playlist file: %1. Check the SD card.</source>
+        <translation>Не удалось удалить файл плейлиста: %1. Проверьте SD-карту.</translation>
+    </message>
+    <message>
+        <source>Can't remove song: playlist numbering limit reached</source>
+        <translation>Не удалось удалить песню: достигнут предел нумерации плейлиста.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move. The previous playlist state was restored.</source>
+        <translation>Не удалось переместить песню: модель отклонила перемещение. Предыдущее состояние плейлиста восстановлено.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
+        <translation>Не удалось переместить песню: модель отклонила перемещение, а восстановить предыдущее состояние плейлиста не удалось: %1. Проверьте SD-карту.</translation>
+    </message>
+    <message><source>The selected song has no linked audio tracks.</source><translation>У выбранной песни не назначены аудиодорожки.</translation></message>
+    <message><source>Track 1 not found.</source><translation>Трек 1 не найден.</translation></message>
+    <message><source>Track 2 not found.</source><translation>Трек 2 не найден.</translation></message>
+    <message><source>Unable to open the selected audio track.</source><translation>Не удалось открыть выбранную аудиодорожку.</translation></message>
+    <message><source>Audio decoding failed: %1</source><translation>Не удалось декодировать аудио: %1</translation></message>
 </context>
 <context>
     <name>SdContentEditor</name>
@@ -371,5 +476,47 @@
         <source>Do you really want to delete object?</source>
         <translation>Вы точно хотите удалить объект?</translation>
     </message>
+</context>
+<context>
+    <name>PlaylistService</name>
+    <message>
+        <source>Unable to load playlists: %1</source>
+        <translation>Не удалось загрузить плейлисты: %1</translation>
+    </message>
+    <message>
+        <source>The workspace directory is unavailable or unreadable.</source>
+        <translation>Рабочая папка недоступна или не может быть прочитана.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST path is not a supported directory.</source>
+        <translation>Путь PLAYLIST не является поддерживаемой папкой.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory is unavailable or unreadable.</source>
+        <translation>Папка PLAYLIST недоступна или не может быть прочитана.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory became unavailable while loading.</source>
+        <translation>Папка PLAYLIST стала недоступна во время загрузки.</translation>
+    </message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> не назначена ни одна дорожка</translation></message>
+    <message><source> </source><translation> </translation></message>
+    <message><source> has an invalid workspace path: </source><translation> содержит некорректный путь в рабочей папке: </translation></message>
+    <message><source> not found: </source><translation> не найден: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> содержит символы не из латиницы.</translation></message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> не содержит назначенных дорожек</translation></message>
+    <message><source> has an invalid workspace path: </source><translation> содержит некорректный путь в рабочей папке: </translation></message>
+    <message><source> not found: </source><translation> не найден: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> содержит символы не из латиницы.</translation></message>
+    <message><source>track 1</source><translation>трек 1</translation></message>
+    <message><source>track 2</source><translation>трек 2</translation></message>
 </context>
 </TS>

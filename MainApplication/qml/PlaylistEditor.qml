@@ -3,12 +3,27 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs as QmlDialogs
 
-// import CppObjects 1.0
 
 Rectangle {
     id: _root
 
     color: "transparent"
+
+    property bool currentPlaylistCorrupted: UiCore.currentPlaylist !== null
+                                           && UiCore.currentPlaylist.corrupted
+    property bool hasSelectedSong: UiCore.currentPlaylist !== null
+                                   && _listView.currentIndex >= 0
+                                   && _listView.currentIndex < UiCore.currentPlaylist.rowCount()
+
+    function updatePlayNext(state) {
+        var playlist = UiCore.currentPlaylist;
+        if (playlist === null || !hasSelectedSong)
+            return;
+
+        var songIndex = playlist.index(_listView.currentIndex, 0);
+        if (!playlist.setPlayNext(songIndex, state))
+            _cbPlayNext.checked = playlist.data(songIndex, PlaylistModel.PlayNextRole);
+    }
 
     ColumnLayout{
         anchors.fill: parent
@@ -29,6 +44,19 @@ Rectangle {
 
                 model: UiCore.avaliablePlaylists
                 currentIndex: UiCore.currentPlaylistIndex
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+
+                delegate: ItemDelegate {
+                    required property int index
+                    required property string modelData
+
+                    width: _plsCombo.width
+                    text: modelData
+                    highlighted: _plsCombo.highlightedIndex === index
+                    opacity: UiCore.currentPlaylistIndex === index
+                             && UiCore.currentPlaylist !== null
+                             && UiCore.currentPlaylist.corrupted ? 0.45 : 1
+                }
 
                 onActivated:{
                     UiCore.currentPlaylistIndex = _plsCombo.currentIndex
@@ -67,6 +95,8 @@ Rectangle {
 
                 anchors.fill: parent
                 anchors.margins: 5
+                enabled: !_root.currentPlaylistCorrupted
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 boundsBehavior: Flickable.StopAtBounds
 
@@ -100,6 +130,11 @@ Rectangle {
                         property int modelIndex
                         property int visualIndex: DelegateModel.itemsIndex
 
+                        property string trackT1Path: t1Path
+                        property string trackT2Path: t2Path
+                        property bool trackT1Missing: t1Missing
+                        property bool trackT2Missing: t2Missing
+
 
                         onEntered: function (drag) {
                             if(drag.source.Drag.active){
@@ -112,7 +147,8 @@ Rectangle {
                         onDropped: function (drag) {
                             var from = (drag.source as Item).dragParent.modelIndex;
                             var to = (drag.source as Item).visualIndex;
-                            UiCore.currentPlaylist.moveSong(from, to);
+                            if (!UiCore.currentPlaylist.moveSong(from, to))
+                                _visualModel.items.move(to, from);
                         }
 
                         Rectangle{
@@ -189,11 +225,18 @@ Rectangle {
                                 Label{
                                     id: _text
 
+                                    width: parent.width
+                                           - (_midiImage.visible ? _midiImage.width : 0)
+                                           - (_nextImage.visible ? _nextImage.width : 0)
+                                    color: fileMissing ? "red" : palette.text
+                                    elide: Text.ElideMiddle
+                                    wrapMode: Text.NoWrap
+                                    clip: true
+                                    verticalAlignment: Text.AlignVCenter
 
                                     text: (index + 1) + ((index != fileNum) ? "(" + fileNum + ".ego)" : "")
-                                           + ": " + t1Name
-                                           + (t2Name !== "" ? " | " + t2Name : "")
-                                            // + (midiExist ? "|have midi file" : "")
+                                           + ": " + (t1Name !== "" ? t1Name : t2Name)
+                                           + (t1Name !== "" && t2Name !== "" ? " | " + t2Name : "")
                                 }
 
                                 Image{
@@ -259,10 +302,17 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("ADD SONG")
+                enabled: !_root.currentPlaylistCorrupted && UiCore.currentPlaylist !== null
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked: {
-                    UiCore.currentPlaylist.insertRows(_listView.currentIndex + 1, 1);
-                    _listView.currentIndex = _listView.currentIndex + 1
+                    var playlist = UiCore.currentPlaylist;
+                    if (playlist === null)
+                        return;
+
+                    var insertPosition = Math.max(0, _listView.currentIndex + 1);
+                    if (playlist.insertRows(insertPosition, 1))
+                        _listView.currentIndex = insertPosition;
                 }
 
                 Shortcut{
@@ -287,6 +337,8 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: qsTr("DELETE SONG")
+
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
 
                 onClicked: {
                     _removeSongConfirmationDialog.open()
@@ -313,8 +365,10 @@ Rectangle {
 
                 text: qsTr("CHECK")
 
+                enabled: UiCore.currentPlaylist !== null
+
                 onClicked: {
-                    UiCore.checkPlaylists()
+                    UiCore.checkPlaylist(_plsCombo.currentText)
                 }
             }
         }
@@ -323,16 +377,17 @@ Rectangle {
             id: _cbPlayNext
 
             text: qsTr("Play next")
+            enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+            opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
-            onClicked:{
-                var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
-            }
+            onClicked: _root.updatePlayNext(_cbPlayNext.checked)
 
             Binding{
                 target: _cbPlayNext
                 property: "checked"
-                value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+                value: _root.hasSelectedSong
+                       ? UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.PlayNextRole)
+                       : false
                 restoreMode: Binding.RestoreBinding
             }
 
@@ -342,9 +397,11 @@ Rectangle {
                 sequence: "Ctrl+N"
 
                 onActivated: {
-                    _cbPlayNext.checked = !_cbPlayNext.checked
-                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    UiCore.currentPlaylist.setPlayNext(indx, _cbPlayNext.checked)
+                    if (!_cbPlayNext.enabled || !_root.hasSelectedSong)
+                        return;
+                    var playlist = UiCore.currentPlaylist;
+                    var songIndex = playlist.index(_listView.currentIndex, 0);
+                    _root.updatePlayNext(!playlist.data(songIndex, PlaylistModel.PlayNextRole))
                 }
 
                 Component.onCompleted: {
@@ -368,19 +425,8 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                Connections{
-                    target: UiCore.currentPlaylist
-
-                    function onDataChanged(){
-                        _t1PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
-                    }
-                }
-                Binding{
-                    target: _t1PathFiled
-                    property: "text"
-                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T1PathRole)
-                    restoreMode: Binding.RestoreBinding
-                }
+                text: _listView.currentItem ? _listView.currentItem.trackT1Path : ""
+                color: _listView.currentItem && _listView.currentItem.trackT1Missing ? "red" : palette.text
             }
 
             Button{
@@ -388,9 +434,13 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: UiCore.sdContentModel.canSetTrack
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+                         && UiCore.sdContentModel.canSetTrack
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
 
                 onClicked:{
+                    if (!_root.hasSelectedSong)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 0, UiCore.sdContentModel.selectedPath);
                 }
@@ -427,18 +477,19 @@ Rectangle {
                 readOnly: true
                 Layout.fillWidth: true
 
-                Connections{
-                    target: UiCore.currentPlaylist
+                text: _listView.currentItem ? _listView.currentItem.trackT2Path : ""
+                color: _listView.currentItem && _listView.currentItem.trackT2Missing ? "red" : palette.text
+            }
 
-                    function onDataChanged(){
-                        _t2PathFiled.text = UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
-                    }
-                }
-                Binding{
-                    target: _t2PathFiled
-                    property: "text"
-                    value: UiCore.currentPlaylist.data(UiCore.currentPlaylist.index(_listView.currentIndex, 0), PlaylistModel.T2PathRole)
-                    restoreMode: Binding.RestoreBinding
+            Button{
+                text: qsTr("Clear")
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+                onClicked: {
+                    if (!_root.hasSelectedSong)
+                        return;
+                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
+                    UiCore.currentPlaylist.setLink(indx, 1, "");
                 }
             }
 
@@ -447,8 +498,12 @@ Rectangle {
 
                 text: qsTr("Set link")
 
-                enabled: UiCore.sdContentModel.canSetTrack && _t1PathFiled.text !== ""
+                enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+                         && UiCore.sdContentModel.canSetTrack
+                opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
                 onClicked:{
+                    if (!_root.hasSelectedSong)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
                     UiCore.currentPlaylist.setLink(indx, 1, UiCore.sdContentModel.selectedPath);
                 }
@@ -467,18 +522,13 @@ Rectangle {
                         AppGlobals.setLink2Shortcut = _shortcutSetLink2.nativeText
                     }
                 }
-            }
-
-            Button{
-                text: qsTr("Clear")
-                onClicked: {
-                    var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    UiCore.currentPlaylist.setLink(indx, 1, "");
-                }
-            }
+            }   
         }
 
         PlayerPanel{
+            enabled: !_root.currentPlaylistCorrupted && _root.hasSelectedSong
+            opacity: _root.currentPlaylistCorrupted ? 0.45 : 1
+
             label: qsTr("EGO player") + ((SoundCore.egoSongPlaying !== "") ? qsTr(", now playing: ") +  SoundCore.egoSongPlaying : "")
 
             Layout.preferredWidth: parent.width
@@ -486,10 +536,13 @@ Rectangle {
 
             value: SoundCore.egoTrackPosition
             duration: SoundCore.egoTrackDuration
+            playbackActive: SoundCore.egoPlaybackActive
 
             onPlayPause: {
+                if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
+                    return;
                 var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                SoundCore.playEgo(indx);
+                SoundCore.PlayPause(SoundPlayer.PlayEgo, indx);
             }
 
             onStop: {
@@ -506,8 +559,10 @@ Rectangle {
                 sequence: "Ctrl+space"
 
                 onActivated: {
+                    if (_root.currentPlaylistCorrupted || UiCore.currentPlaylist === null)
+                        return;
                     var indx = UiCore.currentPlaylist.index(_listView.currentIndex, 0);
-                    SoundCore.playEgo(indx);
+                    SoundCore.PlayPause(SoundPlayer.PlayEgo, indx);
                 }
 
                 Component.onCompleted: {
@@ -546,6 +601,23 @@ Rectangle {
     }
 
     QmlDialogs.MessageDialog{
+        id: _brokenPlaylistDialog
+
+        title: qsTr("Damaged playlist")
+        text: qsTr("This playlist contains invalid or unreadable .ego files or incorrect .ego numbering. Editing and playback are disabled until the playlist files are fixed.")
+        buttons: QmlDialogs.MessageDialog.Ok
+    }
+
+    Connections {
+        target: UiCore
+
+        function onCurrentPlaylistChanged() {
+            if (UiCore.currentPlaylist !== null && UiCore.currentPlaylist.corrupted)
+                _brokenPlaylistDialog.open()
+        }
+    }
+
+    QmlDialogs.MessageDialog{
         id: _removePlsConfirmationDialog
 
         title: qsTr("Remove playlist?")
@@ -572,8 +644,10 @@ Rectangle {
                 | QmlDialogs.MessageDialog.Cancel
 
         onAccepted: {
-            UiCore.currentPlaylist.removeRows(_listView.currentIndex, 1);
-            _listView.currentIndex = _listView.currentIndex - 1
+            var removedRow = _listView.currentIndex;
+            if (UiCore.currentPlaylist.removeRows(removedRow, 1))
+                _listView.currentIndex = Math.min(removedRow,
+                                                  UiCore.currentPlaylist.rowCount() - 1)
         }
     }
 }

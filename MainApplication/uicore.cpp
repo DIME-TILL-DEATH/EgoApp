@@ -11,12 +11,48 @@
 
 #include <QCollator>
 
+// Рабочая папка не должна быть корнем, домашней папкой или системной/библиотечной
+// директорией: приложение создаёт там SONGS/PLAYLIST и умеет удалять их содержимое.
+static bool isSafeWorkspace(const QString &path)
+{
+    const QString p = QDir::cleanPath(path);
+    if(p.isEmpty() || p == "/" || p == ".") return false;
+
+    const QString home = QDir::cleanPath(QDir::homePath());
+    if(p == home) return false;
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_LINUX)
+    static const QStringList forbidden = {"/System", "/Library", "/Applications", "/usr",
+                                          "/bin", "/sbin", "/etc", "/var", "/private", "/opt"};
+    for(const QString &f : forbidden)
+        if(p == f || p.startsWith(f + "/")) return false;
+
+    if(p == home + "/Library" || p.startsWith(home + "/Library/")) return false;
+#endif
+    return true;
+}
+
 UiCore::UiCore(QObject *parent)
     : QObject{parent}
 {
+    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
+    connect(&m_playlistService, &PlaylistService::errorOccurred, this, &UiCore::errorOccured);
+    connect(&m_playlistService, &PlaylistService::loadIssuesFound, this, &UiCore::playlistLoadIssuesFound);
+}
+
+void UiCore::initialize()
+{
+    if (m_initialized)
+        return;
+
+    m_initialized = true;
+
     QString workspacePath = m_settings.value("workspace_path").toString();
 
-    if(workspacePath.isEmpty())
+    if (!workspacePath.isEmpty() && !isSafeWorkspace(workspacePath))
+        workspacePath.clear(); // Unsafe path from old settings -> default workspace.
+
+    if (workspacePath.isEmpty())
     {
 #ifdef Q_OS_MACOS
         workspacePath = QDir::homePath() + "/Documents";
@@ -29,21 +65,18 @@ UiCore::UiCore(QObject *parent)
         dir.mkpath(workspacePath);
     }
 
-    m_workspaceDir = QDir(workspacePath);
-    m_sdContentModel.setWorkspace(workspacePath);
-
-    connect(&m_sdContentModel, &SdContentModel::errorOccured, this, &UiCore::errorOccured);
-
-    readPlaylistFolder();
+    const QDir workspaceDir(workspacePath);
+    m_sdContentModel.setWorkspace(workspaceDir);
+    m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
     setCurrentPlaylistIndex(0);
 
     QString appLanguage = m_settings.value("application_language", "autoselect").toString();
-
-    if(appLanguage=="autoselect")
-    {
+    if (appLanguage == "autoselect")
         appLanguage = QLocale().name().left(2);
-    }
+
     setLanguage(appLanguage);
+
+    emit workspaceChanged();
 }
 
 void UiCore::setWorkspace(QUrl workspaceFolderPath)
@@ -52,71 +85,65 @@ void UiCore::setWorkspace(QUrl workspaceFolderPath)
 #ifdef Q_OS_WINDOWS
     path = path.removeFirst();
 #endif
-    m_workspaceDir = QDir(path);
-    m_sdContentModel.setWorkspace(path);
+    if(!isSafeWorkspace(path))
+    {
+        emit errorOccured(QObject::tr("This folder can't be used as a workspace"));
+        return;
+    }
 
+    const QDir workspaceDir(path);
+    m_sdContentModel.setWorkspace(workspaceDir);
     m_settings.setValue("workspace_path", path);
+    m_playlistService.setWorkspacePath(workspaceDir.absolutePath());
 
-    readPlaylistFolder();
     setCurrentPlaylistIndex(0);
 
     emit workspaceChanged();
 }
 
-void UiCore::addPlaylist(QString plsName)
+void UiCore::addPlaylist(QString playlistPath)
 {
-    QFileInfo dirInfo(m_workspaceDir.absolutePath() + "/PLAYLIST/" + plsName);
-    if(dirInfo.exists())
+    QString errorString;
+    if (!m_playlistService.createPlaylist(playlistPath, &errorString))
     {
-        emit errorOccured(QObject::tr("Playlist already exist"));
+        emit errorOccured(errorString);
         return;
     }
 
-    m_workspaceDir.mkpath("PLAYLIST/" + plsName);
-    readPlaylistFolder();
+    emit workspaceChanged();
 
-    for(int i=0; i < m_avaliablePlaylists.size(); i++)
-    {
-        if(m_avaliablePlaylists.at(i)->playlistName() == plsName)
-        {
-            emit workspaceChanged();
-            setCurrentPlaylistIndex(i);
-        }
-    }
+    const int playlistIndex = m_playlistService.indexOfPath(playlistPath);
+    if (playlistIndex >= 0)
+        setCurrentPlaylistIndex(playlistIndex);
 }
 
 void UiCore::deletePlaylist(quint16 index)
 {
-    QDir playlistDir = m_workspaceDir;
-    if(playlistDir.cd("PLAYLIST"))
-    {
-        if(index < m_avaliablePlaylists.size())
-        {
-            QDir plsDir(playlistDir.absolutePath() + "/" + m_avaliablePlaylists.at(index)->playlistName());
-            plsDir.removeRecursively();
-            readPlaylistFolder();
-            emit workspaceChanged();
+    PlaylistModel *playlist = m_playlistService.playlistAt(index);
+    if (!playlist)
+        return;
 
-            setCurrentPlaylistIndex(0);
-        }
+    const QString playlistPath = playlist->playlistPath();
+    QString errorString;
+    if (!m_playlistService.removePlaylist(playlistPath, &errorString))
+    {
+        emit errorOccured(errorString);
+        return;
     }
+
+    emit workspaceChanged();
+
+    setCurrentPlaylistIndex(0);
 }
 
 QString UiCore::workspacePath() const
 {
-    return m_workspaceDir.absolutePath();
+    return m_playlistService.workspacePath();
 }
 
 QStringList UiCore::avaliablePlaylists() const
 {
-    QStringList playlists;
-
-    foreach (PlaylistModel* plsModel, m_avaliablePlaylists)
-    {
-        playlists.append(plsModel->playlistName());
-    }
-
-    return playlists;
+    return m_playlistService.playlistPaths();
 }
 
 PlaylistModel* UiCore::currentPlaylist() const
@@ -124,162 +151,32 @@ PlaylistModel* UiCore::currentPlaylist() const
     return m_currentPlaylist;
 }
 
-void UiCore::readPlaylistFolder()
-{
-    qDeleteAll(m_avaliablePlaylists);
-    m_avaliablePlaylists.clear();
-    m_currentPlaylist = nullptr;
-
-    QDir roorPlstDir = m_workspaceDir;
-    if(roorPlstDir.cd("PLAYLIST"))
-    {
-        QStringList allDirs = roorPlstDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-
-        foreach(QString plsDirName, allDirs)
-        {
-            QDir plsDir(roorPlstDir.absolutePath() + "/" + plsDirName);
-
-            QStringList filters;
-            filters.append("*.ego");
-            QStringList egoFiles = plsDir.entryList(filters, QDir::Files, QDir::Name);
-            QCollator collator;
-            collator.setNumericMode(true);
-            std::sort(egoFiles.begin(), egoFiles.end(), collator);
-
-            QList<Song> songList;
-            if(!egoFiles.isEmpty())
-            {
-                foreach (QString egoFilePath, egoFiles)
-                {
-                    Song song;
-
-                    QFile file(plsDir.absoluteFilePath(egoFilePath));
-                    if(file.open(QIODevice::ReadOnly))
-                    {
-                        QByteArray track1Line = file.readLine();
-                        if(track1Line.size() != 0)
-                        {
-                            if(track1Line.front() == '>')
-                            {
-                                song.playNext = true;
-                                track1Line = track1Line.removeFirst();
-                            }
-                            song.t1Path = track1Line;
-                            song.t1Path.remove("\n");
-                        }
-                        song.t2Path = file.readLine();
-                        song.t2Path.remove("\n");
-                    }
-
-                    QFileInfo fileInfo(file);
-                    QString fileName = fileInfo.fileName();
-                    fileName.remove(".ego");
-                    song.fileNum = fileName.toInt();
-
-                    songList.append(song);
-                }
-
-            }
-            PlaylistModel* playListModel = new PlaylistModel(songList, this);
-            playListModel->setPlaylistName(plsDirName);
-
-            QDir playlistDir(roorPlstDir);
-            playlistDir.cd(plsDirName);
-
-            playListModel->setDir(playlistDir);
-            m_avaliablePlaylists.append(playListModel);
-        }
-    }
-}
-
-
-quint16 UiCore::currentPlaylistIndex() const
+int UiCore::currentPlaylistIndex() const
 {
     return m_currentPlaylistIndex;
 }
 
-void UiCore::setCurrentPlaylistIndex(qint16 newCurrentPlaylistIndex)
+void UiCore::setCurrentPlaylistIndex(int newCurrentPlaylistIndex)
 {
-    m_currentPlaylistIndex = newCurrentPlaylistIndex;
-
-    if(m_avaliablePlaylists.size() == 0)
+    const int playlistCount = m_playlistService.playlists().size();
+    if (playlistCount == 0)
     {
         m_currentPlaylist = nullptr;
         m_currentPlaylistIndex = -1;
     }
     else
     {
-        if(m_currentPlaylistIndex <  m_avaliablePlaylists.size())
-            m_currentPlaylist = m_avaliablePlaylists.at(m_currentPlaylistIndex);
+        m_currentPlaylistIndex = qBound(0, newCurrentPlaylistIndex, playlistCount - 1);
+        m_currentPlaylist = m_playlistService.playlistAt(m_currentPlaylistIndex);
     }
 
     emit currentPlaylistChanged();
     emit currentPlaylistIndexChanged();
 }
 
-void UiCore::checkPlaylists()
+void UiCore::checkPlaylist(const QString &playlistPath)
 {
-    QStringList result;
-
-    QRegularExpression englishRegex("^[a-zA-Z0-9\\\\:/._\\-\\s()&]+$");
-
-
-    foreach(PlaylistModel* playlist, m_avaliablePlaylists)
-    {
-        quint32 songsCount = playlist->rowCount(QModelIndex());
-
-        result.append(playlist->playlistName() + ":");
-        QStringList errors;
-        for(int i=0; i < songsCount; i++)
-        {
-            QModelIndex index0 = playlist->index(i, 0, QModelIndex());
-
-            QString t1Path = m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString();
-            QString t2Path = m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString();
-
-            QFileInfo t1PathInfo(t1Path);
-            QFileInfo t2PathInfo(t2Path);
-
-
-            QString errString;
-            if(!t1PathInfo.exists())
-            {
-                errString.append("\t");
-                errString.append(QObject::tr("Song ") + QString::number(i+1));
-
-                if(m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T1PathRole).toString() == "")
-                    errString.append(QObject::tr(" track 1 not settled"));
-                else
-                    errString.append(QObject::tr(" track 1 not found: ") + playlist->data(index0, PlaylistModel::T1PathRole).toString());
-            }
-
-            if(!errString.isEmpty()) errors.append(errString);
-
-            if (!englishRegex.match(t1Path).hasMatch()) errors.append("\t"
-                              + QObject::tr("Song ") + QString::number(i+1) +QObject::tr(" track1 contains non latin symbols."));
-
-            errString.clear();
-
-            if(!t2PathInfo.exists() && m_workspaceDir.absolutePath() + playlist->data(index0, PlaylistModel::T2PathRole).toString() != "")
-            {
-                errString.append("\t");
-                errString.append(QObject::tr("Song ") + QString::number(i+1) + QObject::tr(" track 2 not found: ") + playlist->data(index0, PlaylistModel::T2PathRole).toString());
-            }
-
-            if (!englishRegex.match(t2Path).hasMatch()) errors.append("\t"
-                              + QObject::tr("Song ") + QString::number(i+1) +QObject::tr(" track2 contains non latin symbols."));
-
-            if(!errString.isEmpty()) errors.append(errString);
-
-        }
-
-        if(errors.isEmpty()) result.append("\t" + QObject::tr("Playlist is OK"));
-        else result.append(errors);
-
-        result.append("\n");
-    }
-
-    emit checkingPlaylistsFinished(result);
+    emit checkingPlaylistsFinished(m_playlistService.checkPlaylist(playlistPath));
 }
 
 void UiCore::setLanguage(QString languageCode)
@@ -406,8 +303,16 @@ void UiCore::runWavConvertor()
 #endif
 
 #ifdef Q_OS_MACOS
+    // Second executable inside EgoGIG.app/Contents/MacOS (shares the app's Qt).
+    const QString converterPath = QCoreApplication::applicationDirPath() + "/wavconverter";
+    if(!QFile::exists(converterPath))
+    {
+        qWarning() << "WavConverter executable not found:" << converterPath;
+        return;
+    }
+
     QProcess wavConvertorProcess;
-    wavConvertorProcess.setProgram(QCoreApplication::applicationDirPath() + "/wavconverter.app");
+    wavConvertorProcess.setProgram(converterPath);
     wavConvertorProcess.startDetached();
 #endif
 

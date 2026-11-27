@@ -3,6 +3,7 @@
 #include <QAudioDecoder>
 #include <QThread>
 
+
 bool SdProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent);
@@ -66,31 +67,53 @@ void SdContentModel::setWorkspace(const QDir &workspaceDir)
     setRootPath(workspaceDir.absolutePath());
     m_sdProxyModel.invalidate();
 
+    if (!m_selectedPath.isEmpty())
+    {
+        m_selectedPath.clear();
+        emit selectedPathChanged();
+    }
+    if (m_canSetTrack)
+    {
+        m_canSetTrack = false;
+        emit canSetTrackChanged();
+    }
+
     emit rootIndexChanged();
 }
 
 void SdContentModel::currentSelectionChanged(QModelIndex currentIndex)
 {
-    QModelIndex realIndex = m_sdProxyModel.mapToSource(currentIndex);
-    QString dstPath = this->filePath(realIndex);
-    QFileInfo fileInfo(dstPath);
+    bool canSetTrack = false;
+    QString selectedPath;
 
-    m_canSetTrack = false;
-
-    if(fileInfo.isFile())
+    if (currentIndex.isValid() && currentIndex.model() == &m_sdProxyModel)
     {
-        if(fileInfo.suffix().compare("wav", Qt::CaseSensitivity::CaseInsensitive) == 0)
+        const QModelIndex sourceIndex = m_sdProxyModel.mapToSource(currentIndex);
+        if (sourceIndex.isValid())
         {
-            m_canSetTrack = true;
-
-            m_selectedPath = this->filePath(realIndex);
-            quint16 workspacePathLenght = rootPath().size();
-            m_selectedPath.remove(0, workspacePathLenght);
-            if(m_selectedPath.first(1) != '/') m_selectedPath.prepend('/');
-            emit selectedPathChanged();
+            const QFileInfo fileInfo(filePath(sourceIndex));
+            if (fileInfo.isFile()
+                && fileInfo.suffix().compare(QStringLiteral("wav"), Qt::CaseInsensitive) == 0)
+            {
+                canSetTrack = true;
+                selectedPath = QDir::fromNativeSeparators(
+                    QDir(rootPath()).relativeFilePath(fileInfo.absoluteFilePath()));
+                if (!selectedPath.startsWith(QLatin1Char('/')))
+                    selectedPath.prepend(QLatin1Char('/'));
+            }
         }
     }
-    emit canSetTrackChanged();
+
+    if (m_selectedPath != selectedPath)
+    {
+        m_selectedPath = selectedPath;
+        emit selectedPathChanged();
+    }
+    if (m_canSetTrack != canSetTrack)
+    {
+        m_canSetTrack = canSetTrack;
+        emit canSetTrackChanged();
+    }
 }
 
 void SdContentModel::addContent(QModelIndex parentIndex, QList<QUrl> filesPathList)
@@ -287,10 +310,34 @@ void SdContentModel::addMidi(QString dstPath, QList<QUrl> filesPathList)
     }
 }
 
+QString SdContentModel::fileNameAt(QModelIndex index) const
+{
+    if(!index.isValid()) return {};
+    return fileName(m_sdProxyModel.mapToSource(index));
+}
+
 void SdContentModel::deleteObject(QModelIndex index)
 {
-    QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
-    remove(realIndex);
+    if(!index.isValid()) return;
+
+    const QModelIndex realIndex = m_sdProxyModel.mapToSource(index);
+    if(!realIndex.isValid()) return;
+
+    const QString path = filePath(realIndex);
+    if(path.isEmpty()) return;
+
+    // Только строго внутри <workspace>/SONGS (canonicalFilePath раскрывает symlink и "..")
+    const QString songsRoot = QFileInfo(rootPath() + "/SONGS").canonicalFilePath();
+    const QString target = QFileInfo(path).canonicalFilePath();
+    if(songsRoot.isEmpty() || target.isEmpty() || !target.startsWith(songsRoot + "/"))
+    {
+        emit errorOccured(QObject::tr("Refusing to delete an item outside of the SONGS folder"));
+        return;
+    }
+
+    if(!remove(realIndex))
+        emit errorOccured(QObject::tr("Can't delete: ") + target);
+
     m_sdProxyModel.invalidate();
     emit dataChanged(realIndex, realIndex);
 }

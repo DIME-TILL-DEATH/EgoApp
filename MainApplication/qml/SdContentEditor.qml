@@ -175,6 +175,8 @@ Item{
 
                 Layout.fillWidth: true
 
+                enabled: _itemSelectionModel.currentIndex.valid
+
                 onClicked: _removeConfirmationDialog.open()
             }
         }
@@ -187,9 +189,10 @@ Item{
 
             value: SoundCore.sdTrackPosition
             duration: SoundCore.sdTrackDuration
+            playbackActive: SoundCore.sdPlaybackActive
 
             onPlayPause: {
-                SoundCore.playContent(_itemSelectionModel.currentIndex);
+                SoundCore.PlayPause(SoundPlayer.PlaySd, _itemSelectionModel.currentIndex);
             }
 
             onStop: {
@@ -206,7 +209,7 @@ Item{
                 sequence: "space"
 
                 onActivated: {
-                    SoundCore.playContent(_itemSelectionModel.currentIndex);
+                    SoundCore.PlayPause(SoundPlayer.PlaySd, _itemSelectionModel.currentIndex);
                 }
 
                 Component.onCompleted: {
@@ -280,7 +283,7 @@ Item{
 
         title: qsTr("Remove item?")
 
-        text: qsTr("Do you really want to delete object?")
+        text: qsTr("Delete object: %1?").arg(UiCore.sdContentModel.fileNameAt(_itemSelectionModel.currentIndex))
 
         buttons: QmlDialogs.MessageDialog.Ok
                 | QmlDialogs.MessageDialog.Cancel

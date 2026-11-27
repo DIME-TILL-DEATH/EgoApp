@@ -237,6 +237,14 @@
         <source>Do you really want to delete song?</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Damaged playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This playlist contains invalid or unreadable .ego files or incorrect .ego numbering. Editing and playback are disabled until the playlist files are fixed.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>
@@ -298,6 +306,103 @@
         <source>Playlist is OK</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Can't play the selected playlist track.</source>
+        <translation>Can't play the selected playlist track.</translation>
+    </message>
+    <message>
+        <source>Playback is disabled because the playlist contains invalid or unreadable .ego files.</source>
+        <translation>Playback is disabled because the playlist contains invalid or unreadable .ego files.</translation>
+    </message>
+    <message>
+        <source>Track 1 has an invalid workspace path.</source>
+        <translation>Track 1 has an invalid workspace path.</translation>
+    </message>
+    <message>
+        <source>Track 2 has an invalid workspace path.</source>
+        <translation>Track 2 has an invalid workspace path.</translation>
+    </message>
+    <message>
+        <source>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</source>
+        <translation>Playlist editing is disabled because one or more .ego files could not be loaded. Fix the reported files before editing to avoid data loss.</translation>
+    </message>
+    <message>
+        <source>Invalid playlist persistence range.</source>
+        <translation>Invalid playlist persistence range.</translation>
+    </message>
+    <message>
+        <source>Can't create playlist backup. Check the SD card and its available space.</source>
+        <translation>Can't create playlist backup. Check the SD card and its available space.</translation>
+    </message>
+    <message>
+        <source>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</source>
+        <translation>Can't back up playlist file: %1. No playlist files were changed. Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't open playlist file for writing: %1 (%2)</source>
+        <translation>Can't open playlist file for writing: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't write playlist file: %1 (%2)</source>
+        <translation>Can't write playlist file: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't finalize playlist file: %1 (%2)</source>
+        <translation>Can't finalize playlist file: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Can't remove obsolete playlist file: %1</source>
+        <translation>Can't remove obsolete playlist file: %1</translation>
+    </message>
+    <message>
+        <source>%1: can't read backup</source>
+        <translation>%1: can't read backup</translation>
+    </message>
+    <message>
+        <source>%1: can't open for restoration</source>
+        <translation>%1: can't open for restoration</translation>
+    </message>
+    <message>
+        <source>%1: restoration failed</source>
+        <translation>%1: restoration failed</translation>
+    </message>
+    <message>
+        <source>%1: can't remove newly created file</source>
+        <translation>%1: can't remove newly created file</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</source>
+        <translation>Playlist update failed: %1. The previous playlist state was restored. Check the SD card, its connection, and available space.</translation>
+    </message>
+    <message>
+        <source>Playlist update failed: %1. The previous state could not be fully restored: %2. Backup files were kept at: %3. Stop editing and check the SD card and its connection.</source>
+        <translation>Playlist update failed: %1. The previous state could not be fully restored: %2. Stop editing and check the SD card and its connection.</translation>
+    </message>
+    <message>
+        <source>Can't save playlist file: %1 (%2). Check the SD card.</source>
+        <translation>Can't save playlist file: %1 (%2). Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't remove playlist file: %1. Check the SD card.</source>
+        <translation>Can't remove playlist file: %1. Check the SD card.</translation>
+    </message>
+    <message>
+        <source>Can't remove song: playlist numbering limit reached</source>
+        <translation>Can't remove song: playlist numbering limit reached</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move. The previous playlist state was restored.</source>
+        <translation>Can't move song: the model rejected the move. The previous playlist state was restored.</translation>
+    </message>
+    <message>
+        <source>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</source>
+        <translation>Can't move song: the model rejected the move, and restoring the previous playlist state failed: %1. Check the SD card.</translation>
+    </message>
+    <message><source>The selected song has no linked audio tracks.</source><translation>The selected song has no linked audio tracks.</translation></message>
+    <message><source>Track 1 not found.</source><translation>Track 1 not found.</translation></message>
+    <message><source>Track 2 not found.</source><translation>Track 2 not found.</translation></message>
+    <message><source>Unable to open the selected audio track.</source><translation>Unable to open the selected audio track.</translation></message>
+    <message><source>Audio decoding failed: %1</source><translation>Audio decoding failed: %1</translation></message>
 </context>
 <context>
     <name>SdContentEditor</name>
@@ -371,5 +476,47 @@
         <source>Do you really want to delete object?</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>PlaylistService</name>
+    <message>
+        <source>Unable to load playlists: %1</source>
+        <translation>Unable to load playlists: %1</translation>
+    </message>
+    <message>
+        <source>The workspace directory is unavailable or unreadable.</source>
+        <translation>The workspace directory is unavailable or unreadable.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST path is not a supported directory.</source>
+        <translation>The PLAYLIST path is not a supported directory.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory is unavailable or unreadable.</source>
+        <translation>The PLAYLIST directory is unavailable or unreadable.</translation>
+    </message>
+    <message>
+        <source>The PLAYLIST directory became unavailable while loading.</source>
+        <translation>The PLAYLIST directory became unavailable while loading.</translation>
+    </message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> has no linked tracks</translation></message>
+    <message><source> </source><translation> </translation></message>
+    <message><source> has an invalid workspace path: </source><translation> has an invalid workspace path: </translation></message>
+    <message><source> not found: </source><translation> not found: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> contains non latin symbols.</translation></message>
+</context>
+
+<context>
+    <name>UiCore</name>
+    <message><source> has no linked tracks</source><translation> has no linked tracks</translation></message>
+    <message><source> has an invalid workspace path: </source><translation> has an invalid workspace path: </translation></message>
+    <message><source> not found: </source><translation> not found: </translation></message>
+    <message><source> contains non latin symbols.</source><translation> contains non latin symbols.</translation></message>
+    <message><source>track 1</source><translation>track 1</translation></message>
+    <message><source>track 2</source><translation>track 2</translation></message>
 </context>
 </TS>
