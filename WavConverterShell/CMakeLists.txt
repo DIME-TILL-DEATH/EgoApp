@@ -58,7 +58,7 @@ if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter.exe"
@@ -78,7 +78,7 @@ if(APPLE)
 endif()
 
 if(LINUX)
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    if(EGOGIG_ENABLE_RELEASE_PACKAGING AND CMAKE_BUILD_TYPE STREQUAL "Release")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_BINARY_DIR}/WavConverterShell/WavConverter"
