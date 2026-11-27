@@ -257,7 +257,8 @@ The requested Windows 10 hosted runner is not available in the selected GitHub-h
 - Added `release-build` to `.github/workflows/ci.yml`; it is gated to PRs with base `master` and pushes to `master`, with Ubuntu 22.04 and Windows Server 2022 / Qt 6.12.1 matrix legs.
 - The job configures the full project with `BUILD_TESTING=OFF`, `CMAKE_BUILD_TYPE=Release`, and `EGOGIG_ENABLE_RELEASE_PACKAGING=OFF`, then builds all default targets. Configure/build logs are uploaded for 14 days.
 - Added the packaging switch in the root CMake project and guarded app, converter-shell, and converter-library deployment/signing/installer hooks.
-- Updated `docs/PLATFORM_SUPPORT.md` and `docs/AI_CONTEXT.md`. This is implementation evidence only; the new workflow must still be exercised by a PR targeting `master` before T6 can be marked DONE.
+- First PR-to-`master` run `45987008675`: Ubuntu 22.04 full Release build passed; Windows Release configuration exposed a pre-existing missing `WavConverterShell/resources.rc` source. Added a tracked `.rc.in` template and configure-time generation into the build tree using the existing converter `.ico` asset.
+- Updated `docs/PLATFORM_SUPPORT.md` and `docs/AI_CONTEXT.md`. The fixed Windows path still requires a successful rerun on PR #6 before T6 can be marked DONE.
 
 ---
 
