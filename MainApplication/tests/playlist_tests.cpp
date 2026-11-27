@@ -120,6 +120,16 @@ private slots:
         QVERIFY(result.errors.isEmpty());
     }
 
+    void modelReturnsInvalidDataForUnsupportedRoles()
+    {
+        PlaylistModel model({song(0, "/SONGS/A.wav")});
+        model.setDir(QDir(m_playlistDirectory));
+
+        const QModelIndex index = model.index(0, 0);
+        QVERIFY(index.isValid());
+        QVERIFY(!model.data(index, Qt::UserRole + 1000).isValid());
+    }
+
     void modelInsertAndRemoveRenumberTheAffectedSuffix()
     {
         const QList<Song> initial{
