@@ -128,7 +128,6 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
         return isTrackMissing(m_songList.at(index.row()).t2Path);
 
     default:
-        qWarning() << __FUNCTION__ << "no role";
         return {};
     }
 }

@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QTimeZone>
 #include <QtTest>
 
 #include "playlistmodel.h"
@@ -54,7 +55,7 @@ private:
         QFile file(path);
         if (!file.open(QIODevice::ReadWrite))
             return {};
-        const QDateTime oldTime(QDate(2001, 1, 1), QTime(0, 0), Qt::UTC);
+        const QDateTime oldTime(QDate(2001, 1, 1), QTime(0, 0), QTimeZone::UTC);
         if (!file.setFileTime(oldTime, QFileDevice::FileModificationTime))
             return {};
         file.close();
@@ -118,6 +119,16 @@ private slots:
         const PlaylistLoadResult result = PlaylistStorage::loadSongs(m_playlistDirectory);
         QVERIFY(result.songs.isEmpty());
         QVERIFY(result.errors.isEmpty());
+    }
+
+    void modelReturnsInvalidDataForUnsupportedRoles()
+    {
+        PlaylistModel model({song(0, "/SONGS/A.wav")});
+        model.setDir(QDir(m_playlistDirectory));
+
+        const QModelIndex index = model.index(0, 0);
+        QVERIFY(index.isValid());
+        QVERIFY(!model.data(index, Qt::UserRole + 1000).isValid());
     }
 
     void modelInsertAndRemoveRenumberTheAffectedSuffix()
@@ -323,6 +334,12 @@ private slots:
 
     void repositoryCreatesDiscoversAndRemovesNestedPlaylists()
     {
+        // init() creates a default Test playlist for the other fixtures. This
+        // repository test owns the complete directory tree it wants to assert.
+        const QString defaultPlaylistPath =
+            QDir(m_workspacePath).filePath("PLAYLIST/Test");
+        QVERIFY(QDir(defaultPlaylistPath).removeRecursively());
+
         PlaylistRepository repository;
         QVERIFY(repository.create(m_workspacePath, "Collections/Rock"));
         QVERIFY(repository.create(m_workspacePath, "Collections/Jazz"));
